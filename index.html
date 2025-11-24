@@ -1,0 +1,289 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>5-Minute Improv Coach</title>
+		<link rel="icon" type="image/x-icon" href="favicon.ico" />
+		<link rel="stylesheet" href="style.css" />
+	</head>
+	<body>
+		<main class="app-shell">
+			<header class="hero">
+				<div>
+					<h1>5-Minute Improv Coach</h1>
+					<p>Generate a quick improv assignment for piano.</p>
+          <p class="muted">A tiny coach that hands you a scale, chords, LH groove, and a motif.</p>
+				</div>
+				<div class="transport-controls">
+          <label>
+              Tempo
+              <input type="range" id="tempo-slider" min="60" max="140" value="90" />
+              <span id="tempo-value">90 BPM</span>
+          </label>
+          <div class="transport-row">
+						<button id="play-all">Play All</button>
+            <label class="loop-toggle" for="play-all-loop" style="margin-left:8px;">
+                <input type="checkbox" id="play-all-loop" /> Loop
+            </label>
+            <span id="play-all-loop-badge" class="badge"></span>
+          </div>
+					<div class="sampler-panel">
+						<label class="piano-model-select" for="piano-model">
+							Piano Model
+							<select id="piano-model">
+								<option value="fuhton-piano" selected>Fuhton Piano (Default)</option>
+								<option value="local-soft">Piano Lite - Soft</option>
+								<option value="local-bright">Piano HL - Bright</option>
+								<option value="salamander-lite">Salamander Lite</option>
+							</select>
+						</label>
+					</div>
+          <button id="stop-all">Stop All</button>
+        </div>
+
+			</header>
+
+			<section class="card preset-card" id="preset-card">
+				<div class="preset-header">
+					<label for="preset-select">Preset
+						<select id="preset-select"></select>
+					</label>
+					<button id="advanced-controls-toggle" class="ghost small" type="button">Show Controls</button>
+				</div>
+				<p class="muted">Choose a curated setup to auto-fill everything. Reveal controls if you want to tweak before generating.</p>
+			</section>
+			<section class="card controls-card collapsed" id="advanced-controls-card">
+				<div class="card-head">
+					<h2>Advanced Assignment Controls</h2>
+				</div>
+				<section class="control-panel">
+					<div class="control">
+						<label for="key-select">Key</label>
+						<select id="key-select">
+							<option value="C">C</option>
+							<option value="C#">C#/Db</option>
+							<option value="D">D</option>
+							<option value="D#">D#/Eb</option>
+							<option value="E">E</option>
+							<option value="F">F</option>
+							<option value="F#">F#/Gb</option>
+							<option value="G">G</option>
+							<option value="G#">G#/Ab</option>
+							<option value="A">A</option>
+							<option value="A#">A#/Bb</option>
+							<option value="B">B</option>
+						</select>
+					</div>
+		        <div class="control">
+		          <label for="mode-select">Mode</label>
+		          <select id="mode-select">
+							<option value="major">Major – bright, neutral</option>
+							<option value="minor">Minor – natural minor color</option>
+							<option value="pentatonicMajor">Pentatonic Major – open 5-note</option>
+							<option value="pentatonicMinor">Pentatonic Minor – bluesy 5-note</option>
+							<option value="harmonicMinor">Harmonic Minor – raised 7 pull</option>
+							<option value="melodicMinor">Melodic Minor – smooth raised 6 & 7</option>
+							<option value="majorBlues">Major Blues – hexatonic with blue note</option>
+							<option value="minorBlues">Minor Blues – classic blues hexatonic</option>
+		          </select>
+		        </div>
+					<div class="control">
+						<label for="progression-select">Chord Progression</label>
+						<select id="progression-select"></select>
+					</div>
+					<div class="control">
+						<label for="lh-select">Left-Hand Pattern</label>
+						<select id="lh-select">
+							<option value="block">Block Chords</option>
+							<option value="alberti">Alberti Bass</option>
+							<option value="broken">Broken Arpeggios</option>
+							<option value="oompah">Oom-pah (Bass + Chords)</option>
+							<option value="root-5th-oct">Root–5th–Octave Bass</option>
+							<option value="pop-8ths">Pop 8ths (Root/Octave)</option>
+							<option value="power-8ths">Power Fifths 8ths</option>
+							<option value="pedal">Pedal Root + Off-Beat Chords</option>
+							<option value="stride">Light Stride</option>
+							<option value="walking">Walking Bass (Advanced)</option>
+						</select>
+					</div>
+					<div class="control">
+						<label for="motif-select">Motif Style</label>
+						<select id="motif-select">
+						</select>
+					</div>
+					<div class="control">
+						<label for="length-select">Progression Length</label>
+						<select id="length-select">
+							<option value="4">4 bars</option>
+							<option value="8">8 bars</option>
+							<option value="12">12 bars</option>
+						</select>
+					</div>
+					<button id="generate" class="primary">Generate Assignment</button>
+				</section>
+			</section>
+				<article class="card custom-progression-card" id="custom-progression-card">
+					<div class="card-head">
+						<h2 id="custom-progression-title">Custom Progression (0 bars)</h2>
+						<button id="clear-custom-progression" class="play" type="button">Clear</button>
+					</div>
+					<p class="muted" style="margin-bottom:0.5rem;" id="custom-progression-help-text">
+						Pick a palette style to set both the chord buttons and voicing, then use this when "Custom (use chord palette)" is selected above.
+					</p>
+					<div class="palette-controls">
+						<label for="palette-level">Palette style (chords + voicing):</label>
+						<select id="palette-level">
+							<option value="classical">Classical</option>
+							<option value="pop">Pop / Rock</option>
+							<option value="jazz">Jazz</option>
+							<option value="modal">Modal / Ambient</option>
+						</select>
+					</div>
+					<div id="chord-palette" class="chord-palette"></div>
+					<p id="custom-progression-preview" class="muted" style="margin-top:0.75rem;">
+					No chords yet. Click the buttons above to build your own sequence.
+					</p>
+				</article>
+      <section class="card mix-card collapsed">
+				<div class="card-head">
+					<h2>Mix & Feel</h2>
+					<button id="mix-card-toggle" class="ghost small" type="button">Show</button>
+				</div>
+				<div class="mix-grid">
+					<div class="mix-row">
+						<div class="mix-label">
+							<h4>Left Hand</h4>
+							<span id="mix-left-volume-value">0 dB</span>
+						</div>
+						<label>
+							Volume
+							<input type="range" id="mix-left-volume" min="-24" max="6" step="1" value="0" />
+						</label>
+						<label class="mute-label">
+							<input type="checkbox" id="mix-left-mute" /> Mute
+						</label>
+					</div>
+					<div class="mix-row">
+						<div class="mix-label">
+							<h4>Motif / Lead</h4>
+							<span id="mix-lead-volume-value">0 dB</span>
+						</div>
+						<label>
+							Volume
+							<input type="range" id="mix-lead-volume" min="-24" max="6" step="1" value="0" />
+						</label>
+						<label class="mute-label">
+							<input type="checkbox" id="mix-lead-mute" /> Mute
+						</label>
+					</div>
+				</div>
+				<div class="humanize-controls">
+					<label class="toggle">
+						<input type="checkbox" id="humanize-toggle" /> Humanize & Swing
+					</label>
+					<label>
+						Feel Amount
+						<input type="range" id="humanize-amount" min="0" max="100" step="1" value="0" />
+						<span id="humanize-value">0%</span>
+					</label>
+					<label>
+						Swing Push
+						<input type="range" id="swing-amount" min="0" max="100" step="1" value="0" />
+						<span id="swing-value">0%</span>
+					</label>
+				</div>
+				<div class="spatial-controls">
+					<label>
+						Reverb Mix
+						<input type="range" id="reverb-wet" min="0" max="60" step="1" value="0" />
+						<span id="reverb-wet-value">0%</span>
+					</label>
+					<label class="toggle">
+						<input type="checkbox" id="room-size-toggle" /> Large Room
+					</label>
+					<label>
+						Motif Width
+						<input type="range" id="motif-width" min="0" max="100" step="1" value="0" />
+						<span id="motif-width-value">0%</span>
+					</label>
+				</div>
+			</section>
+      <div id="status-line" class="status-line"></div>
+
+
+			<section class="cards">
+                <article class="card" id="piano-roll-card">
+                    <div class="card-head">
+                        <h2>Piano Roll (LH + Motif)</h2>
+                    </div>
+                    <svg id="piano-roll" viewBox="0 0 400 160"></svg>
+                </article>
+
+				<article class="card" id="scale-card">
+					<div class="card-head">
+					<h2>Scale / Mode</h2>
+						<div class="card-actions">
+							<label class="loop-toggle" for="scale-loop">
+								<input type="checkbox" id="scale-loop" /> Loop
+							</label>
+							<button class="play" data-target="scale">Play Scale</button>
+						</div>
+					</div>
+					  <p id="scale-name">--</p>
+					<p id="scale-notes" class="muted">Select options and generate to begin.</p>
+				</article>
+
+				<article class="card" id="progression-card">
+					<div class="card-head">
+						<h2>Chord Progression</h2>
+						<div class="card-actions">
+							<label class="loop-toggle" for="progression-loop">
+								<input type="checkbox" id="progression-loop" /> Loop
+							</label>
+							<button class="play" data-target="progression">Play Progression</button>
+						</div>
+					</div>
+					  <p id="progression-roman">--</p>
+					  <p id="progression-description" class="muted">--</p>
+					  <p id="progression-chords" class="muted">--</p>
+					<div id="progression-visual" class="timeline"></div>
+				</article>
+
+
+				<article class="card" id="lh-card">
+					<div class="card-head">
+					<h2>Left-Hand Pattern</h2>
+						<div class="card-actions">
+							<label class="loop-toggle" for="lh-loop">
+								<input type="checkbox" id="lh-loop" /> Loop
+							</label>
+							<button class="play" data-target="left-hand">Play LH Pattern</button>
+						</div>
+					</div>
+					  <p id="lh-name">--</p>
+					<div id="lh-details" class="table-ish"></div>
+				</article>
+
+				<article class="card" id="motif-card">
+					<div class="card-head">
+						<h2>Motif</h2>
+						<div class="card-actions">
+							<label class="loop-toggle" for="motif-loop">
+								<input type="checkbox" id="motif-loop" /> Loop
+							</label>
+							<button class="play" data-target="motif">Play Motif</button>
+						</div>
+					</div>
+					  <p id="motif-rhythm">--</p>
+					  <p id="motif-pitches" class="muted">--</p>
+					<svg id="motif-visual" viewBox="0 0 200 100"></svg>
+				</article>
+			</section>
+		</main>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script type="module" src="main.js"></script>
+
+	</body>
+</html>

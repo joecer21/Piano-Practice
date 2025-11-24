@@ -1,0 +1,13 @@
+{
+  "name": "piano-practice",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/theory.spec.js && node tests/ui-labels.spec.js && node tests/humanize.spec.js && node tests/anchor-spacing.spec.js && node tests/presets.spec.js && node tests/progression-dropdown.spec.js && node tests/audio-loop.spec.js"
+  },
+  "dependencies": {
+    "jsdom": "^27.2.0",
+    "puppeteer": "^24.31.0",
+    "serve-handler": "^6.1.6"
+  }
+}
