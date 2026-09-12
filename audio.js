@@ -2,6 +2,7 @@
 // Playback helpers and Tone.js wiring.
 
 import * as Tone from "tone";
+import { LOCAL_SAMPLE_BASE_URL, LOCAL_VH_URL_MAP, LOCAL_VL_URL_MAP } from "./audio/local-samples.js";
 
 import {
   beatsToTransport,
@@ -92,7 +93,6 @@ const LOCAL_HIGH_LIBRARY_ID = "local-bright";
 const DEFAULT_LIBRARY_ID = LOCAL_LIBRARY_ID;
 const FALLBACK_LIBRARY_ID = "salamander-lite";
 const FALLBACK_LOAD_TIMEOUT_MS = 15000;
-const LOCAL_SAMPLE_BASE_URL = "samples/";
 
 function dispatchNoteEvent(type, detail = {}) {
   if (typeof window === "undefined" || typeof window.CustomEvent !== "function") return;
@@ -156,44 +156,6 @@ const FUHTON_URL_MAP = {
   D5: "D5.mp3",
 };
 
-const LOCAL_VL_URL_MAP = {
-  A0: "a0vl.mp3",
-  A1: "a1vl.mp3",
-  A2: "a2vl.mp3",
-  A3: "a3vl.mp3",
-  A4: "a4vl.mp3",
-  A5: "a5vl.mp3",
-  A6: "a6vl.mp3",
-  A7: "a7vl.mp3",
-  C2: "c2vl.mp3",
-  C3: "c3vl.mp3",
-  C4: "c4vl.mp3",
-  C5: "c5vl.mp3",
-  "D#3": "d%233vl.mp3",
-  "D#4": "d%234vl.mp3",
-  "F#2": "f%232vl.mp3",
-  "F#3": "f%233vl.mp3",
-};
-// Bright accent samples (vh = high velocity layer) used for rare emphasis hits.
-const LOCAL_VH_URL_MAP = {
-  A0: "a0vh.mp3",
-  A1: "a1vh.mp3",
-  A3: "a3vh.mp3",
-  A4: "a4vh.mp3",
-  A5: "a5vh.mp3",
-  A6: "a6vh.mp3",
-  A7: "a7vh.mp3",
-  B3: "b3vh.mp3",
-  B4: "b4vh.mp3",
-  B5: "b5vh.mp3",
-  C2: "c2vh.mp3",
-  C3: "c3vh.mp3",
-  C5: "c5vh.mp3",
-  "D#3": "d%233vh.mp3",
-  "D#4": "d%234vh.mp3",
-  "F#2": "f%232vh.mp3",
-  "F#3": "f%233vh.mp3",
-};
 const SALAMANDER_URL_MAP = {
   A2: "A2.mp3",
   A3: "A3.mp3",
