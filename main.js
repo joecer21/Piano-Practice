@@ -186,18 +186,10 @@ function init() {
   dom.playAllLoop?.addEventListener("change", handlePlayAllLoopToggle);
   updateLoopBadge(dom, dom.playAllLoop?.checked || false);
 
-  window.addEventListener(
-    "click",
-    async () => {
-      try {
-        await Tone.start();
-        console.log("Audio context started");
-      } catch (err) {
-        console.error("Error starting audio context:", err);
-      }
-    },
-    { once: true }
-  );
+  // Not { once: true }: if Tone.start() rejects, the listener would already be
+  // gone and the user would be left with a page that silently never plays.
+  // The listener removes itself only once the context is actually running.
+  window.addEventListener("click", handleUnlockClick);
   const initialPresetId = state.inputs.presetId || DEFAULT_PRESET_ID;
   if (initialPresetId) {
     applyPreset(initialPresetId, { autoGenerate: true });
@@ -386,6 +378,36 @@ function ensureAssignmentReady() {
   return ready;
 }
 
+let audioUnlocked = false;
+
+/**
+ * Bring the AudioContext out of its suspended state.
+ *
+ * Browsers require a user gesture, and Tone.start() can reject. Previously that
+ * rejection was logged and swallowed: on boot the user saw nothing, and pressing
+ * a piano key simply did nothing with no explanation.
+ *
+ * @returns {Promise<boolean>} whether audio is now running
+ */
+async function unlockAudio() {
+  if (audioUnlocked) return true;
+  try {
+    await Tone.start();
+    audioUnlocked = true;
+    window.removeEventListener("click", handleUnlockClick);
+    return true;
+  } catch (error) {
+    setStatusMessage(dom, "Sound is blocked by the browser. Click anywhere on the page to enable audio.", {
+      tone: "error",
+    });
+    return false;
+  }
+}
+
+function handleUnlockClick() {
+  void unlockAudio();
+}
+
 function ensureSamplerReady() {
   if (isPianoLoaded()) {
     return true;
@@ -399,7 +421,7 @@ async function handlePlay(target) {
   if (!ensureAssignmentReady() || !ensureSamplerReady()) {
     return;
   }
-  await Tone.start();
+  if (!(await unlockAudio())) return;
   stopAllPlayback();
 
   switch (target) {
@@ -460,12 +482,7 @@ function handleStopAll() {
 
 async function handlePianoKeyDown(rootNote) {
   if (!rootNote || !ensureSamplerReady()) return;
-  try {
-    await Tone.start();
-  } catch (error) {
-    console.warn("Unable to start piano preview", error);
-    return;
-  }
+  if (!(await unlockAudio())) return;
   const priorNotes = activeLivePianoNotes.get(rootNote) || [];
   priorNotes.forEach((note) => playPreviewNoteUp(note, { part: "lead" }));
   const notes = getLivePianoChordNotes(
@@ -501,7 +518,7 @@ async function handlePlayAll() {
   if (!ensureAssignmentReady() || !ensureSamplerReady()) {
     return;
   }
-  await Tone.start();
+  if (!(await unlockAudio())) return;
   stopAllPlayback();
   const loopEnabled = dom.playAllLoop?.checked || false;
   updateLoopBadge(dom, loopEnabled);
