@@ -127,6 +127,7 @@ export function cacheDom() {
     cards: document.querySelectorAll(".card"),
     playAllLoopBadge: document.getElementById("play-all-loop-badge"),
     pianoModel: document.getElementById("piano-model"),
+    samplerStatus: document.getElementById("sampler-status"),
     pianoRollPlayhead: document.getElementById("piano-roll-playhead"),
     mixControls,
     mixCard: document.querySelector(".mix-card"),
@@ -778,33 +779,12 @@ export function populatePresetSelector(dom, presets = [], selectedId) {
 export function renderSamplerStatus(dom, snapshot = {}) {
   const badge = dom.samplerStatus || null;
   const libraries = Object.values(snapshot?.libraries || {});
-  try {
-    console.log(
-      "[sampler-ui] renderSamplerStatus",
-      JSON.stringify(
-        {
-          activeLibraryId: snapshot?.activeLibraryId || null,
-          librarySummaries: libraries.map((entry) => ({
-            id: entry.libraryId,
-            label: entry.label,
-            phase: entry.phase,
-            isDefault: entry.isDefault,
-          })),
-        },
-        null,
-        2
-      )
-    );
-  } catch (err) {
-    console.warn("[sampler-ui] renderSamplerStatus log failed", err);
-  }
   if (badge) {
     badge.classList.remove("loading", "ready", "error");
     badge.innerHTML = "";
   }
 
   if (!libraries.length) {
-    console.log("[sampler-ui] renderSamplerStatus: no libraries in snapshot");
     if (badge) {
       badge.textContent = "Loading piano…";
       badge.classList.add("loading");
@@ -869,7 +849,6 @@ function deriveBadgeClass(entries) {
 function syncPianoModelSelector(selectEl, libraries, activeId) {
   if (!selectEl) return;
   if (!libraries.length) {
-    console.log("[sampler-ui] sync selector: no libraries, showing placeholder");
     selectEl.innerHTML = "";
     const placeholder = document.createElement("option");
     placeholder.value = "";
@@ -879,26 +858,6 @@ function syncPianoModelSelector(selectEl, libraries, activeId) {
     return;
   }
 
-  try {
-    console.log(
-      "[sampler-ui] sync selector",
-      JSON.stringify(
-        {
-          activeId,
-          optionOrder: libraries.map((entry) => ({
-            id: entry.libraryId,
-            phase: entry.phase,
-            isDefault: entry.isDefault,
-          })),
-          locked: selectEl.dataset.locked === "true",
-        },
-        null,
-        2
-      )
-    );
-  } catch (err) {
-    console.warn("[sampler-ui] sync selector log failed", err);
-  }
   const locked = selectEl.dataset.locked === "true";
   const previousValue = selectEl.value;
   selectEl.innerHTML = "";
@@ -932,20 +891,6 @@ function syncPianoModelSelector(selectEl, libraries, activeId) {
           : libraries[0].libraryId;
   selectEl.value = nextValue;
   selectEl.disabled = locked;
-  console.log(
-    "[sampler-ui] selector populated",
-    JSON.stringify(
-      {
-        selectedValue: selectEl.value,
-        optionLabels: Array.from(selectEl.options).map((opt) => ({
-          value: opt.value,
-          label: opt.textContent,
-        })),
-      },
-      null,
-      2
-    )
-  );
 }
 
 function formatDb(value, muted) {

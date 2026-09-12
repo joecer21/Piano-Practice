@@ -127,6 +127,30 @@ body {
   color: #7a6254;
 }
 
+/* Audio status surface. renderSamplerStatus appends one .sampler-row per
+   library; the rows must stack rather than run together inline. */
+#sampler-status {
+  margin-top: 0.4rem;
+  line-height: 1.45;
+  text-align: left;
+  max-width: 22rem;
+}
+#sampler-status:empty {
+  display: none;
+}
+.sampler-row {
+  display: block;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+.sampler-row.error,
+.sampler-row.timeout {
+  color: #a0382a;
+}
+.sampler-row.ready {
+  color: #1f7a52;
+}
+
 .badge.loading {
   background: #fff3d4;
   color: #8b5a1e;

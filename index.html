@@ -37,6 +37,7 @@
 								<option value="salamander-lite">Salamander Lite</option>
 							</select>
 						</label>
+						<div id="sampler-status" class="badge" aria-hidden="true"></div>
 					</div>
           <button id="stop-all">Stop All</button>
         </div>
@@ -234,7 +235,7 @@
 					</label>
 				</div>
 			</section>
-      <div id="status-line" class="status-line"></div>
+      <div id="status-line" class="status-line" role="status" aria-live="polite" aria-atomic="true"></div>
 
 
 			<section class="cards">
