@@ -32,7 +32,7 @@ npm run typecheck      # Strict TypeScript checks for new typed modules
 npm test               # Unit and DOM contract specs with Vitest
 npm run test:watch     # Vitest watch mode
 npm run test:browser   # Playwright, against the production bundle
-npm run fingerprint    # Verify generated music against the frozen baseline
+npm run fingerprint    # Verify generated music and its Score interpretation against frozen baselines
 npm run check          # Everything above, in the order CI runs it
 ```
 
@@ -67,28 +67,38 @@ Sample filenames spell sharps with `s` (`ds3vl.mp3`), because a literal `#` in a
 - `audio/local-samples.js` is the local sample manifest, free of Tone.js so it can be validated directly.
 - `tests/*.spec.js` contains the Vitest contract suite.
 - `tests/browser/` covers the practice flow and pins previously-shipped defects as user-visible behaviour.
-- `tests/support/fingerprint.js` and `scripts/fingerprint.mjs` implement the musical fingerprint.
+- `tests/support/fingerprint.js` and `scripts/fingerprint.mjs` implement the musical fingerprint; `tests/support/score-fingerprint.js`, `tests/score-fingerprint.spec.js` and `scripts/score-fingerprint.mjs` implement the Score fingerprint.
 
 ## Visual channels
 
 The coach gives each musical fact one visual channel, so none can be mistaken for another. Hue means only which hand is sounding. Note role is fill weight: chord tones and the root are solid marks, scale tones are outlined, and notes outside the scale are unmarked. The root carries a heavier ring. Chord provenance (borrowed, secondary) is a text badge. Interface controls use neutral ink, so no button can be read as a hand. `tests/browser/coach.spec.js` asserts this against computed styles.
 
-## Musical fingerprint
+## Fingerprints
 
-The engine is deterministic: a seed reproduces the same assignment. `npm run fingerprint`
-hashes the generated music for the same 96-seed matrix the property tests use and compares it
-against `tests/fixtures/musical-fingerprint.json`.
+The engine is deterministic: a seed reproduces the same assignment. Two frozen fingerprints
+guard it, and `npm run fingerprint` checks both.
 
-The hash covers musical facts only - pitches, onsets, durations, parts, bar indices and chord
-voicings. It deliberately excludes labels, descriptions and property order, so presentation
-changes do not produce diffs. It also excludes the assignment `id`, which is derived from
-inputs rather than from notes and so cannot detect a change in generated material.
+**Cases.** Both cover the 96 property seeds plus a fixed grid of every mode in C, F# and A#.
+The grid exists because every property seed rerolls away from the defaults, so the seed matrix
+alone never contains the default mode (major) or key (C).
 
-Six seeds are additionally kept as readable fixtures under `tests/fixtures/curated/` so a
-failure can be read rather than merely detected.
+**Musical fingerprint** (`tests/fixtures/musical-fingerprint.json`) hashes the generated
+music: pitches, onsets, durations, parts, bar indices and chord voicings. Six seeds are kept
+readable under `tests/fixtures/curated/`.
 
-A change to the generated music should be intentional: make it in its own commit, confirm only
-the seeds you expect have moved, then re-freeze with `npm run fingerprint:write`.
+**Score fingerprint** (`tests/fixtures/score-fingerprint.json`) hashes how `Score`
+interprets that music: note roles, scale degrees, dynamics, bar chords, roots and provenance.
+The music fingerprint cannot see these, so a change such as renumbering degrees leaves it
+untouched. Six cases chosen to cover the mode-dependent degree spellings are kept readable
+under `tests/fixtures/curated-score/`, and a failure names the fields that changed in them
+(for example `parts.lh[].role`). It runs under Vitest because `Score` is TypeScript.
+
+Both exclude labels, descriptions, property order and the assignment `id`, which is derived
+from inputs rather than from notes and so cannot detect a change in generated material.
+
+They are frozen separately so an intended change to one does not re-freeze the other. Make the
+change in its own commit, confirm only the cases and fields you expect have moved, then run
+`npm run fingerprint:write-music` or `npm run fingerprint:write-score`.
 
 ## Continuous integration
 

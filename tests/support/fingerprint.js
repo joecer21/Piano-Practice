@@ -16,6 +16,7 @@ import {
   generateAssignment,
   rerollAssignmentInputs,
 } from "../../domain/assignment.js";
+import { SCALE_PATTERNS } from "../../theory.js";
 
 /** The same 96-seed matrix used by tests/assignment.spec.js. */
 export const PROPERTY_SEED_COUNT = 96;
@@ -26,6 +27,29 @@ export function propertySeeds(count = PROPERTY_SEED_COUNT) {
 
 export function assignmentForSeed(seed) {
   return generateAssignment(rerollAssignmentInputs(DEFAULT_ASSIGNMENT_INPUTS, { seed }));
+}
+
+/**
+ * Every property seed rerolls away from the defaults with pickDifferent, so the
+ * 96-seed matrix never contains the default mode (major) or the default key (C).
+ * A fixed grid of every mode in a natural, a sharp and a flat-spelled key closes
+ * that hole without changing any property seed.
+ */
+export const COVERAGE_KEYS = Object.freeze(["C", "F#", "A#"]);
+
+export function coverageCaseIds() {
+  return Object.keys(SCALE_PATTERNS).flatMap((mode) => COVERAGE_KEYS.map((key) => `coverage:${mode}:${key}`));
+}
+
+/** All fingerprinted cases: the property seeds, then the mode-by-key coverage grid. */
+export function fingerprintCaseIds() {
+  return [...propertySeeds(), ...coverageCaseIds()];
+}
+
+export function assignmentForCase(caseId) {
+  if (!caseId.startsWith("coverage:")) return assignmentForSeed(caseId);
+  const [, mode, key] = caseId.split(":");
+  return generateAssignment({ ...DEFAULT_ASSIGNMENT_INPUTS, key, mode, seed: caseId });
 }
 
 function stepNotes(step) {
@@ -100,6 +124,30 @@ export function fingerprint(assignment) {
 }
 
 /** { seed: hash } for the whole matrix. */
-export function fingerprintMatrix(seeds = propertySeeds()) {
-  return Object.fromEntries(seeds.map((seed) => [seed, fingerprint(assignmentForSeed(seed))]));
+export function fingerprintMatrix(caseIds = fingerprintCaseIds()) {
+  return Object.fromEntries(caseIds.map((caseId) => [caseId, fingerprint(assignmentForCase(caseId))]));
+}
+
+/**
+ * Every leaf that differs between two fact trees, with array positions collapsed
+ * so the same kind of change reads as one path ("parts.rh[].degree.number").
+ */
+export function changedFieldPaths(before, after, path = "") {
+  if (Array.isArray(before) || Array.isArray(after)) {
+    const a = Array.isArray(before) ? before : [];
+    const b = Array.isArray(after) ? after : [];
+    const paths = a.length === b.length ? [] : [`${path}.length`];
+    for (let index = 0; index < Math.max(a.length, b.length); index += 1) {
+      paths.push(...changedFieldPaths(a[index], b[index], `${path}[]`));
+    }
+    return paths;
+  }
+  const isObject = (value) => value !== null && typeof value === "object";
+  if (isObject(before) && isObject(after)) {
+    const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+    return [...keys].flatMap((key) =>
+      changedFieldPaths(before[key], after[key], path ? `${path}.${key}` : key),
+    );
+  }
+  return stableStringify(before) === stableStringify(after) ? [] : [path || "(root)"];
 }

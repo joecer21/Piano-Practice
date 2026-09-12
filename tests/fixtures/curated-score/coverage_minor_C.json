@@ -1,0 +1,2252 @@
+{
+  "meta": {
+    "bars": 8,
+    "beatsPerBar": 4,
+    "key": "C",
+    "mode": "minor",
+    "rootPitchClass": 0,
+    "scalePitchClasses": [
+      0,
+      2,
+      3,
+      5,
+      7,
+      8,
+      10
+    ],
+    "rhCycleBeats": 8,
+    "totalBeats": 32
+  },
+  "bars": [
+    {
+      "barIndex": 0,
+      "startBeat": 0,
+      "roman": "I",
+      "chordPitchClasses": [
+        0,
+        3,
+        7
+      ],
+      "rootPitchClass": 0,
+      "voicingMidis": {
+        "chord": [
+          60,
+          63,
+          67
+        ],
+        "bass": [
+          48,
+          51,
+          55
+        ]
+      },
+      "provenance": {
+        "kind": "diatonic"
+      }
+    },
+    {
+      "barIndex": 1,
+      "startBeat": 4,
+      "roman": "V",
+      "chordPitchClasses": [
+        2,
+        7,
+        10
+      ],
+      "rootPitchClass": 7,
+      "voicingMidis": {
+        "chord": [
+          55,
+          58,
+          62
+        ],
+        "bass": [
+          43,
+          46,
+          50
+        ]
+      },
+      "provenance": {
+        "kind": "diatonic"
+      }
+    },
+    {
+      "barIndex": 2,
+      "startBeat": 8,
+      "roman": "vi",
+      "chordPitchClasses": [
+        0,
+        3,
+        8
+      ],
+      "rootPitchClass": 8,
+      "voicingMidis": {
+        "chord": [
+          56,
+          60,
+          63
+        ],
+        "bass": [
+          44,
+          48,
+          51
+        ]
+      },
+      "provenance": {
+        "kind": "diatonic"
+      }
+    },
+    {
+      "barIndex": 3,
+      "startBeat": 12,
+      "roman": "IV",
+      "chordPitchClasses": [
+        0,
+        5,
+        8
+      ],
+      "rootPitchClass": 5,
+      "voicingMidis": {
+        "chord": [
+          65,
+          68,
+          72
+        ],
+        "bass": [
+          53,
+          56,
+          60
+        ]
+      },
+      "provenance": {
+        "kind": "diatonic"
+      }
+    },
+    {
+      "barIndex": 4,
+      "startBeat": 16,
+      "roman": "I",
+      "chordPitchClasses": [
+        0,
+        3,
+        7
+      ],
+      "rootPitchClass": 0,
+      "voicingMidis": {
+        "chord": [
+          60,
+          63,
+          67
+        ],
+        "bass": [
+          48,
+          51,
+          55
+        ]
+      },
+      "provenance": {
+        "kind": "diatonic"
+      }
+    },
+    {
+      "barIndex": 5,
+      "startBeat": 20,
+      "roman": "V",
+      "chordPitchClasses": [
+        2,
+        7,
+        10
+      ],
+      "rootPitchClass": 7,
+      "voicingMidis": {
+        "chord": [
+          55,
+          58,
+          62
+        ],
+        "bass": [
+          43,
+          46,
+          50
+        ]
+      },
+      "provenance": {
+        "kind": "diatonic"
+      }
+    },
+    {
+      "barIndex": 6,
+      "startBeat": 24,
+      "roman": "vi",
+      "chordPitchClasses": [
+        0,
+        3,
+        8
+      ],
+      "rootPitchClass": 8,
+      "voicingMidis": {
+        "chord": [
+          56,
+          60,
+          63
+        ],
+        "bass": [
+          44,
+          48,
+          51
+        ]
+      },
+      "provenance": {
+        "kind": "diatonic"
+      }
+    },
+    {
+      "barIndex": 7,
+      "startBeat": 28,
+      "roman": "IV",
+      "chordPitchClasses": [
+        0,
+        5,
+        8
+      ],
+      "rootPitchClass": 5,
+      "voicingMidis": {
+        "chord": [
+          65,
+          68,
+          72
+        ],
+        "bass": [
+          53,
+          56,
+          60
+        ]
+      },
+      "provenance": {
+        "kind": "diatonic"
+      }
+    }
+  ],
+  "parts": {
+    "lh": [
+      {
+        "id": "lh:0:0:0",
+        "kind": "note",
+        "barIndex": 0,
+        "startBeat": 0,
+        "durationBeats": 0.5,
+        "midi": 48,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "accent",
+        "expression": {
+          "accent": 0.18,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:0:1:0",
+        "kind": "note",
+        "barIndex": 0,
+        "startBeat": 0.5,
+        "durationBeats": 0.5,
+        "midi": 60,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:0:2:0",
+        "kind": "note",
+        "barIndex": 0,
+        "startBeat": 1,
+        "durationBeats": 0.5,
+        "midi": 48,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:0:3:0",
+        "kind": "note",
+        "barIndex": 0,
+        "startBeat": 1.5,
+        "durationBeats": 0.5,
+        "midi": 60,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:0:4:0",
+        "kind": "note",
+        "barIndex": 0,
+        "startBeat": 2,
+        "durationBeats": 0.5,
+        "midi": 48,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.1,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:0:5:0",
+        "kind": "note",
+        "barIndex": 0,
+        "startBeat": 2.5,
+        "durationBeats": 0.5,
+        "midi": 60,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:0:6:0",
+        "kind": "note",
+        "barIndex": 0,
+        "startBeat": 3,
+        "durationBeats": 0.5,
+        "midi": 48,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:0:7:0",
+        "kind": "note",
+        "barIndex": 0,
+        "startBeat": 3.5,
+        "durationBeats": 0.5,
+        "midi": 60,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:1:0:0",
+        "kind": "note",
+        "barIndex": 1,
+        "startBeat": 4,
+        "durationBeats": 0.5,
+        "midi": 43,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "accent",
+        "expression": {
+          "accent": 0.18,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:1:1:0",
+        "kind": "note",
+        "barIndex": 1,
+        "startBeat": 4.5,
+        "durationBeats": 0.5,
+        "midi": 55,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:1:2:0",
+        "kind": "note",
+        "barIndex": 1,
+        "startBeat": 5,
+        "durationBeats": 0.5,
+        "midi": 43,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:1:3:0",
+        "kind": "note",
+        "barIndex": 1,
+        "startBeat": 5.5,
+        "durationBeats": 0.5,
+        "midi": 55,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:1:4:0",
+        "kind": "note",
+        "barIndex": 1,
+        "startBeat": 6,
+        "durationBeats": 0.5,
+        "midi": 43,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.1,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:1:5:0",
+        "kind": "note",
+        "barIndex": 1,
+        "startBeat": 6.5,
+        "durationBeats": 0.5,
+        "midi": 55,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:1:6:0",
+        "kind": "note",
+        "barIndex": 1,
+        "startBeat": 7,
+        "durationBeats": 0.5,
+        "midi": 43,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:1:7:0",
+        "kind": "note",
+        "barIndex": 1,
+        "startBeat": 7.5,
+        "durationBeats": 0.5,
+        "midi": 55,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:2:0:0",
+        "kind": "note",
+        "barIndex": 2,
+        "startBeat": 8,
+        "durationBeats": 0.5,
+        "midi": 45,
+        "role": "chromatic",
+        "degree": {
+          "number": 6,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "accent",
+        "expression": {
+          "accent": 0.18,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:2:1:0",
+        "kind": "note",
+        "barIndex": 2,
+        "startBeat": 8.5,
+        "durationBeats": 0.5,
+        "midi": 57,
+        "role": "chromatic",
+        "degree": {
+          "number": 6,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:2:2:0",
+        "kind": "note",
+        "barIndex": 2,
+        "startBeat": 9,
+        "durationBeats": 0.5,
+        "midi": 45,
+        "role": "chromatic",
+        "degree": {
+          "number": 6,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:2:3:0",
+        "kind": "note",
+        "barIndex": 2,
+        "startBeat": 9.5,
+        "durationBeats": 0.5,
+        "midi": 57,
+        "role": "chromatic",
+        "degree": {
+          "number": 6,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:2:4:0",
+        "kind": "note",
+        "barIndex": 2,
+        "startBeat": 10,
+        "durationBeats": 0.5,
+        "midi": 45,
+        "role": "chromatic",
+        "degree": {
+          "number": 6,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.1,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:2:5:0",
+        "kind": "note",
+        "barIndex": 2,
+        "startBeat": 10.5,
+        "durationBeats": 0.5,
+        "midi": 57,
+        "role": "chromatic",
+        "degree": {
+          "number": 6,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:2:6:0",
+        "kind": "note",
+        "barIndex": 2,
+        "startBeat": 11,
+        "durationBeats": 0.5,
+        "midi": 45,
+        "role": "chromatic",
+        "degree": {
+          "number": 6,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:2:7:0",
+        "kind": "note",
+        "barIndex": 2,
+        "startBeat": 11.5,
+        "durationBeats": 0.5,
+        "midi": 57,
+        "role": "chromatic",
+        "degree": {
+          "number": 6,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:3:0:0",
+        "kind": "note",
+        "barIndex": 3,
+        "startBeat": 12,
+        "durationBeats": 0.5,
+        "midi": 41,
+        "role": "root",
+        "degree": {
+          "number": 4,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "accent",
+        "expression": {
+          "accent": 0.18,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:3:1:0",
+        "kind": "note",
+        "barIndex": 3,
+        "startBeat": 12.5,
+        "durationBeats": 0.5,
+        "midi": 53,
+        "role": "root",
+        "degree": {
+          "number": 4,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:3:2:0",
+        "kind": "note",
+        "barIndex": 3,
+        "startBeat": 13,
+        "durationBeats": 0.5,
+        "midi": 41,
+        "role": "root",
+        "degree": {
+          "number": 4,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:3:3:0",
+        "kind": "note",
+        "barIndex": 3,
+        "startBeat": 13.5,
+        "durationBeats": 0.5,
+        "midi": 53,
+        "role": "root",
+        "degree": {
+          "number": 4,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:3:4:0",
+        "kind": "note",
+        "barIndex": 3,
+        "startBeat": 14,
+        "durationBeats": 0.5,
+        "midi": 41,
+        "role": "root",
+        "degree": {
+          "number": 4,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.1,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:3:5:0",
+        "kind": "note",
+        "barIndex": 3,
+        "startBeat": 14.5,
+        "durationBeats": 0.5,
+        "midi": 53,
+        "role": "root",
+        "degree": {
+          "number": 4,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:3:6:0",
+        "kind": "note",
+        "barIndex": 3,
+        "startBeat": 15,
+        "durationBeats": 0.5,
+        "midi": 41,
+        "role": "root",
+        "degree": {
+          "number": 4,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:3:7:0",
+        "kind": "note",
+        "barIndex": 3,
+        "startBeat": 15.5,
+        "durationBeats": 0.5,
+        "midi": 53,
+        "role": "root",
+        "degree": {
+          "number": 4,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:4:0:0",
+        "kind": "note",
+        "barIndex": 4,
+        "startBeat": 16,
+        "durationBeats": 0.5,
+        "midi": 48,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "accent",
+        "expression": {
+          "accent": 0.18,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:4:1:0",
+        "kind": "note",
+        "barIndex": 4,
+        "startBeat": 16.5,
+        "durationBeats": 0.5,
+        "midi": 60,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:4:2:0",
+        "kind": "note",
+        "barIndex": 4,
+        "startBeat": 17,
+        "durationBeats": 0.5,
+        "midi": 48,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:4:3:0",
+        "kind": "note",
+        "barIndex": 4,
+        "startBeat": 17.5,
+        "durationBeats": 0.5,
+        "midi": 60,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:4:4:0",
+        "kind": "note",
+        "barIndex": 4,
+        "startBeat": 18,
+        "durationBeats": 0.5,
+        "midi": 48,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.1,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:4:5:0",
+        "kind": "note",
+        "barIndex": 4,
+        "startBeat": 18.5,
+        "durationBeats": 0.5,
+        "midi": 60,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:4:6:0",
+        "kind": "note",
+        "barIndex": 4,
+        "startBeat": 19,
+        "durationBeats": 0.5,
+        "midi": 48,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:4:7:0",
+        "kind": "note",
+        "barIndex": 4,
+        "startBeat": 19.5,
+        "durationBeats": 0.5,
+        "midi": 60,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:5:0:0",
+        "kind": "note",
+        "barIndex": 5,
+        "startBeat": 20,
+        "durationBeats": 0.5,
+        "midi": 43,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "accent",
+        "expression": {
+          "accent": 0.18,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:5:1:0",
+        "kind": "note",
+        "barIndex": 5,
+        "startBeat": 20.5,
+        "durationBeats": 0.5,
+        "midi": 55,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:5:2:0",
+        "kind": "note",
+        "barIndex": 5,
+        "startBeat": 21,
+        "durationBeats": 0.5,
+        "midi": 43,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:5:3:0",
+        "kind": "note",
+        "barIndex": 5,
+        "startBeat": 21.5,
+        "durationBeats": 0.5,
+        "midi": 55,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:5:4:0",
+        "kind": "note",
+        "barIndex": 5,
+        "startBeat": 22,
+        "durationBeats": 0.5,
+        "midi": 43,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.1,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:5:5:0",
+        "kind": "note",
+        "barIndex": 5,
+        "startBeat": 22.5,
+        "durationBeats": 0.5,
+        "midi": 55,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:5:6:0",
+        "kind": "note",
+        "barIndex": 5,
+        "startBeat": 23,
+        "durationBeats": 0.5,
+        "midi": 43,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:5:7:0",
+        "kind": "note",
+        "barIndex": 5,
+        "startBeat": 23.5,
+        "durationBeats": 0.5,
+        "midi": 55,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:6:0:0",
+        "kind": "note",
+        "barIndex": 6,
+        "startBeat": 24,
+        "durationBeats": 0.5,
+        "midi": 45,
+        "role": "chromatic",
+        "degree": {
+          "number": 6,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "accent",
+        "expression": {
+          "accent": 0.18,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:6:1:0",
+        "kind": "note",
+        "barIndex": 6,
+        "startBeat": 24.5,
+        "durationBeats": 0.5,
+        "midi": 57,
+        "role": "chromatic",
+        "degree": {
+          "number": 6,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:6:2:0",
+        "kind": "note",
+        "barIndex": 6,
+        "startBeat": 25,
+        "durationBeats": 0.5,
+        "midi": 45,
+        "role": "chromatic",
+        "degree": {
+          "number": 6,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:6:3:0",
+        "kind": "note",
+        "barIndex": 6,
+        "startBeat": 25.5,
+        "durationBeats": 0.5,
+        "midi": 57,
+        "role": "chromatic",
+        "degree": {
+          "number": 6,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:6:4:0",
+        "kind": "note",
+        "barIndex": 6,
+        "startBeat": 26,
+        "durationBeats": 0.5,
+        "midi": 45,
+        "role": "chromatic",
+        "degree": {
+          "number": 6,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.1,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:6:5:0",
+        "kind": "note",
+        "barIndex": 6,
+        "startBeat": 26.5,
+        "durationBeats": 0.5,
+        "midi": 57,
+        "role": "chromatic",
+        "degree": {
+          "number": 6,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:6:6:0",
+        "kind": "note",
+        "barIndex": 6,
+        "startBeat": 27,
+        "durationBeats": 0.5,
+        "midi": 45,
+        "role": "chromatic",
+        "degree": {
+          "number": 6,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:6:7:0",
+        "kind": "note",
+        "barIndex": 6,
+        "startBeat": 27.5,
+        "durationBeats": 0.5,
+        "midi": 57,
+        "role": "chromatic",
+        "degree": {
+          "number": 6,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:7:0:0",
+        "kind": "note",
+        "barIndex": 7,
+        "startBeat": 28,
+        "durationBeats": 0.5,
+        "midi": 41,
+        "role": "root",
+        "degree": {
+          "number": 4,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "accent",
+        "expression": {
+          "accent": 0.18,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:7:1:0",
+        "kind": "note",
+        "barIndex": 7,
+        "startBeat": 28.5,
+        "durationBeats": 0.5,
+        "midi": 53,
+        "role": "root",
+        "degree": {
+          "number": 4,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:7:2:0",
+        "kind": "note",
+        "barIndex": 7,
+        "startBeat": 29,
+        "durationBeats": 0.5,
+        "midi": 41,
+        "role": "root",
+        "degree": {
+          "number": 4,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:7:3:0",
+        "kind": "note",
+        "barIndex": 7,
+        "startBeat": 29.5,
+        "durationBeats": 0.5,
+        "midi": 53,
+        "role": "root",
+        "degree": {
+          "number": 4,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:7:4:0",
+        "kind": "note",
+        "barIndex": 7,
+        "startBeat": 30,
+        "durationBeats": 0.5,
+        "midi": 41,
+        "role": "root",
+        "degree": {
+          "number": 4,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.1,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:7:5:0",
+        "kind": "note",
+        "barIndex": 7,
+        "startBeat": 30.5,
+        "durationBeats": 0.5,
+        "midi": 53,
+        "role": "root",
+        "degree": {
+          "number": 4,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      },
+      {
+        "id": "lh:7:6:0",
+        "kind": "note",
+        "barIndex": 7,
+        "startBeat": 31,
+        "durationBeats": 0.5,
+        "midi": 41,
+        "role": "root",
+        "degree": {
+          "number": 4,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:7:7:0",
+        "kind": "note",
+        "barIndex": 7,
+        "startBeat": 31.5,
+        "durationBeats": 0.5,
+        "midi": 53,
+        "role": "root",
+        "degree": {
+          "number": 4,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "ghost",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0.3,
+          "swingWeight": 0.15
+        }
+      }
+    ],
+    "rh": [
+      {
+        "id": "rh:0:0:0:0",
+        "kind": "note",
+        "barIndex": 0,
+        "startBeat": 0,
+        "durationBeats": 1,
+        "midi": 72,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "accent",
+        "expression": {
+          "accent": 0.18,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:0:0:1:0",
+        "kind": "note",
+        "barIndex": 0,
+        "startBeat": 1,
+        "durationBeats": 1,
+        "midi": 75,
+        "role": "chordTone",
+        "degree": {
+          "number": 3,
+          "alteration": -1,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:0:0:2:0",
+        "kind": "note",
+        "barIndex": 0,
+        "startBeat": 2,
+        "durationBeats": 1,
+        "midi": 79,
+        "role": "chordTone",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.1,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:0:0:3:0",
+        "kind": "note",
+        "barIndex": 0,
+        "startBeat": 3,
+        "durationBeats": 1,
+        "midi": 72,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:1:0:4:0",
+        "kind": "note",
+        "barIndex": 1,
+        "startBeat": 4,
+        "durationBeats": 1,
+        "midi": 72,
+        "role": "scaleTone",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "accent",
+        "expression": {
+          "accent": 0.18,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:1:0:5:0",
+        "kind": "note",
+        "barIndex": 1,
+        "startBeat": 5,
+        "durationBeats": 1,
+        "midi": 75,
+        "role": "scaleTone",
+        "degree": {
+          "number": 3,
+          "alteration": -1,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:1:0:6:0",
+        "kind": "note",
+        "barIndex": 1,
+        "startBeat": 6,
+        "durationBeats": 1,
+        "midi": 79,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.1,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:1:0:7:0",
+        "kind": "note",
+        "barIndex": 1,
+        "startBeat": 7,
+        "durationBeats": 1,
+        "midi": 72,
+        "role": "scaleTone",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:2:1:0:0",
+        "kind": "note",
+        "barIndex": 2,
+        "startBeat": 8,
+        "durationBeats": 1,
+        "midi": 72,
+        "role": "chordTone",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "accent",
+        "expression": {
+          "accent": 0.18,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:2:1:1:0",
+        "kind": "note",
+        "barIndex": 2,
+        "startBeat": 9,
+        "durationBeats": 1,
+        "midi": 75,
+        "role": "chordTone",
+        "degree": {
+          "number": 3,
+          "alteration": -1,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:2:1:2:0",
+        "kind": "note",
+        "barIndex": 2,
+        "startBeat": 10,
+        "durationBeats": 1,
+        "midi": 79,
+        "role": "scaleTone",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.1,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:2:1:3:0",
+        "kind": "note",
+        "barIndex": 2,
+        "startBeat": 11,
+        "durationBeats": 1,
+        "midi": 72,
+        "role": "chordTone",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:3:1:4:0",
+        "kind": "note",
+        "barIndex": 3,
+        "startBeat": 12,
+        "durationBeats": 1,
+        "midi": 72,
+        "role": "chordTone",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "accent",
+        "expression": {
+          "accent": 0.18,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:3:1:5:0",
+        "kind": "note",
+        "barIndex": 3,
+        "startBeat": 13,
+        "durationBeats": 1,
+        "midi": 75,
+        "role": "scaleTone",
+        "degree": {
+          "number": 3,
+          "alteration": -1,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:3:1:6:0",
+        "kind": "note",
+        "barIndex": 3,
+        "startBeat": 14,
+        "durationBeats": 1,
+        "midi": 79,
+        "role": "scaleTone",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.1,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:3:1:7:0",
+        "kind": "note",
+        "barIndex": 3,
+        "startBeat": 15,
+        "durationBeats": 1,
+        "midi": 72,
+        "role": "chordTone",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:4:2:0:0",
+        "kind": "note",
+        "barIndex": 4,
+        "startBeat": 16,
+        "durationBeats": 1,
+        "midi": 72,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "accent",
+        "expression": {
+          "accent": 0.18,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:4:2:1:0",
+        "kind": "note",
+        "barIndex": 4,
+        "startBeat": 17,
+        "durationBeats": 1,
+        "midi": 75,
+        "role": "chordTone",
+        "degree": {
+          "number": 3,
+          "alteration": -1,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:4:2:2:0",
+        "kind": "note",
+        "barIndex": 4,
+        "startBeat": 18,
+        "durationBeats": 1,
+        "midi": 79,
+        "role": "chordTone",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.1,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:4:2:3:0",
+        "kind": "note",
+        "barIndex": 4,
+        "startBeat": 19,
+        "durationBeats": 1,
+        "midi": 72,
+        "role": "root",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:5:2:4:0",
+        "kind": "note",
+        "barIndex": 5,
+        "startBeat": 20,
+        "durationBeats": 1,
+        "midi": 72,
+        "role": "scaleTone",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "accent",
+        "expression": {
+          "accent": 0.18,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:5:2:5:0",
+        "kind": "note",
+        "barIndex": 5,
+        "startBeat": 21,
+        "durationBeats": 1,
+        "midi": 75,
+        "role": "scaleTone",
+        "degree": {
+          "number": 3,
+          "alteration": -1,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:5:2:6:0",
+        "kind": "note",
+        "barIndex": 5,
+        "startBeat": 22,
+        "durationBeats": 1,
+        "midi": 79,
+        "role": "root",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.1,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:5:2:7:0",
+        "kind": "note",
+        "barIndex": 5,
+        "startBeat": 23,
+        "durationBeats": 1,
+        "midi": 72,
+        "role": "scaleTone",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:6:3:0:0",
+        "kind": "note",
+        "barIndex": 6,
+        "startBeat": 24,
+        "durationBeats": 1,
+        "midi": 72,
+        "role": "chordTone",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "accent",
+        "expression": {
+          "accent": 0.18,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:6:3:1:0",
+        "kind": "note",
+        "barIndex": 6,
+        "startBeat": 25,
+        "durationBeats": 1,
+        "midi": 75,
+        "role": "chordTone",
+        "degree": {
+          "number": 3,
+          "alteration": -1,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:6:3:2:0",
+        "kind": "note",
+        "barIndex": 6,
+        "startBeat": 26,
+        "durationBeats": 1,
+        "midi": 79,
+        "role": "scaleTone",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.1,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:6:3:3:0",
+        "kind": "note",
+        "barIndex": 6,
+        "startBeat": 27,
+        "durationBeats": 1,
+        "midi": 72,
+        "role": "chordTone",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:7:3:4:0",
+        "kind": "note",
+        "barIndex": 7,
+        "startBeat": 28,
+        "durationBeats": 1,
+        "midi": 72,
+        "role": "chordTone",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "accent",
+        "expression": {
+          "accent": 0.18,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:7:3:5:0",
+        "kind": "note",
+        "barIndex": 7,
+        "startBeat": 29,
+        "durationBeats": 1,
+        "midi": 75,
+        "role": "scaleTone",
+        "degree": {
+          "number": 3,
+          "alteration": -1,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:7:3:6:0",
+        "kind": "note",
+        "barIndex": 7,
+        "startBeat": 30,
+        "durationBeats": 1,
+        "midi": 79,
+        "role": "scaleTone",
+        "degree": {
+          "number": 5,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.1,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "rh:7:3:7:0",
+        "kind": "note",
+        "barIndex": 7,
+        "startBeat": 31,
+        "durationBeats": 1,
+        "midi": 72,
+        "role": "chordTone",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "soft",
+        "expression": {
+          "accent": 0.05,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      }
+    ]
+  }
+}
