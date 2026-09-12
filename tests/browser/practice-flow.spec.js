@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 
 test("loads, generates, plays, stops, and switches piano models", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "5-Minute Improv Coach" })).toBeVisible();

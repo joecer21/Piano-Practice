@@ -8,7 +8,7 @@
 import * as Tone from "tone";
 import "./style.css";
 
-import { generateAssignment } from "./domain/assignment.js";
+import { generateAssignment, validateAssignmentInputs } from "./domain/assignment.js";
 import { getLivePianoChordNotes } from "./domain/live-piano.js";
 import { createAppStore } from "./application/state.js";
 import {
@@ -211,11 +211,46 @@ function resolveLength(rawLength, progressionPresetId) {
   return rawLength;
 }
 
+// Validation failures phrased for the person editing, not the developer.
+const DRAFT_BLOCKED_MESSAGES = {
+  "custom progressions require at least one chord": "Add at least one chord to use your custom palette.",
+};
+
+/**
+ * Derive and commit an assignment from the current inputs.
+ *
+ * The chord palette is edited one chord at a time, so inputs legitimately pass
+ * through states that are not yet a complete assignment - selecting "Custom"
+ * before adding any chord is the obvious one. generateAssignment throws on those,
+ * and six handlers called this with no guard, so changing the key while a custom
+ * progression was empty killed the interaction with nothing shown to the user.
+ *
+ * An incomplete draft is now an expected state rather than an error: the last
+ * valid assignment stays committed and on screen, and the user is told what is
+ * missing.
+ *
+ * @returns {{ ok: boolean, assignment?: object, errors?: string[] }}
+ */
 function computeDerived() {
-  const assignment = generateAssignment(state.inputs);
-  appStore.commitAssignment(assignment);
-  updateAudioHumanize();
-  return assignment;
+  const { valid, errors } = validateAssignmentInputs(state.inputs);
+  if (!valid) {
+    showHint(dom, DRAFT_BLOCKED_MESSAGES[errors[0]] || `Can't build that yet: ${errors.join("; ")}`);
+    return { ok: false, errors };
+  }
+
+  try {
+    const assignment = generateAssignment(state.inputs);
+    appStore.commitAssignment(assignment);
+    updateAudioHumanize();
+    return { ok: true, assignment };
+  } catch (error) {
+    // Validation passed but generation still failed: a real defect, not a draft.
+    console.error("Assignment generation failed", error);
+    setStatusMessage(dom, `Could not build that assignment: ${error?.message || "unknown error"}`, {
+      tone: "error",
+    });
+    return { ok: false, errors: [error?.message || "unknown error"] };
+  }
 }
 
 function syncInputsFromDom() {
@@ -261,9 +296,10 @@ function handleGenerate(options = {}) {
     }
   }
 
-  computeDerived();
+  const result = computeDerived();
   renderAll();
   syncPlayButtonsAvailability();
+  if (!result.ok) return;
 
   const preset = getProgressionPreset(state.inputs.progressionPresetId);
   const scaleLabel = state.derived.scale?.label
