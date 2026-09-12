@@ -9,12 +9,8 @@ import {
   STYLE_PALETTE_SETS,
   getStyleProfile,
 } from "../theory.js";
-
-function expect(condition, message) {
-  if (!condition) {
-    throw new Error(message || "Expectation failed");
-  }
-}
+import { it } from "vitest";
+import { expectContract as expect } from "./test-helpers.js";
 
 function setupDom() {
   const dom = new JSDOM(`<!doctype html><body>
@@ -94,8 +90,4 @@ function run() {
   domEnv.window.close();
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  run();
-}
-
-export { run };
+it("renders style-aware progression labels across the UI", run);

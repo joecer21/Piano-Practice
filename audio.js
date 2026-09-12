@@ -1,6 +1,8 @@
 // audio.js
 // Playback helpers and Tone.js wiring.
 
+import * as Tone from "tone";
+
 import {
   beatsToTransport,
   beatsToTone,
@@ -59,6 +61,15 @@ class VelocityLayerSampler {
     sampler?.triggerAttackRelease(note, duration, time, velocity);
   }
 
+  triggerAttack(note, time, velocity = 0.5) {
+    const sampler = this._selectLayer(velocity);
+    sampler?.triggerAttack(note, time, velocity);
+  }
+
+  triggerRelease(note, time) {
+    Object.values(this.layers).forEach((sampler) => sampler?.triggerRelease(note, time));
+  }
+
   _selectLayer(velocity = 0.5) {
     const high = this.layers.high;
     const low = this.layers.low || high;
@@ -78,10 +89,15 @@ const ACCENT_VELOCITY_THRESHOLD = 0.98;
 const FUHTON_LIBRARY_ID = "fuhton-piano";
 const LOCAL_LIBRARY_ID = "local-soft";
 const LOCAL_HIGH_LIBRARY_ID = "local-bright";
-const DEFAULT_LIBRARY_ID = FUHTON_LIBRARY_ID;
+const DEFAULT_LIBRARY_ID = LOCAL_LIBRARY_ID;
 const FALLBACK_LIBRARY_ID = "salamander-lite";
 const FALLBACK_LOAD_TIMEOUT_MS = 15000;
 const LOCAL_SAMPLE_BASE_URL = "samples/";
+
+function dispatchNoteEvent(type, detail = {}) {
+  if (typeof window === "undefined" || typeof window.CustomEvent !== "function") return;
+  window.dispatchEvent(new window.CustomEvent(type, { detail }));
+}
 // Local anchor samples (vl = low velocity layer) captured across A/C/D#/F# pivots.
 const FUHTON_URL_MAP = {
   A0: "A0.mp3",
@@ -199,14 +215,14 @@ const SAMPLE_LIBRARY_REGISTRY = {
       low: { baseUrl: LOCAL_SAMPLE_BASE_URL, urls: LOCAL_VL_URL_MAP },
       high: { baseUrl: LOCAL_SAMPLE_BASE_URL, urls: LOCAL_VH_URL_MAP },
     },
-    isDefault: true,
+    isDefault: false,
   },
   [LOCAL_LIBRARY_ID]: {
     id: LOCAL_LIBRARY_ID,
     label: "Piano Lite - Soft",
     baseUrl: LOCAL_SAMPLE_BASE_URL,
     urls: LOCAL_VL_URL_MAP,
-    isDefault: false,
+    isDefault: true,
   },
   [LOCAL_HIGH_LIBRARY_ID]: {
     id: LOCAL_HIGH_LIBRARY_ID,
@@ -349,6 +365,7 @@ export function stopTransport() {
   Tone.Transport.cancel();
   Tone.Transport.position = 0;
   Tone.Transport.loop = false;
+  dispatchNoteEvent("notes-stop-all");
 
   PART_IDS.forEach((partId) => {
     const synth = synths[partId];
@@ -434,10 +451,20 @@ export function schedulePatternEvents(events, synth, options = {}) {
     Tone.Transport.schedule((time) => {
       const baseVelocity = scaleVelocityByDynamics(BASE_VELOCITIES[partId], ev.dynamics);
       const velocity = getHumanizedVelocity(baseVelocity, humanizeContext);
+      const duration = ev.duration || "4n";
+      const durationSeconds = Tone.Time(duration).toSeconds();
       if (ev.notes && ev.notes.length) {
-        synth.triggerAttackRelease(ev.notes, ev.duration, time, velocity);
+        ev.notes.forEach((note) =>
+          dispatchNoteEvent("note-play", { note, part: partId, duration: durationSeconds })
+        );
+        synth.triggerAttackRelease(ev.notes, duration, time, velocity);
       } else if (ev.note) {
-        synth.triggerAttackRelease(ev.note, ev.duration, time, velocity);
+        dispatchNoteEvent("note-play", {
+          note: ev.note,
+          part: partId,
+          duration: durationSeconds,
+        });
+        synth.triggerAttackRelease(ev.note, duration, time, velocity);
       }
     }, when);
   });
@@ -448,6 +475,29 @@ export function playFromEvents(events, synth, loopBeats, loopEnabled, partId) {
   configureLoop(loopBeats, loopEnabled);
   schedulePatternEvents(events, synth, { partId });
   Tone.Transport.start();
+}
+
+export function playPreviewNoteDown(note, options = {}) {
+  if (!note) return false;
+  const part = options.part === "left" ? "left" : "lead";
+  const synth = synths[part] || synths.lead || synths.left;
+  if (!synth || typeof synth.triggerAttack !== "function") return false;
+  const velocity = typeof options.velocity === "number"
+    ? clamp(options.velocity, 0.05, 1)
+    : BASE_VELOCITIES[part] || 0.85;
+  synth.triggerAttack(note, undefined, velocity);
+  dispatchNoteEvent("note-play", { note, part });
+  return true;
+}
+
+export function playPreviewNoteUp(note, options = {}) {
+  if (!note) return false;
+  const part = options.part === "left" ? "left" : "lead";
+  const synth = synths[part] || synths.lead || synths.left;
+  if (!synth || typeof synth.triggerRelease !== "function") return false;
+  synth.triggerRelease(note);
+  dispatchNoteEvent("note-stop", { note, part });
+  return true;
 }
 
 export async function playScale(scale, loopEnabled, options = {}) {
@@ -474,6 +524,11 @@ export async function playScale(scale, loopEnabled, options = {}) {
       if (typeof options.onNote === "function") {
         options.onNote(note, index);
       }
+      dispatchNoteEvent("note-play", {
+        note,
+        part: "lead",
+        duration: Tone.Time("8n").toSeconds(),
+      });
       synths.lead.triggerAttackRelease(note, "8n", eventTime);
     }, when);
     beatCursor += 0.5;
@@ -906,4 +961,3 @@ function setActiveLibrary(libraryId) {
 function getLibraryConfig(libraryId) {
   return SAMPLE_LIBRARY_REGISTRY[libraryId];
 }
-

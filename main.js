@@ -5,14 +5,18 @@
   getProgressionPreset,
   getStyleProfile,
 } from "./theory.js";
+import * as Tone from "tone";
+import "./style.css";
+
+import { generateAssignment } from "./domain/assignment.js";
+import { getLivePianoChordNotes } from "./domain/live-piano.js";
+import { createAppStore } from "./application/state.js";
 import {
-  generateScale,
-  generateProgression,
-  generateCustomProgression,
-  generateLeftHandPattern,
-  generateMotif,
-  createPhrasePlan,
-} from "./engine.js";
+  attachPianoNoteListeners,
+  buildPianoVisual,
+  clearPianoHighlights,
+  renderPianoDiatonic,
+} from "./components/piano.js";
 import { PRESET_CONFIGS, DEFAULT_PRESET_ID, getPresetConfig } from "./presets.js";
 import {
   initSynths,
@@ -22,6 +26,8 @@ import {
   playLeftHand,
   playMotif,
   playAll,
+  playPreviewNoteDown,
+  playPreviewNoteUp,
   configureLoop,
   setMixSettings,
   setHumanizeSettings,
@@ -59,6 +65,7 @@ import {
   renderMixControls,
   renderHumanizeControls,
   renderSpatialControls,
+  renderAssignmentTools,
   renderSamplerStatus,
   setMixCardCollapsed,
   setAdvancedControlsCollapsed,
@@ -80,57 +87,28 @@ const MIX_PARTS = ["left", "lead"];
 const SWING_MAX = 0.2;
 
 
-const state = {
-  tempo: 90,
-  inputs: {
-    key: "C",
-    mode: "major",
-    progressionPresetId: "pop-4",
-    styleId: "pop",
-    length: 8,
-    lhId: "pop-8ths",
-    motifId: "pop-hook-1351",
-    customProgressionRoman: [],
-    presetId: DEFAULT_PRESET_ID,
-  },
-  derived: {
-    scale: null,
-    progression: null,
-    leftHand: null,
-    motif: null,
-  },
-  mix: {
-    left: { volume: 0, mute: false, pan: 0 },
-    lead: { volume: 0, mute: false, pan: 0 },
-  },
-  playback: {
-    humanizeEnabled: false,
-    humanizeAmount: 0,
-    swingAmount: 0,
-  },
-  fx: {
-    reverbWet: 0,
-    roomSizeLarge: false,
-    motifWidth: 0,
-  },
-  ui: {
-    mixCollapsed: true,
-    advancedCollapsed: true,
-  },
-};
+const appStore = createAppStore();
+const state = appStore.state;
 
 let samplerSnapshot = getSamplerStatusSnapshot();
 if (typeof window !== "undefined") {
   window.__samplerSnapshot = samplerSnapshot;
+  window.__transportState = Tone.Transport.state;
 }
 let librarySwitchPending = false;
 let playbackSession = null;
 let playbackRafId = null;
+const activeLivePianoNotes = new Map();
 
 const dom = {};
 
 function init() {
   Object.assign(dom, cacheDom());
+  dom.__pianoIndicatorMode = state.ui.livePianoIndicatorMode;
+  dom.__pianoGlissMode = state.ui.livePianoGlissMode;
+  if (dom.pianoChordMode) dom.pianoChordMode.value = state.ui.livePianoChordMode;
+  buildPianoVisual(dom);
+  attachPianoNoteListeners(dom);
   renderSamplerStatus(dom, samplerSnapshot);
   renderPlaceholders(dom);
   populateProgressionSelector(dom, PROGRESSION_PRESETS, state.inputs.progressionPresetId);
@@ -165,6 +143,10 @@ function init() {
   renderSpatialControls(dom, state.fx);
   setMixCardCollapsed(dom, state.ui.mixCollapsed);
   setAdvancedControlsCollapsed(dom, state.ui.advancedCollapsed);
+  renderAssignmentTools(dom, state, {
+    canUndo: appStore.canUndo(),
+    canRedo: appStore.canRedo(),
+  });
   wireEvents(dom, {
     onGenerate: handleGenerate,
     onPresetChange: handlePresetChange,
@@ -191,6 +173,15 @@ function init() {
     onLibrarySelect: handleLibrarySelect,
     onMixCardToggle: handleMixCardToggle,
     onAdvancedControlsToggle: handleAdvancedControlsToggle,
+    onAssignmentReroll: handleAssignmentReroll,
+    onAssignmentUndo: handleAssignmentUndo,
+    onAssignmentRedo: handleAssignmentRedo,
+    onAssignmentLockToggle: handleAssignmentLockToggle,
+    onPianoKeyDown: handlePianoKeyDown,
+    onPianoKeyUp: handlePianoKeyUp,
+    onPianoIndicatorModeChange: handlePianoIndicatorModeChange,
+    onPianoGlissModeChange: handlePianoGlissModeChange,
+    onPianoChordModeChange: handlePianoChordModeChange,
   });
   dom.playAllLoop?.addEventListener("change", handlePlayAllLoopToggle);
   updateLoopBadge(dom, dom.playAllLoop?.checked || false);
@@ -229,46 +220,10 @@ function resolveLength(rawLength, progressionPresetId) {
 }
 
 function computeDerived() {
-  const inputs = state.inputs;
-  const styleProfile = getStyleProfile(inputs.styleId);
-  const scale = generateScale({ key: inputs.key, mode: inputs.mode });
-  const effectiveLength = resolveLength(inputs.length, inputs.progressionPresetId);
-  const presetConfig = getPresetConfig(state.inputs.presetId);
-  const progression =
-    inputs.progressionPresetId === "custom" && inputs.customProgressionRoman.length > 0
-      ? generateCustomProgression(inputs.key, inputs.customProgressionRoman, scale, inputs.mode, styleProfile)
-      : generateProgression(
-          {
-            key: inputs.key,
-            mode: inputs.mode,
-            length: effectiveLength,
-            progressionPresetId: inputs.progressionPresetId,
-          },
-          scale,
-          styleProfile
-        );
-
-  const phrasePlan = createPhrasePlan({
-    key: inputs.key,
-    mode: inputs.mode,
-    styleId: inputs.styleId,
-    motifPatternId: inputs.motifId,
-    leftHandPatternId: inputs.lhId,
-    anchors: presetConfig?.anchors,
-  });
-
-  const leftHand = generateLeftHandPattern(
-    { leftHand: inputs.lhId, difficulty: "intermediate", styleId: inputs.styleId, phrasePlan },
-    progression,
-    state.inputs.mode
-  );
-  const motif =
-    inputs.motifId === "none"
-      ? null
-      : generateMotif({ motifPatternId: inputs.motifId, styleId: inputs.styleId, phrasePlan }, scale);
-
-  state.derived = { scale, progression, leftHand, motif, styleProfile, phrasePlan };
+  const assignment = generateAssignment(state.inputs);
+  appStore.commitAssignment(assignment);
   updateAudioHumanize();
+  return assignment;
 }
 
 function syncInputsFromDom() {
@@ -401,6 +356,10 @@ function handleProgressionChange(id) {
   const isCustom = id === "custom";
   toggleCustomCard(dom, isCustom);
   updateGenerateButtonLabel(dom, isCustom);
+  if (isCustom && state.inputs.customProgressionRoman.length === 0) {
+    renderCustomProgressionPreview(state, dom);
+    return;
+  }
   computeDerived();
   renderAll();
   renderProgressionPresetInfo(dom, getProgressionPreset(id), getStyleProfile(state.inputs.styleId), state.derived.progression);
@@ -499,6 +458,45 @@ function handleStopAll() {
   stopAllPlayback();
 }
 
+async function handlePianoKeyDown(rootNote) {
+  if (!rootNote || !ensureSamplerReady()) return;
+  try {
+    await Tone.start();
+  } catch (error) {
+    console.warn("Unable to start piano preview", error);
+    return;
+  }
+  const priorNotes = activeLivePianoNotes.get(rootNote) || [];
+  priorNotes.forEach((note) => playPreviewNoteUp(note, { part: "lead" }));
+  const notes = getLivePianoChordNotes(
+    rootNote,
+    state.ui.livePianoChordMode,
+    state.derived.scale
+  );
+  activeLivePianoNotes.set(rootNote, notes);
+  notes.forEach((note) => playPreviewNoteDown(note, { part: "lead" }));
+}
+
+function handlePianoKeyUp(rootNote) {
+  if (!rootNote) return;
+  const notes = activeLivePianoNotes.get(rootNote) || [];
+  notes.forEach((note) => playPreviewNoteUp(note, { part: "lead" }));
+  activeLivePianoNotes.delete(rootNote);
+}
+
+function handlePianoIndicatorModeChange(mode) {
+  state.ui.livePianoIndicatorMode = mode === "lh" || mode === "rh" ? mode : "both";
+  clearPianoHighlights(dom);
+}
+
+function handlePianoGlissModeChange(enabled) {
+  state.ui.livePianoGlissMode = !!enabled;
+}
+
+function handlePianoChordModeChange(mode) {
+  state.ui.livePianoChordMode = mode || "single";
+}
+
 async function handlePlayAll() {
   if (!ensureAssignmentReady() || !ensureSamplerReady()) {
     return;
@@ -516,6 +514,7 @@ async function handlePlayAll() {
     },
     loopEnabled
   );
+  publishTransportState();
   const motifBeats = state.derived?.motif?.totalBeats || 0;
   startPlaybackVisuals({
     totalBeats: getPlayAllBeats(),
@@ -555,8 +554,16 @@ function applyPlayAllLoop(enabled) {
 
 function stopAllPlayback() {
   stopTransport();
+  activeLivePianoNotes.clear();
+  publishTransportState();
   stopPlaybackVisuals();
   highlightScaleNote(dom, null);
+}
+
+function publishTransportState() {
+  if (typeof window !== "undefined") {
+    window.__transportState = Tone.Transport.state;
+  }
 }
 
 function startPlaybackVisuals(options = {}) {
@@ -705,6 +712,7 @@ function cancelVisualTick(id) {
 
 function renderAll() {
   renderScale(state, dom);
+  renderPianoDiatonic(dom, state.derived.scale);
   renderProgression(state, dom, getProgressionPreset);
   renderLeftHand(state, dom);
   renderMotif(state, dom);
@@ -720,7 +728,83 @@ function renderAll() {
   renderMixControls(dom, state.mix);
   renderHumanizeControls(dom, state.playback);
   renderSpatialControls(dom, state.fx);
+  renderAssignmentTools(dom, state, {
+    canUndo: appStore.canUndo(),
+    canRedo: appStore.canRedo(),
+  });
   syncPlayButtonsAvailability();
+}
+
+function handleAssignmentReroll() {
+  if (["key", "harmony", "groove", "motif"].every((part) => state.locks[part])) {
+    showHint(dom, "Unlock at least one part before rerolling.");
+    return;
+  }
+  stopAllPlayback();
+  appStore.reroll();
+  computeDerived();
+  syncAssignmentUiFromState();
+  renderAll();
+  const shortId = state.assignment.id.replace(/^assignment-/, "");
+  setStatusMessage(dom, `Created variation ${shortId} · locked parts were kept`, {
+    tone: "success",
+  });
+  pulseElement(dom.assignmentReroll, "accent");
+}
+
+function handleAssignmentUndo() {
+  stopAllPlayback();
+  const assignment = appStore.undo();
+  if (!assignment) return;
+  syncAssignmentUiFromState();
+  renderAll();
+  setStatusMessage(dom, "Restored the previous assignment", { tone: "info" });
+}
+
+function handleAssignmentRedo() {
+  stopAllPlayback();
+  const assignment = appStore.redo();
+  if (!assignment) return;
+  syncAssignmentUiFromState();
+  renderAll();
+  setStatusMessage(dom, "Restored the next assignment", { tone: "info" });
+}
+
+function handleAssignmentLockToggle(component) {
+  const locks = appStore.toggleLock(component);
+  renderAssignmentTools(dom, state, {
+    canUndo: appStore.canUndo(),
+    canRedo: appStore.canRedo(),
+  });
+  const label = component.charAt(0).toUpperCase() + component.slice(1);
+  setStatusMessage(dom, `${label} ${locks[component] ? "locked" : "unlocked"} for the next reroll`, {
+    tone: "info",
+  });
+}
+
+function syncAssignmentUiFromState() {
+  const inputs = state.inputs;
+  const setValue = (element, value) => {
+    if (element) element.value = value == null ? "" : String(value);
+  };
+  setValue(dom.presetSelect, inputs.presetId);
+  setValue(dom.key, inputs.key);
+  setValue(dom.mode, inputs.mode);
+  setValue(dom.progressionSelect, inputs.progressionPresetId);
+  setValue(dom.leftHand, inputs.lhId);
+  setValue(dom.motif, inputs.motifId);
+  setValue(dom.length, inputs.length);
+  setValue(dom.styleSelect, inputs.styleId);
+
+  const styleProfile = getStyleProfile(inputs.styleId);
+  renderPaletteButtons(inputs.styleId, dom, STYLE_PALETTE_SETS, {
+    mode: inputs.mode,
+    styleProfile,
+  });
+  attachPaletteButtonHandlers(dom, handleChordAdd);
+  const isCustom = inputs.progressionPresetId === "custom";
+  toggleCustomCard(dom, isCustom);
+  updateGenerateButtonLabel(dom, isCustom);
 }
 
 function handleMixVolumeChange(partId, value) {

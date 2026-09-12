@@ -43,7 +43,7 @@ function computeSwingOffset(startBeats, swingAmount = 0, swingPosition = 0) {
   if (!swingAmount) return 0;
   const maxDelay = 0.15; // beats
   if (swingPosition) {
-    return swingAmount * swingPosition * maxDelay;
+    return swingAmount * (1 + swingPosition) * maxDelay;
   }
   const eighthPosition = startBeats / 0.5;
   const epsilon = 1e-3;

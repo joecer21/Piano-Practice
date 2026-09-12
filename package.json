@@ -2,12 +2,25 @@
   "name": "piano-practice",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.19.0"
+  },
   "scripts": {
-    "test": "node tests/theory.spec.js && node tests/ui-labels.spec.js && node tests/humanize.spec.js && node tests/anchor-spacing.spec.js && node tests/presets.spec.js && node tests/progression-dropdown.spec.js && node tests/audio-loop.spec.js"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:browser": "playwright test",
+    "check": "npm run test && npm run build && npm run test:browser"
   },
   "dependencies": {
-    "jsdom": "^27.2.0",
-    "puppeteer": "^24.31.0",
-    "serve-handler": "^6.1.6"
+    "tone": "^15.1.22"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "jsdom": "^30.0.1",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.0"
   }
 }

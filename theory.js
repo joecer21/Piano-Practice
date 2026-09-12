@@ -563,7 +563,8 @@ const RAW_MOTIF_STYLES = {
       { beats: 2, rest: false },
       { beats: 2, rest: false },
     ],
-    degreePattern: [1, 2, 3, 4, 3, 2, 1, 1],
+    degreePattern: [1, 2, 3, 10, 3, 2, 1, 1],
+    peaksPerPhrase: 1,
   },
   "scalar-run-8ths": {
     label: "Scalar Run - Ascending 8ths",

@@ -4,26 +4,8 @@ import {
   labelRomanWithTag,
   analyzeRomanAgainstMode,
 } from "../theory.js";
-
-function expect(condition, message) {
-  if (!condition) throw new Error(message || "Expectation failed");
-}
-
-function describe(label, fn) {
-  console.log(`\n${label}`);
-  fn();
-}
-
-function it(label, fn) {
-  try {
-    fn();
-    console.log(`✔ ${label}`);
-  } catch (err) {
-    console.error(`✘ ${label}`);
-    console.error(err.message);
-    throw err;
-  }
-}
+import { describe, it } from "vitest";
+import { expectContract as expect } from "./test-helpers.js";
 
 const FOUR_CHORD_LIFT = ["I", "V", "IV", "V"];
 
@@ -85,8 +67,4 @@ function run() {
   });
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  run();
-}
-
-export { run };
+run();

@@ -10,7 +10,7 @@ export const PRESET_CONFIGS = [
     length: 8,
     styleId: "pop",
     anchors: {
-      lh: "C2",
+      lh: "C3",
       rh: "C5",
       chords: {
         I: "C3",
@@ -147,7 +147,7 @@ export const PRESET_CONFIGS = [
     length: 8,
     styleId: "pop",
     anchors: {
-      lh: "D2",
+      lh: "D3",
       rh: "A4",
       chords: {
         I: "D2",
@@ -167,7 +167,7 @@ export const PRESET_CONFIGS = [
     motifId: "pop-offbeat-echo",
     length: 8,
     styleId: "pop",
-    anchors: { lh: "G2", rh: "D5" },
+    anchors: { lh: "G2", rh: "D4" },
   },
   {
     id: "coldplayer",
@@ -239,7 +239,7 @@ export const PRESET_CONFIGS = [
     motifId: "ballad-call-response",
     length: 8,
     styleId: "classical",
-    anchors: { lh: "F2", rh: "C5" },
+    anchors: { lh: "F3", rh: "C5" },
   },
 ];
 

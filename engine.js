@@ -179,10 +179,16 @@ export function createPhrasePlan({
 
   const rawLhAnchor = anchorOverrides.lh || computedAnchors.lh;
   const rawRhAnchor = anchorOverrides.rh || computedAnchors.rh;
+  const hasLhOverride = Boolean(anchorOverrides.lh);
+  const hasRhOverride = Boolean(anchorOverrides.rh);
   const lhAnchorRange = anchorOverrides.lhRange || styleStrategy.anchorRange || styleAnchors.lh;
   const rhAnchorRange = styleAnchors.rh;
-  let lhAnchorClamped = clampAnchorToRangeSpec(ensureNoteWithOctave(rawLhAnchor, rawLhAnchor), lhAnchorRange, "lh");
-  const rhAnchorClamped = clampAnchorToRangeSpec(ensureNoteWithOctave(rawRhAnchor, rawRhAnchor), rhAnchorRange, "rh");
+  let lhAnchorClamped = hasLhOverride
+    ? ensureNoteWithOctave(rawLhAnchor, rawLhAnchor)
+    : clampAnchorToRangeSpec(ensureNoteWithOctave(rawLhAnchor, rawLhAnchor), lhAnchorRange, "lh");
+  const rhAnchorClamped = hasRhOverride
+    ? ensureNoteWithOctave(rawRhAnchor, rawRhAnchor)
+    : clampAnchorToRangeSpec(ensureNoteWithOctave(rawRhAnchor, rawRhAnchor), rhAnchorRange, "rh");
 
   const motifRange = estimateMotifRangeForAnchors({
     motifStyle,
@@ -191,17 +197,38 @@ export function createPhrasePlan({
     rhAnchor: rhAnchorClamped,
   });
 
-  lhAnchorClamped = applyLowKeyGuard({
-    lhAnchor: lhAnchorClamped,
-    motifRange,
-    leftPatternMeta,
-    styleAnchors,
-    key,
-    mode,
-  });
+  if (!hasLhOverride) {
+    lhAnchorClamped = applyLowKeyGuard({
+      lhAnchor: lhAnchorClamped,
+      motifRange,
+      leftPatternMeta,
+      styleAnchors,
+      key,
+      mode,
+    });
+  }
 
-  const lhAnchorNote = adjustAnchorForPattern(lhAnchorClamped, leftHandPatternId);
-  const rhAnchorNote = rhAnchorClamped;
+  let lhAnchorNote = hasLhOverride
+    ? ensureNoteWithOctave(rawLhAnchor, rawLhAnchor)
+    : adjustAnchorForPattern(lhAnchorClamped, leftHandPatternId);
+  let rhAnchorNote = rhAnchorClamped;
+  if (!hasLhOverride && !hasRhOverride) {
+    let lhMidi = noteStringToMidiSafe(lhAnchorNote, lhAnchorNote);
+    let rhMidi = noteStringToMidiSafe(rhAnchorNote, rhAnchorNote);
+    const rhFloor = noteStringToMidiSafe(rhAnchorRange?.low || HAND_RANGE_SPECS.rh.soft.low, "G3");
+    const lhCeiling = noteStringToMidiSafe(lhAnchorRange?.high || HAND_RANGE_SPECS.lh.soft.high, "C5");
+    while (rhMidi - lhMidi > 30) {
+      if (rhMidi - 12 >= rhFloor) {
+        rhMidi -= 12;
+        rhAnchorNote = midiToNote(rhMidi);
+      } else if (lhMidi + 12 <= lhCeiling) {
+        lhMidi += 12;
+        lhAnchorNote = midiToNote(lhMidi);
+      } else {
+        break;
+      }
+    }
+  }
   const lhAnchorMidi = noteStringToMidiSafe(lhAnchorNote, lhAnchorNote);
   const rhAnchorMidi = noteStringToMidiSafe(rhAnchorNote, rhAnchorNote);
   const chordAnchors = anchorOverrides.chords || anchorOverrides.lhChords || null;
@@ -267,8 +294,13 @@ export function generateMotif({ motifPatternId, styleId: playbackStyleId, phrase
       const noteName = degreeToNote(degree, scale?.mode, scale);
       const stepsPerOctave = scale?.intervals?.length || scale?.notes?.length || 7;
       const octaveShift = Math.floor((degreeNumber - 1) / stepsPerOctave);
+      const scaleIndex = ((degreeNumber - 1) % stepsPerOctave + stepsPerOctave) % stepsPerOctave;
+      const scaleInterval = scale?.intervals?.[scaleIndex] ?? scaleIndex * 2;
+      const rootMidi = noteToMidi(motifRootNote, octaveBase);
+      const expectedMidi = rootMidi + octaveShift * 12 + scaleInterval;
+      const noteOctave = findClosestOctave(noteName, expectedMidi);
 
-      step.note = `${noteName}${octaveBase + octaveShift}`;
+      step.note = `${noteName}${noteOctave}`;
       step.degree = degree;
       step.label = durationToNotation(beats);
     } else {
@@ -369,10 +401,13 @@ export function generateLeftHandPattern({ leftHand, difficulty, styleId, phraseP
       barAnchorMidi,
       barAnchorInfo
     );
-    const adjustedSteps = enforceHandRange(rawBar.steps, handState, {
+    let adjustedSteps = enforceHandRange(rawBar.steps, handState, {
       part: "lh",
       barIndex: idx,
     });
+    if (leftHand === "pop-8ths") {
+      adjustedSteps = clampStepsToMidiRange(adjustedSteps, "C2", "C4");
+    }
     return { ...rawBar, steps: adjustedSteps };
   });
   const nameMap = {
@@ -1336,6 +1371,29 @@ function clampStepsToComfortRange(steps = [], part = "lh") {
 
   if (delta === 0) return steps;
   return steps.map((step) => transposeStep(step, delta));
+}
+
+function clampStepsToMidiRange(steps = [], lowNote, highNote) {
+  const stats = gatherStepMidiStats(steps);
+  if (!stats) return steps;
+  const minAllowed = noteStringToMidiSafe(lowNote, lowNote);
+  const maxAllowed = noteStringToMidiSafe(highNote, highNote);
+  let min = stats.min;
+  let max = stats.max;
+  let delta = 0;
+
+  while (max > maxAllowed) {
+    max -= 12;
+    min -= 12;
+    delta -= 12;
+  }
+  while (min < minAllowed) {
+    min += 12;
+    max += 12;
+    delta += 12;
+  }
+
+  return delta ? steps.map((step) => transposeStep(step, delta)) : steps;
 }
 
 function alignStepsToAnchor(steps = [], anchorMidi, part = "rh") {

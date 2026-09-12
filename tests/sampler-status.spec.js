@@ -1,25 +1,12 @@
 import { JSDOM } from "jsdom";
 import { renderSamplerStatus } from "../ui.js";
+import { afterEach, describe, it } from "vitest";
+import { expectContract as expect } from "./test-helpers.js";
 
-function expect(condition, message) {
-  if (!condition) throw new Error(message || "Expectation failed");
-}
-
-function describe(label, fn) {
-  console.log(`\n${label}`);
-  fn();
-}
-
-function it(label, fn) {
-  try {
-    fn();
-    console.log(`✔ ${label}`);
-  } catch (err) {
-    console.error(`✘ ${label}`);
-    console.error(err.message);
-    throw err;
-  }
-}
+afterEach(() => {
+  delete global.document;
+  delete global.window;
+});
 
 function createSelectorDom() {
   const dom = new JSDOM(`<!doctype html><body>
@@ -35,12 +22,12 @@ function createSelectorDom() {
 
 function snapshotWith(overrides = {}) {
   const base = {
-    activeLibraryId: "fuhton-piano",
+    activeLibraryId: "local-soft",
     libraries: {
       "fuhton-piano": {
         libraryId: "fuhton-piano",
         label: "Fuhton Piano",
-        isDefault: true,
+        isDefault: false,
         phase: "ready",
         progress: 1,
         active: true,
@@ -48,7 +35,7 @@ function snapshotWith(overrides = {}) {
       "local-soft": {
         libraryId: "local-soft",
         label: "Piano Lite - Soft",
-        isDefault: false,
+        isDefault: true,
         phase: "standby",
         progress: 0,
         active: false,
@@ -89,9 +76,9 @@ function run() {
       const snapshot = snapshotWith();
       renderSamplerStatus(uiDom, snapshot);
       expect(pianoSelect.options.length === 3, "Expected three piano models");
-      expect(/Fuhton/.test(pianoSelect.options[0].textContent), "Fuhton should be first option");
+      expect(/Piano Lite - Soft/.test(pianoSelect.options[0].textContent), "Bundled soft piano should be first option");
       expect(/Default/.test(pianoSelect.options[0].textContent), "Default label missing");
-      expect(pianoSelect.value === "fuhton-piano", "Selector should default to Fuhton");
+      expect(pianoSelect.value === "local-soft", "Selector should default to the bundled soft piano");
     });
 
     it("tracks the active library when switching", () => {
@@ -116,8 +103,4 @@ function run() {
   });
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  run();
-}
-
-export { run };
+run();

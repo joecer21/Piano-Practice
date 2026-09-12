@@ -4,8 +4,7 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>5-Minute Improv Coach</title>
-		<link rel="icon" type="image/x-icon" href="favicon.ico" />
-		<link rel="stylesheet" href="style.css" />
+		<link rel="icon" type="image/x-icon" href="/favicon.ico" />
 	</head>
 	<body>
 		<main class="app-shell">
@@ -32,8 +31,8 @@
 						<label class="piano-model-select" for="piano-model">
 							Piano Model
 							<select id="piano-model">
-								<option value="fuhton-piano" selected>Fuhton Piano (Default)</option>
-								<option value="local-soft">Piano Lite - Soft</option>
+								<option value="local-soft" selected>Piano Lite - Soft (Default)</option>
+								<option value="fuhton-piano">Fuhton Piano</option>
 								<option value="local-bright">Piano HL - Bright</option>
 								<option value="salamander-lite">Salamander Lite</option>
 							</select>
@@ -52,6 +51,32 @@
 					<button id="advanced-controls-toggle" class="ghost small" type="button">Show Controls</button>
 				</div>
 				<p class="muted">Choose a curated setup to auto-fill everything. Reveal controls if you want to tweak before generating.</p>
+			</section>
+			<section class="card assignment-tools-card" aria-labelledby="assignment-tools-title">
+				<div class="assignment-tools-header">
+					<div>
+						<h2 id="assignment-tools-title">Shape next assignment</h2>
+						<p class="muted">Lock the parts you want to keep, then reroll everything else.</p>
+					</div>
+					<div class="history-actions" aria-label="Assignment history">
+						<button id="assignment-undo" class="ghost small" type="button" disabled>Undo</button>
+						<button id="assignment-redo" class="ghost small" type="button" disabled>Redo</button>
+					</div>
+				</div>
+				<div id="assignment-locks" class="assignment-locks" role="group" aria-label="Parts to keep during reroll">
+					<button class="lock-chip" type="button" data-assignment-lock="key" aria-pressed="false">Lock key</button>
+					<button class="lock-chip" type="button" data-assignment-lock="harmony" aria-pressed="false">Lock harmony</button>
+					<button class="lock-chip" type="button" data-assignment-lock="groove" aria-pressed="false">Lock groove</button>
+					<button class="lock-chip" type="button" data-assignment-lock="motif" aria-pressed="false">Lock motif</button>
+				</div>
+				<div class="assignment-reroll-row">
+					<div class="assignment-identity">
+						<span>Current variation</span>
+						<code id="assignment-seed">—</code>
+						<span id="assignment-id" class="assignment-id"></span>
+					</div>
+					<button id="assignment-reroll" class="primary-action" type="button">Reroll unlocked</button>
+				</div>
 			</section>
 			<section class="card controls-card collapsed" id="advanced-controls-card">
 				<div class="card-head">
@@ -213,6 +238,46 @@
 
 
 			<section class="cards">
+                <article class="card live-piano-card" id="piano-visual-card">
+                    <div class="card-head live-piano-head">
+                        <div>
+                            <h2>Live Piano</h2>
+                            <p class="muted live-piano-help">Click or drag across the keys. Playback lights left and right hands separately.</p>
+                        </div>
+                        <div class="piano-controls">
+                            <fieldset class="piano-indicator-toggle">
+                                <legend>Indicators</legend>
+                                <label><input type="radio" name="piano-indicator-mode" value="both" checked /> Both</label>
+                                <label><input type="radio" name="piano-indicator-mode" value="lh" /> LH</label>
+                                <label><input type="radio" name="piano-indicator-mode" value="rh" /> RH</label>
+                            </fieldset>
+                            <label class="piano-control" for="piano-chord-mode">
+                                Shape
+                                <select id="piano-chord-mode">
+                                    <option value="single" selected>Single note</option>
+                                    <option value="diatonic-triad">Diatonic triad</option>
+                                    <option value="diatonic-7th">Diatonic 7th</option>
+                                    <option value="sus2">Sus2</option>
+                                    <option value="sus4">Sus4</option>
+                                    <option value="power5">Power 5</option>
+                                    <option value="maj6">Major 6</option>
+                                    <option value="min6">Minor 6</option>
+                                    <option value="add9">Add9</option>
+                                    <option value="quartal">Quartal stack</option>
+                                    <option value="dom7">Dominant 7</option>
+                                    <option value="maj7">Major 7</option>
+                                    <option value="min7">Minor 7</option>
+                                </select>
+                            </label>
+                            <label class="piano-hover-toggle" for="piano-gliss-mode">
+                                <input type="checkbox" id="piano-gliss-mode" /> Hover mode
+                            </label>
+                        </div>
+                    </div>
+                    <div class="piano-visual-wrapper">
+                        <div id="piano-visual" class="piano-visual" aria-label="Interactive piano keyboard"></div>
+                    </div>
+                </article>
                 <article class="card" id="piano-roll-card">
                     <div class="card-head">
                         <h2>Piano Roll (LH + Motif)</h2>
@@ -282,8 +347,7 @@
 			</section>
 		</main>
 
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-    <script type="module" src="main.js"></script>
+		<script type="module" src="/main.js"></script>
 
 	</body>
 </html>
