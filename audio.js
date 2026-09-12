@@ -262,7 +262,49 @@ export function isPianoLoaded() {
   return pianoLoaded;
 }
 
+/** Dispose a Tone node without letting a teardown failure abort the rest. */
+function disposeNode(node, label) {
+  if (!node) return;
+  try {
+    if (typeof node.disconnect === "function") node.disconnect();
+  } catch (err) {
+    console.warn(`Failed to disconnect ${label}`, err);
+  }
+  try {
+    if (typeof node.dispose === "function") node.dispose();
+  } catch (err) {
+    console.warn(`Failed to dispose ${label}`, err);
+  }
+}
+
+/**
+ * Tear the whole audio graph down. Without this, initSynths could only ever be
+ * called once safely: a second call replaced masterLimiter and sharedReverb with
+ * new nodes while the previous pair stayed connected to the destination.
+ */
+export function disposeAudio() {
+  stopTransport();
+  PART_IDS.forEach((partId) => {
+    disposeNode(synths[partId], `${partId} sampler`);
+    delete synths[partId];
+  });
+  Object.keys(channels).forEach((partId) => {
+    disposeNode(channels[partId], `${partId} channel`);
+    delete channels[partId];
+  });
+  disposeMotifWidthNode();
+  disposeNode(sharedReverb, "shared reverb");
+  sharedReverb = null;
+  disposeNode(masterLimiter, "master limiter");
+  masterLimiter = null;
+  reverbSendEnabled = false;
+  pianoLoaded = false;
+}
+
 export async function initSynths() {
+  // Idempotent: rebuild from a known-empty graph rather than orphaning the
+  // previous limiter and reverb.
+  disposeAudio();
   masterLimiter = new Tone.Limiter(-1).toDestination();
   sharedReverb = new Tone.Reverb({
     ...getReverbConfig(reverbState.roomSize),
@@ -858,7 +900,11 @@ function createSingleLayerSampler(partId, library) {
       baseUrl: library.baseUrl,
       release: 1,
       onload: () => resolve({ partId, sampler }),
-      onerror: (err) => reject(err || new Error(`Sampler load failed for ${library.label}`)),
+      onerror: (err) => {
+        // The caller never receives this sampler, so nothing else can dispose it.
+        disposeNode(sampler, `${library.label} sampler (failed load)`);
+        reject(err || new Error(`Sampler load failed for ${library.label}`));
+      },
     });
   });
 }
@@ -869,22 +915,41 @@ function createVelocityLayerSampler(partId, library) {
     return createSingleLayerSampler(partId, library);
   }
   return new Promise((resolve, reject) => {
+    // Every sampler constructed here is owned by this promise until it settles.
+    // Previously, if one layer errored the promise rejected while the layers that
+    // had already loaded stayed alive and unreachable.
+    const constructed = [];
     const loadedLayers = {};
     let remaining = entries.length;
+    let settled = false;
+
+    const failLoad = (err) => {
+      if (settled) return;
+      settled = true;
+      constructed.forEach((node) => disposeNode(node, `${library.label} layer sampler (failed load)`));
+      reject(err || new Error(`Sampler load failed for ${library.label}`));
+    };
+
     entries.forEach(([layerName, layerConfig]) => {
       const sampler = new Tone.Sampler({
         urls: layerConfig.urls,
         baseUrl: layerConfig.baseUrl ?? library.baseUrl,
         release: 1,
         onload: () => {
+          if (settled) {
+            disposeNode(sampler, `${library.label} layer sampler (late load)`);
+            return;
+          }
           loadedLayers[layerName] = sampler;
           remaining -= 1;
           if (remaining === 0) {
+            settled = true;
             resolve({ partId, sampler: new VelocityLayerSampler(loadedLayers) });
           }
         },
-        onerror: (err) => reject(err || new Error(`Sampler load failed for ${library.label} (${layerName})`)),
+        onerror: (err) => failLoad(err || new Error(`Sampler load failed for ${library.label} (${layerName})`)),
       });
+      constructed.push(sampler);
     });
   });
 }
