@@ -1,4 +1,5 @@
 import { NOTE_TO_INDEX, analyzeRomanAgainstMode, noteStringToMidi, parseRomanSymbol } from "../theory.js";
+import { degreeForInterval } from "./degree.js";
 
 export const SCORE_SCHEMA_VERSION = 1 as const;
 export const SCORE_BEATS_PER_BAR = 4 as const;
@@ -9,6 +10,12 @@ export type DegreeAlteration = -2 | -1 | 0 | 1 | 2;
 export type Dynamic = "ghost" | "soft" | "normal" | "accent";
 export type NoteRole = "root" | "chordTone" | "scaleTone" | "chromatic";
 
+/**
+ * A scale degree named against the major scale (see domain/degree.ts): number
+ * and alteration name the pitch relative to the key, octaveOffset marks
+ * extensions such as 8 or 9, and scaleSize is the reference size used to spell
+ * those extensions, which is always 7.
+ */
 export type DegreeToken = {
   number: DegreeNumber;
   alteration: DegreeAlteration;
@@ -346,7 +353,10 @@ function buildRightHandEvents(
           step: { ...step, time: startBeat },
           part: "rh",
           barIndex,
-          degree: parseDegreeToken(step.degree, scale.intervals.length) ?? degreeForPitch(midi, scale),
+          // The motif's own degree numbers count positions within the mode, so
+          // they only tell us which octave the note sits in. The degree itself
+          // is named from the pitch.
+          degree: degreeForPitch(midi, scale, motifOctaveOffset(step.degree, scale.intervals.length)),
           bar: bars[barIndex],
           scale,
         }),
@@ -405,53 +415,22 @@ function roleForPitch(midi: number, bar: ScoreBar | undefined, scale: ScaleConte
   return "chromatic";
 }
 
-function parseDegreeToken(value: number | string | undefined, scaleSize: number): DegreeToken | null {
-  if (value == null) return null;
-  const match = /^([b♭#♯]{0,2})(\d+)$/.exec(String(value).trim());
-  if (!match) return null;
-  const absoluteDegree = Number(match[2]);
-  if (!Number.isInteger(absoluteDegree) || absoluteDegree < 1) return null;
-  const alteration = [...match[1]].reduce(
-    (sum, symbol) => sum + (symbol === "b" || symbol === "♭" ? -1 : 1),
-    0,
-  );
-  if (alteration < -2 || alteration > 2) return null;
-  const normalizedScaleSize = Math.min(7, Math.max(1, Math.trunc(scaleSize)));
-  return {
-    number: (((((absoluteDegree - 1) % normalizedScaleSize) + normalizedScaleSize) % normalizedScaleSize) +
-      1) as DegreeNumber,
-    alteration: alteration as DegreeAlteration,
-    octaveOffset: Math.floor((absoluteDegree - 1) / normalizedScaleSize),
-    scaleSize: normalizedScaleSize,
-  };
+/**
+ * Octave position encoded by an engine motif degree such as 8 or 10, counted in
+ * the mode's own scale steps. Accidentals do not change the octave.
+ */
+function motifOctaveOffset(value: number | string | undefined, scaleSize: number): number {
+  if (value == null) return 0;
+  const match = /^[b♭#♯]{0,2}(\d+)$/.exec(String(value).trim());
+  if (!match) return 0;
+  const absoluteDegree = Number(match[1]);
+  if (!Number.isInteger(absoluteDegree) || absoluteDegree < 1) return 0;
+  const size = Math.min(7, Math.max(1, Math.trunc(scaleSize)));
+  return Math.floor((absoluteDegree - 1) / size);
 }
 
-function degreeForPitch(midi: number, scale: ScaleContext): DegreeToken | null {
-  const relativePitchClass = pitchClass(midi - scale.rootPitchClass);
-  const candidates = scale.intervals.map((interval, index) => ({
-    index,
-    alteration: signedPitchDistance(relativePitchClass, pitchClass(interval)),
-  }));
-  candidates.sort((a, b) => {
-    const distance = Math.abs(a.alteration) - Math.abs(b.alteration);
-    if (distance) return distance;
-    // Prefer flat spellings for chromatic ties (b3 over #2); exact scale
-    // degrees always win before this tiebreaker is needed.
-    return a.alteration - b.alteration;
-  });
-  const best = candidates[0];
-  if (!best || best.index > 6 || best.alteration < -2 || best.alteration > 2) return null;
-  return {
-    number: (best.index + 1) as DegreeNumber,
-    alteration: best.alteration as DegreeAlteration,
-    octaveOffset: 0,
-    scaleSize: scale.intervals.length,
-  };
-}
-
-function signedPitchDistance(target: number, origin: number): number {
-  const upward = pitchClass(target - origin);
-  return upward > 6 ? upward - 12 : upward;
+function degreeForPitch(midi: number, scale: ScaleContext, octaveOffset = 0): DegreeToken {
+  return degreeForInterval(midi - scale.rootPitchClass, scale.intervals, octaveOffset);
 }
 
 function assertMidi(note: string): number {

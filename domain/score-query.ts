@@ -1,13 +1,5 @@
-import type {
-  DegreeAlteration,
-  DegreeNumber,
-  DegreeToken,
-  NoteRole,
-  PartId,
-  Score,
-  ScoreBar,
-  ScoreEvent,
-} from "./score.js";
+import { degreeForInterval } from "./degree.js";
+import type { DegreeToken, NoteRole, PartId, Score, ScoreBar, ScoreEvent } from "./score.js";
 
 export type BeatRange = readonly [startBeat: number, endBeat: number];
 export type PitchClassification = { degree: DegreeToken | null; role: NoteRole };
@@ -65,28 +57,12 @@ export function classifyPitch(score: Score, midi: number, beat: number): PitchCl
   };
 }
 
-function degreeForPitchClass(score: Score, pitchClass: number): DegreeToken | null {
-  const candidates = score.meta.scalePitchClasses.slice(0, 7).map((scalePitchClass, index) => ({
-    index,
-    alteration: signedPitchDistance(pitchClass, scalePitchClass),
-  }));
-  candidates.sort((a, b) => {
-    const distance = Math.abs(a.alteration) - Math.abs(b.alteration);
-    return distance || a.alteration - b.alteration;
-  });
-  const best = candidates[0];
-  if (!best || best.alteration < -2 || best.alteration > 2) return null;
-  return {
-    number: (best.index + 1) as DegreeNumber,
-    alteration: best.alteration as DegreeAlteration,
-    octaveOffset: 0,
-    scaleSize: score.meta.scalePitchClasses.length,
-  };
-}
-
-function signedPitchDistance(target: number, origin: number): number {
-  const upward = normalizePitchClass(target - origin);
-  return upward > 6 ? upward - 12 : upward;
+function degreeForPitchClass(score: Score, pitchClass: number): DegreeToken {
+  const root = score.meta.rootPitchClass;
+  const intervals = score.meta.scalePitchClasses.map((scalePitchClass) =>
+    normalizePitchClass(scalePitchClass - root),
+  );
+  return degreeForInterval(pitchClass - root, intervals);
 }
 
 function normalizePitchClass(value: number): number {
