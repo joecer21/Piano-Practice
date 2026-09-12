@@ -1065,14 +1065,28 @@ export function toneToBeatsFromDuration(duration) {
   return BEATS_BY_TONE.get(duration) ?? 1;
 }
 
+// Letter, optional accidentals, then a possibly-negative octave. Parsing the
+// octave positionally with slice(-1) split "C-1" into the name "C-" and the
+// octave 1, yielding NaN; it also mis-read any two-digit octave.
+const NOTE_STRING_PATTERN = /^([A-Ga-g])([#b♯♭]{0,2})(-?\d{1,2})$/;
+
+/**
+ * Parse a note string such as "C4", "Eb3" or "F#-1" into a MIDI number.
+ * Returns NaN for anything unparseable rather than a plausible wrong answer.
+ */
 export function noteStringToMidi(noteStr) {
-  const name = noteStr.slice(0, -1);
-  const octave = parseInt(noteStr.slice(-1), 10);
-  return noteToMidi(name, octave);
+  if (typeof noteStr !== "string") return Number.NaN;
+  const match = NOTE_STRING_PATTERN.exec(noteStr.trim());
+  if (!match) return Number.NaN;
+  const [, letter, accidentals, octave] = match;
+  const name = letter.toUpperCase() + accidentals.replace(/♯/g, "#").replace(/♭/g, "b");
+  if (NOTE_TO_INDEX[name] === undefined) return Number.NaN;
+  return noteToMidi(name, Number(octave));
 }
 
+/** Remove a trailing octave, including a negative one ("C-1" -> "C"). */
 export function stripOctave(note) {
-  return note.replace(/\d/g, "");
+  return typeof note === "string" ? note.replace(/-?\d+$/, "") : "";
 }
 
 export function getQuality(symbol) {
