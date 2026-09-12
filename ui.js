@@ -597,77 +597,49 @@ function getDegreeValue(degree) {
 
 export function renderPianoRoll(state, dom) {
   const svg = dom.pianoRoll || document.getElementById("piano-roll");
-  if (!svg || !state.derived.leftHand) return;
+  const score = state.derived.score;
+  if (!svg || !score) return;
 
   svg.innerHTML = "";
 
-  const events = [];
-  const motif = state.derived.motif;
-  const motifLength = motif?.totalBeats || 0;
-  const progressionBeats = (state.derived.progression?.length || 1) * 4;
-
-  if (motif && motif.steps.length && motifLength > 0) {
-    for (let offset = 0; offset < progressionBeats; offset += motifLength) {
-      motif.steps.forEach((step) => {
-        const start = offset + step.time;
-        const end = start + step.beats;
-        if (start >= progressionBeats) return;
-
-        if (step.rest) {
-          events.push({
+  // Score is now the single event source for both parts. The legacy renderer
+  // shifted some left-hand notes down an octave for display only, so the roll
+  // could disagree with what playback actually sounded. Render the true MIDI
+  // pitches and reserve presentation transforms for geometry alone.
+  const events = [
+    ...score.parts.lh
+      .filter((event) => event.kind === "note")
+      .map((event) => ({
+        id: event.id,
+        track: "lh",
+        start: event.startBeat,
+        end: Math.min(event.startBeat + event.durationBeats, score.meta.totalBeats),
+        midi: event.midi,
+        label: stripOctave(midiToNote(event.midi)),
+      })),
+    ...score.parts.rh.map((event) =>
+      event.kind === "rest"
+        ? {
+            id: event.id,
             track: "motif-rest",
-            start,
-            end: Math.min(end, progressionBeats),
-          });
-        } else {
-          events.push({
+            start: event.startBeat,
+            end: Math.min(event.startBeat + event.durationBeats, score.meta.totalBeats),
+          }
+        : {
+            id: event.id,
             track: "motif",
-            start,
-            end: Math.min(end, progressionBeats),
-            midi: noteStringToMidi(step.note),
-            label: stripOctave(step.note),
-          });
-        }
-      });
-    }
-  }
-
-  const motifMinMidi = lowestMotifMidi(state);
-  state.derived.leftHand.bars.forEach((bar) => {
-    bar.steps.forEach((step) => {
-      const start = step.time;
-      const durBeats = step.beats || 1;
-
-      if (step.notes && Array.isArray(step.notes)) {
-        step.notes.forEach((note) => {
-          const shifted = shiftBelowMotif(note, motifMinMidi);
-          events.push({
-            track: "lh",
-            start,
-            end: start + durBeats,
-            midi: noteStringToMidi(shifted),
-            label: stripOctave(shifted),
-          });
-        });
-      }
-
-      if (step.note) {
-        const shifted = shiftBelowMotif(step.note, motifMinMidi);
-        events.push({
-          track: "lh",
-          start,
-          end: start + durBeats,
-          midi: noteStringToMidi(shifted),
-          label: stripOctave(shifted),
-        });
-      }
-    });
-  });
+            start: event.startBeat,
+            end: Math.min(event.startBeat + event.durationBeats, score.meta.totalBeats),
+            midi: event.midi,
+            label: stripOctave(midiToNote(event.midi)),
+          },
+    ),
+  ].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
 
   if (!events.length) return;
 
-  const minBeat = Math.min(...events.map((e) => e.start));
-  const maxBeat = Math.max(...events.map((e) => e.end));
+  const minBeat = 0;
+  const maxBeat = Math.max(score.meta.totalBeats, 1);
 
   const minMidi = 36;
   const maxMidi = 84;
@@ -692,8 +664,7 @@ export function renderPianoRoll(state, dom) {
     return height - normalized * totalHeight - verticalPadding;
   };
 
-  const totalBeats = maxBeat - minBeat;
-  const totalBars = Math.ceil(totalBeats / 4);
+  const totalBars = score.meta.bars;
 
   for (let b = 0; b <= totalBars; b++) {
     const x = beatToX(minBeat + b * 4);
@@ -743,6 +714,9 @@ export function renderPianoRoll(state, dom) {
     rect.setAttribute("fill", fill);
     rect.setAttribute("stroke", "#222");
     rect.setAttribute("stroke-width", "0.5");
+    rect.setAttribute("data-event-id", e.id);
+    rect.setAttribute("data-track", e.track);
+    if (Number.isInteger(e.midi)) rect.setAttribute("data-midi", String(e.midi));
     svg.appendChild(rect);
 
     if (e.track !== "motif-rest") {
@@ -1006,20 +980,6 @@ function formatDb(value, muted) {
   const rounded = Math.round(value);
   const sign = rounded > 0 ? "+" : "";
   return `${sign}${rounded} dB`;
-}
-
-function lowestMotifMidi(state) {
-  if (!state.derived.motif || !state.derived.motif.steps.length) return Infinity;
-  const noteSteps = state.derived.motif.steps.filter((s) => !s.rest && s.note);
-  if (noteSteps.length === 0) return Infinity;
-  return Math.min(...noteSteps.map((s) => noteStringToMidi(s.note)));
-}
-
-function shiftBelowMotif(noteStr, motifMin) {
-  if (!noteStr || motifMin === Infinity) return noteStr;
-  let midi = noteStringToMidi(noteStr);
-  while (midi >= motifMin) midi -= 12;
-  return midiToNote(midi);
 }
 
 export function populateMotifSelector(dom, motifs) {

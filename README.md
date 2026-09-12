@@ -28,6 +28,7 @@ npm run preview        # Preview the production bundle
 npm run lint           # ESLint
 npm run format         # Prettier, write
 npm run format:check   # Prettier, verify only
+npm run typecheck      # Strict TypeScript checks for new typed modules
 npm test               # Unit and DOM contract specs with Vitest
 npm run test:watch     # Vitest watch mode
 npm run test:browser   # Playwright, against the production bundle
@@ -50,6 +51,9 @@ Sample filenames spell sharps with `s` (`ds3vl.mp3`), because a literal `#` in a
 ## Project layout
 
 - `domain/assignment.js` defines and validates the versioned assignment schema, orchestrates deterministic generation, and provides seeded rerolls.
+- `domain/score.ts` derives the canonical, runtime-validated musical event model consumed by presentation and, in the next slice, playback.
+- `domain/score-query.ts` provides bar, part, chord, and pitch-classification queries over Score.
+- `domain/describe.ts` turns Score facts into deterministic practice-coach language.
 - `domain/random.js` provides the reproducible pseudo-random stream and derived seeds.
 - `domain/live-piano.js` expands interactive keys into deterministic chord shapes.
 - `application/state.js` owns assignment commits, bounded undo/redo history, and component locks without imposing a UI framework.
@@ -87,3 +91,5 @@ and Playwright against that build. Pushes to `main` deploy the bundle to GitHub 
 build uses a relative base, so the same artifact works at a domain root or under a project path.
 
 Assignments are versioned, runtime-validated, and JSON-safe. Seeds reproduce the same input choices and stable assignment ID. The assignment workbench exposes deterministic rerolls, `key`/`harmony`/`groove`/`motif` locks, and bounded undo/redo history without changing the musical engine.
+
+Each committed assignment also produces a derived Score with stable per-note IDs, numeric beat timing, structured degrees, chord roles, and exact expression intent. The piano roll reads this Score directly, so its displayed octaves now match the pitches sent to playback.

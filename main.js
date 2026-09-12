@@ -320,7 +320,9 @@ function handleGenerate(_options = {}) {
     ? `${state.inputs.key} ${state.derived.scale.label}`
     : state.inputs.key;
   const status = `Assignment updated for ${scaleLabel} · ${preset?.label || "Custom"} · ${state.derived.leftHand?.name || state.inputs.lhId} · ${state.derived.motif ? state.derived.motif.description : "No motif"}`;
-  setStatusMessage(dom, status, { tone: "success" });
+  // Keep the direct response to Generate visible long enough to be read. A
+  // sampler-ready message is ambient and will be restored after this expires.
+  setStatusMessage(dom, status, { tone: "success", transient: true });
   runAssignmentPulse(dom, { includeMotif: !!state.derived.motif });
   pulseElement(dom.generate, "accent");
 }

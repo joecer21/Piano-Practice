@@ -6,6 +6,7 @@ import {
   normalizeAssignmentInputs,
   rerollAssignmentInputs,
 } from "../domain/assignment.js";
+import { buildScore } from "../domain/score.ts";
 import { getStyleProfile } from "../theory.js";
 
 /** @typedef {import("../domain/assignment.js").AssignmentInputs} AssignmentInputs */
@@ -26,6 +27,7 @@ export function createInitialAppState(overrides = {}) {
       motif: null,
       styleProfile: null,
       phrasePlan: null,
+      score: null,
     },
     mix: {
       left: { volume: 0, mute: false, pan: 0 },
@@ -151,5 +153,6 @@ function applyAssignment(state, assignment) {
     motif: assignment.motif,
     styleProfile: getStyleProfile(assignment.inputs.styleId),
     phrasePlan: assignment.phrasePlan,
+    score: buildScore(assignment),
   };
 }

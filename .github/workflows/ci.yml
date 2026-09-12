@@ -27,6 +27,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
+      - run: npm run typecheck
       - run: npm test
       # The musical fingerprint is the regression guard for the engine: it fails
       # if any of the 96 seeds produces different music than the frozen baseline.

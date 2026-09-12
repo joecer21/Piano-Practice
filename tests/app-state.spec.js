@@ -18,6 +18,8 @@ describe("Application state store", () => {
     expect(store.canRedo()).toBe(true);
     expect(store.redo()?.id).toBe(second.id);
     expect(store.state.inputs.key).toBe("D");
+    expect(store.state.derived.score.sourceAssignmentId).toBe(second.id);
+    expect(store.state.derived.score.meta.totalBeats).toBe(second.progression.length * 4);
   });
 
   it("honors component locks during a seeded reroll", () => {

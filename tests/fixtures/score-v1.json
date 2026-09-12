@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "sourceAssignmentId": "assignment-54be35a1",
+  "meta": {
+    "bars": 1,
+    "beatsPerBar": 4,
+    "key": "C",
+    "mode": "major",
+    "rootPitchClass": 0,
+    "scalePitchClasses": [0, 2, 4, 5, 7, 9, 11],
+    "rhCycleBeats": null,
+    "totalBeats": 4
+  },
+  "bars": [
+    {
+      "id": "bar:0",
+      "barIndex": 0,
+      "startBeat": 0,
+      "roman": "I",
+      "chordSymbol": "C",
+      "chordPitchClasses": [0, 4, 7],
+      "rootPitchClass": 0,
+      "voicingMidis": {
+        "chord": [60, 64, 67],
+        "bass": [48, 52, 55]
+      },
+      "provenance": { "kind": "diatonic" }
+    }
+  ],
+  "parts": {
+    "lh": [
+      {
+        "kind": "note",
+        "id": "lh:0:0:0",
+        "midi": 48,
+        "startBeat": 0,
+        "durationBeats": 4,
+        "part": "lh",
+        "barIndex": 0,
+        "degree": { "number": 1, "alteration": 0, "octaveOffset": 0, "scaleSize": 7 },
+        "role": "root",
+        "dynamic": "accent",
+        "expression": { "accent": 0.18, "ghost": 0, "swingWeight": 0 }
+      },
+      {
+        "kind": "note",
+        "id": "lh:0:0:1",
+        "midi": 52,
+        "startBeat": 0,
+        "durationBeats": 4,
+        "part": "lh",
+        "barIndex": 0,
+        "degree": { "number": 3, "alteration": 0, "octaveOffset": 0, "scaleSize": 7 },
+        "role": "chordTone",
+        "dynamic": "accent",
+        "expression": { "accent": 0.18, "ghost": 0, "swingWeight": 0 }
+      },
+      {
+        "kind": "note",
+        "id": "lh:0:0:2",
+        "midi": 55,
+        "startBeat": 0,
+        "durationBeats": 4,
+        "part": "lh",
+        "barIndex": 0,
+        "degree": { "number": 5, "alteration": 0, "octaveOffset": 0, "scaleSize": 7 },
+        "role": "chordTone",
+        "dynamic": "accent",
+        "expression": { "accent": 0.18, "ghost": 0, "swingWeight": 0 }
+      }
+    ],
+    "rh": []
+  }
+}

@@ -2,11 +2,14 @@ import js from "@eslint/js";
 import globals from "globals";
 import unusedImports from "eslint-plugin-unused-imports";
 import prettier from "eslint-config-prettier";
+import tseslint from "typescript-eslint";
 
 export default [
   { ignores: ["dist/**", "node_modules/**", "playwright-report/**", "test-results/**"] },
 
   js.configs.recommended,
+
+  ...tseslint.configs.recommended.map((config) => ({ ...config, files: ["**/*.ts"] })),
 
   {
     // Browser application code.
@@ -39,6 +42,16 @@ export default [
     files: ["scripts/**/*.mjs", "*.config.js", "vite.config.js", "vitest.config.js", "playwright.config.js"],
     languageOptions: { ecmaVersion: 2024, sourceType: "module", globals: { ...globals.node } },
     rules: { "no-console": "off" },
+  },
+
+  {
+    // New domain boundaries are strict TypeScript; legacy JavaScript remains
+    // opt-in checked with its existing `// @ts-check` directives.
+    files: ["**/*.ts", "**/*.tsx"],
+    rules: {
+      "@typescript-eslint/consistent-type-imports": "error",
+      "@typescript-eslint/no-explicit-any": "error",
+    },
   },
 
   {
