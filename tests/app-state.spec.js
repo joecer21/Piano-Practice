@@ -93,3 +93,25 @@ describe("Application state store", () => {
     expect(store.canRedo()).toBe(false);
   });
 });
+
+describe("store subscription", () => {
+  it("notifies on commit, undo and redo, and stops after unsubscribe", async () => {
+    const { createAppStore } = await import("../application/state.js");
+    const { generateAssignment, DEFAULT_ASSIGNMENT_INPUTS } = await import("../domain/assignment.js");
+    const store = createAppStore();
+    const calls = [];
+    const unsubscribe = store.subscribe(() => calls.push(store.state.assignment?.id));
+
+    const first = generateAssignment({ ...DEFAULT_ASSIGNMENT_INPUTS, seed: "subscribe-1" });
+    const second = generateAssignment({ ...DEFAULT_ASSIGNMENT_INPUTS, seed: "subscribe-2", key: "D" });
+    store.commitAssignment(first);
+    store.commitAssignment(second);
+    store.undo();
+    store.redo();
+    expect(calls).toEqual([first.id, second.id, first.id, second.id]);
+
+    unsubscribe();
+    store.undo();
+    expect(calls).toHaveLength(4);
+  });
+});

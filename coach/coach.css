@@ -1,0 +1,500 @@
+/*
+ * Coach surface.
+ *
+ * Channel rule - one visual channel per musical fact:
+ *   hue           -> which hand is sounding      (--hand-lh / --hand-rh, nothing else)
+ *   fill weight   -> note role                   (data-role: root/chordTone solid, scaleTone muted)
+ *   text label    -> scale degree or letter      (.key-label)
+ *   stroke weight -> root                        (ring on the root mark)
+ *   badge + label -> chord provenance            (.coach-timeline-badge)
+ * Interface chrome uses ink and surface tokens only, so no control can be
+ * mistaken for a hand.
+ */
+
+:root {
+  --surface: #f6f1eb;
+  --surface-raised: #fffdfa;
+  --ink: #2a1f19;
+  --ink-muted: #6c5a4f;
+  --line: #e2d5ca;
+  --focus-fill: rgba(42, 31, 25, 0.07);
+  --focus-ring: #2a1f19;
+  --hand-lh: #2878b8;
+  --hand-rh: #c56a26;
+  /* Keys stay ivory and ebony in every theme, so their marks are fixed. */
+  --key-mark-on-white: #2a1f19;
+  --key-mark-on-black: #fffdfa;
+  --radius-pill: 999px;
+  --radius-card: 14px;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --touch-target: 44px;
+
+  /* Legacy highlight variables now read from the hand tokens. */
+  --piano-lh: var(--hand-lh);
+  --piano-rh: var(--hand-rh);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #17120f;
+    --surface-raised: #211a16;
+    --ink: #f3ebe4;
+    --ink-muted: #b8a89c;
+    --line: #3a2f29;
+    --focus-fill: rgba(243, 235, 228, 0.09);
+    --focus-ring: #f3ebe4;
+    --hand-lh: #6fb1ec;
+    --hand-rh: #f0a060;
+  }
+}
+
+@media (min-width: 601px) {
+  :root {
+    --piano-white-width: 31px;
+    --piano-black-width: 20px;
+    --piano-white-height: 150px;
+    --piano-black-height: 96px;
+  }
+}
+
+body {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.coach-shell :is(button, summary):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ---- Top: the sentence and the session ---------------------------------- */
+
+.coach-top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-2)) 0;
+  padding: var(--space-3) var(--space-2);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.coach-title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.coach-sentence {
+  margin: var(--space-1) 0 var(--space-2);
+  font-size: clamp(1.1rem, 2.4vw, 1.45rem);
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.coach-session,
+.coach-transport,
+.coach-keyboard-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.coach-shell :is(.coach-start, .coach-play, .coach-secondary, .coach-toggle, .coach-segmented button) {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  transform: none;
+}
+
+.coach-start,
+.coach-play {
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.coach-secondary,
+.coach-toggle {
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+
+.coach-shell :is(.coach-toggle, .coach-segmented button)[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.coach-shell button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.coach-segmented {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+
+.coach-shell .coach-segmented button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.coach-clock {
+  min-width: 3.5ch;
+  font-size: 1.5rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-readiness,
+.coach-complete,
+.coach-focus,
+.coach-count-in {
+  color: var(--ink-muted);
+}
+
+.coach-count-in {
+  min-width: 6.5ch;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-link {
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ---- Middle: the keyboard ------------------------------------------------ */
+
+.coach-keyboard,
+.coach-practice-panel {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+
+.coach-keyboard-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+}
+
+.coach-keyboard-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.coach-keyboard .live-piano-help,
+.coach-keyboard .piano-qwerty-help {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+}
+
+.coach-keyboard .piano-visual-wrapper {
+  margin: var(--space-3) 0;
+}
+
+.coach-more > summary {
+  min-height: var(--touch-target);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.coach-more-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+/* Role marks on keys. Weight, not colour. */
+.piano-key .key-label {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 3px;
+  box-sizing: border-box;
+  transform: translateX(-50%);
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  pointer-events: none;
+  --mark: var(--key-mark-on-white);
+  --mark-contrast: var(--key-mark-on-black);
+}
+
+.piano-key.black .key-label {
+  bottom: 5px;
+  min-width: 16px;
+  font-size: 10px;
+  --mark: var(--key-mark-on-black);
+  --mark-contrast: var(--key-mark-on-white);
+}
+
+.piano-key[data-role="chordTone"] .key-label,
+.piano-key[data-role="root"] .key-label {
+  background: var(--mark);
+  color: var(--mark-contrast);
+}
+
+.piano-key[data-role="root"] .key-label {
+  box-shadow:
+    0 0 0 2.5px var(--mark-contrast),
+    0 0 0 4.5px var(--mark);
+}
+
+.piano-key[data-role="scaleTone"] .key-label {
+  border: 1px solid color-mix(in srgb, var(--mark) 35%, transparent);
+  color: color-mix(in srgb, var(--mark) 70%, transparent);
+  background: transparent;
+}
+
+.piano-key[data-out-of-lens] {
+  opacity: 0.35;
+}
+
+/* A sounding key is filled with its hand's hue; keep the mark legible on it. */
+.piano-key.active .key-label {
+  --mark: #fffdfa;
+  --mark-contrast: #2a1f19;
+}
+
+/* ---- Below: practice controls and the timeline --------------------------- */
+
+.coach-focus {
+  min-height: var(--touch-target);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  margin: var(--space-2) 0;
+}
+
+.coach-timeline {
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+}
+
+.coach-timeline-bars,
+.coach-timeline-roll {
+  min-width: max(100%, calc(var(--timeline-bars) * 76px));
+}
+
+.coach-timeline-bars {
+  display: grid;
+  grid-template-columns: repeat(var(--timeline-bars), minmax(0, 1fr));
+}
+
+.coach-shell .coach-timeline-bar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-height: var(--touch-target);
+  padding: var(--space-2);
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transform: none;
+}
+
+.coach-shell .coach-timeline-bar[aria-pressed="true"] {
+  background: var(--focus-fill);
+  box-shadow: inset 0 -3px 0 var(--ink);
+}
+
+.coach-timeline-bar-number,
+.coach-timeline-roman {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+}
+
+.coach-timeline-chord {
+  font-weight: 700;
+}
+
+.coach-timeline-badge {
+  margin-top: 2px;
+  padding: 0 4px;
+  border: 1px dashed var(--ink-muted);
+  border-radius: 4px;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+}
+
+.coach-timeline-roll {
+  position: relative;
+  height: 128px;
+  margin-top: var(--space-1);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.coach-timeline-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.coach-timeline-barline {
+  stroke: var(--line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.coach-timeline-focus {
+  fill: var(--focus-fill);
+}
+
+.coach-timeline-lane.hand-lh {
+  color: var(--hand-lh);
+}
+
+.coach-timeline-lane.hand-rh {
+  color: var(--hand-rh);
+}
+
+.coach-timeline-note {
+  fill: currentColor;
+}
+
+.coach-timeline-note[data-role="scaleTone"] {
+  fill-opacity: 0.5;
+}
+
+.coach-timeline-note[data-role="chromatic"] {
+  fill-opacity: 0.12;
+  stroke: currentColor;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.coach-timeline-note[data-role="root"] {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.coach-timeline-lane[data-dimmed="true"] {
+  opacity: 0.18;
+}
+
+.coach-timeline-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ink);
+  pointer-events: none;
+}
+
+.coach-timeline-lane-label {
+  position: absolute;
+  left: var(--space-2);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  pointer-events: none;
+}
+
+.coach-timeline-lane-label-rh {
+  top: 2px;
+}
+
+.coach-timeline-lane-label-lh {
+  top: calc(50% + 2px);
+}
+
+.coach-change {
+  margin-top: var(--space-2);
+}
+
+/* ---- The drawer: legacy controls, relocated rather than ported ----------- */
+
+.legacy-drawer {
+  margin-top: var(--space-6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+
+.legacy-drawer > summary {
+  min-height: var(--touch-target);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.legacy-drawer-body {
+  margin: 0 var(--space-2) var(--space-2);
+  padding: var(--space-4);
+  border-radius: calc(var(--radius-card) - 4px);
+  /* The relocated panels were designed for a light page; keep them there until
+     they are ported onto tokens. */
+  color-scheme: light;
+  background: #f6f1eb;
+  color: #2a1f19;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-shell *,
+  .coach-shell *::before,
+  .coach-shell *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

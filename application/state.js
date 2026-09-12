@@ -69,9 +69,19 @@ export function createInitialAppState(overrides = {}) {
 export function createAppStore(options = {}) {
   const state = options.initialState || createInitialAppState();
   const historyLimit = Math.max(1, options.historyLimit || 50);
+  /** @type {Set<() => void>} */
+  const listeners = new Set();
+  // Notify after the committed assignment changes. The coach reads the store
+  // through useSyncExternalStore, so this is its only change signal.
+  const notify = () => listeners.forEach((listener) => listener());
 
   return {
     state,
+    /** @param {() => void} listener @returns {() => void} */
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
     /** @param {Partial<AssignmentInputs>} patch */
     updateInputs(patch) {
       state.inputs = normalizeAssignmentInputs({ ...state.inputs, ...patch });
@@ -89,6 +99,7 @@ export function createAppStore(options = {}) {
       }
       state.history.future.length = 0;
       applyAssignment(state, assignment);
+      notify();
       return assignment;
     },
     undo() {
@@ -96,6 +107,7 @@ export function createAppStore(options = {}) {
       if (!previous) return null;
       if (state.assignment) state.history.future.push(state.assignment);
       applyAssignment(state, previous);
+      notify();
       return previous;
     },
     redo() {
@@ -103,6 +115,7 @@ export function createAppStore(options = {}) {
       if (!next) return null;
       if (state.assignment) state.history.past.push(state.assignment);
       applyAssignment(state, next);
+      notify();
       return next;
     },
     /** @param {Partial<AssignmentLocks>} patch */

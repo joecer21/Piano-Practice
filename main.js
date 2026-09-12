@@ -18,6 +18,7 @@ import {
   renderPianoDiatonic,
 } from "./components/piano.js";
 import { PRESET_CONFIGS, DEFAULT_PRESET_ID, getPresetConfig } from "./presets.js";
+import { mountCoach } from "./coach/mount.tsx";
 import {
   isPianoLoaded,
   audioEngine,
@@ -209,6 +210,58 @@ function init() {
   } else {
     handleGenerate({ auto: true });
   }
+
+  mountCoach(createCoachBridge());
+}
+
+/**
+ * The coach is a React root layered over this application. It reads the
+ * committed assignment and sampler status, and asks for audio unlock, through
+ * this bridge - never by reaching into module state or the legacy DOM.
+ */
+function createCoachBridge() {
+  let cachedDerived = null;
+  let cachedAssignment = null;
+  let cachedSampler = getSamplerStatusSnapshot();
+  const samplerListeners = new Set();
+  onSamplerStatus((status) => {
+    cachedSampler = status?.snapshot || getSamplerStatusSnapshot();
+    samplerListeners.forEach((listener) => listener());
+  });
+
+  return {
+    audioEngine,
+    getAssignment() {
+      // state.derived is replaced on every commit, so its identity is a
+      // correct and cheap change signal for useSyncExternalStore.
+      if (state.derived !== cachedDerived) {
+        cachedDerived = state.derived;
+        cachedAssignment = state.derived?.score
+          ? { score: state.derived.score, leftHand: state.derived.leftHand, motif: state.derived.motif }
+          : null;
+      }
+      return cachedAssignment;
+    },
+    subscribeAssignment: (listener) => appStore.subscribe(listener),
+    getSamplerSnapshot: () => cachedSampler,
+    subscribeSampler(listener) {
+      samplerListeners.add(listener);
+      return () => samplerListeners.delete(listener);
+    },
+    getTempoBpm: () => Number(state.tempo),
+    unlockAudio,
+    stopOtherPlayback: () => stopAllPlayback(),
+    reportError: (message) => setStatusMessage(dom, message, { tone: "error" }),
+    openAssignmentDrawer() {
+      const drawer = document.getElementById("legacy-drawer");
+      if (!drawer) return;
+      drawer.open = true;
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      drawer.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+      drawer.querySelector("summary")?.focus();
+    },
+    getKeyboardElement: () => dom.pianoVisual || null,
+  };
 }
 
 function updateTempo(value) {

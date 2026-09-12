@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openAssignmentDrawer, openKeyboardOptions } from "./support.js";
 
 test("Live Piano exposes accessible controls and a phone-friendly range", async ({ page }, testInfo) => {
   await page.goto("/");
@@ -35,6 +36,7 @@ test("Live Piano exposes accessible controls and a phone-friendly range", async 
   await page.keyboard.up("a");
   await expect(middleC).not.toHaveClass(/active/);
 
+  await openAssignmentDrawer(page);
   await page.locator("#preset-select").focus();
   await page.keyboard.down("s");
   await expect(piano.locator('[data-note="D4"]')).not.toHaveClass(/active/);
@@ -45,6 +47,7 @@ test("Live Piano exposes accessible controls and a phone-friendly range", async 
   await controlsToggle.click();
   await expect(controlsToggle).toHaveAttribute("aria-expanded", "true");
 
+  await openKeyboardOptions(page);
   await expect(page.getByLabel("Gliss / play")).toBeVisible();
   await expect(page.getByLabel("Computer keys")).toBeVisible();
   await expect(piano).toHaveCSS("touch-action", "auto");

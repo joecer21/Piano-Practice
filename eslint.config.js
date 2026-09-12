@@ -3,13 +3,24 @@ import globals from "globals";
 import unusedImports from "eslint-plugin-unused-imports";
 import prettier from "eslint-config-prettier";
 import tseslint from "typescript-eslint";
+import reactHooks from "eslint-plugin-react-hooks";
 
 export default [
   { ignores: ["dist/**", "node_modules/**", "playwright-report/**", "test-results/**"] },
 
   js.configs.recommended,
 
-  ...tseslint.configs.recommended.map((config) => ({ ...config, files: ["**/*.ts"] })),
+  ...tseslint.configs.recommended.map((config) => ({ ...config, files: ["**/*.ts", "**/*.tsx"] })),
+
+  {
+    files: ["coach/**/*.{ts,tsx}", "tests/**/*.jsx"],
+    languageOptions: { globals: { ...globals.browser } },
+    plugins: { "react-hooks": reactHooks },
+    rules: {
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "error",
+    },
+  },
 
   {
     // Browser application code.
@@ -73,10 +84,11 @@ export default [
   },
 
   {
-    files: ["tests/**/*.js"],
+    files: ["tests/**/*.{js,jsx}"],
     languageOptions: {
       ecmaVersion: 2024,
       sourceType: "module",
+      parserOptions: { ecmaFeatures: { jsx: true } },
       globals: { ...globals.node, ...globals.browser },
     },
     rules: { "no-console": "off" },

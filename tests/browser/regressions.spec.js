@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openAssignmentDrawer } from "./support.js";
 
 // Each test here pins a defect that reached a user, so a regression is caught as
 // the behaviour the user would see rather than as an internal invariant.
@@ -23,6 +24,7 @@ test("B2: an empty custom progression does not kill the app", async ({ page }) =
     new MutationObserver(record).observe(node, { childList: true, characterData: true, subtree: true });
   });
 
+  await openAssignmentDrawer(page);
   await page.getByRole("button", { name: "Show Controls" }).click();
 
   // Select the custom palette without adding any chord, then change the key.

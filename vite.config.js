@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
+  plugins: [react()],
   // Relative base so the same bundle works at a domain root and under a GitHub
   // Pages project path (/Piano-Practice/) without environment-specific config.
   base: "./",

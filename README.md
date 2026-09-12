@@ -56,17 +56,22 @@ Sample filenames spell sharps with `s` (`ds3vl.mp3`), because a literal `#` in a
 - `domain/describe.ts` turns Score facts into deterministic practice-coach language.
 - `domain/random.js` provides the reproducible pseudo-random stream and derived seeds.
 - `domain/live-piano.js` expands interactive keys into deterministic chord shapes.
+- `coach/` is the practice surface, a React root layered over the page: the one-sentence summary and five-minute session (`CoachApp.tsx`), the Score-drawn timeline (`Timeline.tsx`), the degree and note-role overlay on the keyboard (`keyboard-overlay.ts`), and the pure request and playhead logic behind slow, loop and isolate (`practice.ts`). It reaches the rest of the app only through `bridge.ts`.
 - `application/state.js` owns assignment commits, bounded undo/redo history, and component locks without imposing a UI framework.
 - `components/piano.js` renders the Live Piano and responds to playback note events.
 - `main.js` coordinates UI state and requests playback without importing Tone.js.
 - `audio/playback-engine.ts` owns validated Score playback requests, scheduled-event ownership, count-in, rate conversion, and session lifecycle.
 - `audio.js` adapts that engine to Tone.js instruments, sample loading, transport, mix, and effects.
 - `engine.js`, `theory.js`, and `presets.js` generate the musical material.
-- `ui.js` renders and wires the interface.
+- `ui.js` renders and wires the pre-coach controls, which now live in the "Change the assignment, sound and more" drawer until they are ported.
 - `audio/local-samples.js` is the local sample manifest, free of Tone.js so it can be validated directly.
 - `tests/*.spec.js` contains the Vitest contract suite.
 - `tests/browser/` covers the practice flow and pins previously-shipped defects as user-visible behaviour.
 - `tests/support/fingerprint.js` and `scripts/fingerprint.mjs` implement the musical fingerprint.
+
+## Visual channels
+
+The coach gives each musical fact one visual channel, so none can be mistaken for another. Hue means only which hand is sounding. Note role is fill weight: chord tones and the root are solid marks, scale tones are outlined, and notes outside the scale are unmarked. The root carries a heavier ring. Chord provenance (borrowed, secondary) is a text badge. Interface controls use neutral ink, so no button can be read as a hand. `tests/browser/coach.spec.js` asserts this against computed styles.
 
 ## Musical fingerprint
 
