@@ -1003,6 +1003,7 @@ function handleSamplerStatus(status = {}) {
 
   if (status.isDefault && status.phase === "ready") {
     setStatusMessage(dom, `${status.label || "Piano"} ready for playback`, {
+      ambient: true,
       tone: "success",
     });
     syncPlayButtonsAvailability();
@@ -1011,6 +1012,7 @@ function handleSamplerStatus(status = {}) {
 
   if (!status.isDefault && status.phase === "ready") {
     setStatusMessage(dom, `${status.label || "Piano"} ready · active`, {
+      ambient: true,
       tone: "success",
     });
     syncPlayButtonsAvailability();
@@ -1050,6 +1052,7 @@ async function loadLibraryChoice(libraryId, { allowActiveReload, verb } = {}) {
   lockPianoModelSelect(true);
   const targetLabel = getSamplerLabelById(libraryId);
   setStatusMessage(dom, `${verb || "Switching"} ${targetLabel} samples…`, {
+    ambient: true,
     tone: "info",
   });
   try {

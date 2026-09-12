@@ -1104,14 +1104,22 @@ export function setStatusMessage(dom, text, options = {}) {
     transient = false,
     duration = STATUS_TRANSIENT_MS,
     pulse = true,
+    ambient = false,
   } = options;
+  if (!transient) {
+    lastPersistentStatus = text;
+    // This is a single last-writer-wins channel shared by two kinds of message:
+    // responses to something the user just did, and ambient background status
+    // such as sample loading finishing. Ambient status arrives asynchronously and
+    // used to wipe an actionable hint mid-read ("Add at least one chord"), so it
+    // now waits: it is already recorded as the message to restore when the hint
+    // expires. Anything the user actually triggered still takes effect at once.
+    if (ambient && statusResetTimer) return;
+  }
+
   node.textContent = text;
   node.dataset.tone = tone;
   node.dataset.transient = transient ? "true" : "false";
-
-  if (!transient) {
-    lastPersistentStatus = text;
-  }
 
   if (statusResetTimer) {
     clearScheduledTimeout(statusResetTimer);

@@ -8,6 +8,21 @@ test("B2: an empty custom progression does not kill the app", async ({ page }) =
   page.on("pageerror", (error) => pageErrors.push(error.message));
 
   await page.goto("/");
+
+  // The hint is a transient message with a ~4.2s lifetime, so polling for it
+  // races the clock under parallel load. Record every value the status line
+  // takes instead, which makes the assertion independent of when we look.
+  await page.evaluate(() => {
+    const node = document.getElementById("status-line");
+    window.__statusLog = [];
+    const record = () => {
+      const text = node.textContent.trim();
+      if (text && window.__statusLog.at(-1) !== text) window.__statusLog.push(text);
+    };
+    record();
+    new MutationObserver(record).observe(node, { childList: true, characterData: true, subtree: true });
+  });
+
   await page.getByRole("button", { name: "Show Controls" }).click();
 
   // Select the custom palette without adding any chord, then change the key.
@@ -20,12 +35,16 @@ test("B2: an empty custom progression does not kill the app", async ({ page }) =
 
   // The last valid assignment is preserved rather than blanked.
   await expect(page.locator("#scale-name")).not.toHaveText("--");
-  await expect(page.locator("#status-line")).toContainText("Add at least one chord");
+  await expect
+    .poll(async () => (await page.evaluate(() => window.__statusLog)).join(" | "))
+    .toContain("Add at least one chord");
 
   // And the app is still live: adding a chord recovers.
   await page.locator("#chord-palette button").first().click();
   await page.getByRole("button", { name: /Generate/ }).click();
-  await expect(page.locator("#status-line")).toContainText("Assignment updated");
+  await expect
+    .poll(async () => (await page.evaluate(() => window.__statusLog)).join(" | "))
+    .toContain("Assignment updated");
   expect(pageErrors).toEqual([]);
 });
 
