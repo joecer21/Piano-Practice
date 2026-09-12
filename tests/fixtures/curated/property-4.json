@@ -1,0 +1,549 @@
+{
+  "inputs": {
+    "key": "F",
+    "mode": "melodicMinor",
+    "progressionPresetId": "predom-cadence",
+    "styleId": "classical",
+    "length": 8,
+    "lhId": "walking",
+    "motifId": "funk-sync",
+    "customProgressionRoman": []
+  },
+  "scale": {
+    "root": "F",
+    "mode": "melodicMinor",
+    "notes": [
+      "F",
+      "G",
+      "G#",
+      "A#",
+      "C",
+      "D",
+      "E"
+    ],
+    "intervals": [
+      0,
+      2,
+      3,
+      5,
+      7,
+      9,
+      11
+    ]
+  },
+  "bars": [
+    {
+      "barIndex": 0,
+      "symbol": "ii",
+      "quality": "min",
+      "root": "G",
+      "isDiatonic": true,
+      "diatonicReason": null,
+      "chordNotes": [
+        "G3",
+        "A#3",
+        "D4"
+      ],
+      "bassNotes": [
+        "G2",
+        "A#2",
+        "D3"
+      ]
+    },
+    {
+      "barIndex": 1,
+      "symbol": "V",
+      "quality": "maj",
+      "root": "C",
+      "isDiatonic": true,
+      "diatonicReason": null,
+      "chordNotes": [
+        "C4",
+        "E4",
+        "G4"
+      ],
+      "bassNotes": [
+        "C3",
+        "E3",
+        "G3"
+      ]
+    },
+    {
+      "barIndex": 2,
+      "symbol": "I",
+      "quality": "min",
+      "root": "F",
+      "isDiatonic": true,
+      "diatonicReason": null,
+      "chordNotes": [
+        "F4",
+        "G#4",
+        "C5"
+      ],
+      "bassNotes": [
+        "F3",
+        "G#3",
+        "C4"
+      ]
+    },
+    {
+      "barIndex": 3,
+      "symbol": "I",
+      "quality": "min",
+      "root": "F",
+      "isDiatonic": true,
+      "diatonicReason": null,
+      "chordNotes": [
+        "F4",
+        "G#4",
+        "C5"
+      ],
+      "bassNotes": [
+        "F3",
+        "G#3",
+        "C4"
+      ]
+    },
+    {
+      "barIndex": 4,
+      "symbol": "ii",
+      "quality": "min",
+      "root": "G",
+      "isDiatonic": true,
+      "diatonicReason": null,
+      "chordNotes": [
+        "G3",
+        "A#3",
+        "D4"
+      ],
+      "bassNotes": [
+        "G2",
+        "A#2",
+        "D3"
+      ]
+    },
+    {
+      "barIndex": 5,
+      "symbol": "V",
+      "quality": "maj",
+      "root": "C",
+      "isDiatonic": true,
+      "diatonicReason": null,
+      "chordNotes": [
+        "C4",
+        "E4",
+        "G4"
+      ],
+      "bassNotes": [
+        "C3",
+        "E3",
+        "G3"
+      ]
+    },
+    {
+      "barIndex": 6,
+      "symbol": "I",
+      "quality": "min",
+      "root": "F",
+      "isDiatonic": true,
+      "diatonicReason": null,
+      "chordNotes": [
+        "F4",
+        "G#4",
+        "C5"
+      ],
+      "bassNotes": [
+        "F3",
+        "G#3",
+        "C4"
+      ]
+    },
+    {
+      "barIndex": 7,
+      "symbol": "I",
+      "quality": "min",
+      "root": "F",
+      "isDiatonic": true,
+      "diatonicReason": null,
+      "chordNotes": [
+        "F4",
+        "G#4",
+        "C5"
+      ],
+      "bassNotes": [
+        "F3",
+        "G#3",
+        "C4"
+      ]
+    }
+  ],
+  "lh": [
+    {
+      "barIndex": 0,
+      "time": 0,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "A#2"
+      ]
+    },
+    {
+      "barIndex": 0,
+      "time": 1,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "D3"
+      ]
+    },
+    {
+      "barIndex": 0,
+      "time": 2,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "F3"
+      ]
+    },
+    {
+      "barIndex": 0,
+      "time": 3,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "A#3"
+      ]
+    },
+    {
+      "barIndex": 1,
+      "time": 4,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "C4"
+      ]
+    },
+    {
+      "barIndex": 1,
+      "time": 5,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "E4"
+      ]
+    },
+    {
+      "barIndex": 1,
+      "time": 6,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "G4"
+      ]
+    },
+    {
+      "barIndex": 1,
+      "time": 7,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "C4"
+      ]
+    },
+    {
+      "barIndex": 2,
+      "time": 8,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "F4"
+      ]
+    },
+    {
+      "barIndex": 2,
+      "time": 9,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "G#3"
+      ]
+    },
+    {
+      "barIndex": 2,
+      "time": 10,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "C4"
+      ]
+    },
+    {
+      "barIndex": 2,
+      "time": 11,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "F4"
+      ]
+    },
+    {
+      "barIndex": 3,
+      "time": 12,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "F4"
+      ]
+    },
+    {
+      "barIndex": 3,
+      "time": 13,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "G#3"
+      ]
+    },
+    {
+      "barIndex": 3,
+      "time": 14,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "C4"
+      ]
+    },
+    {
+      "barIndex": 3,
+      "time": 15,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "F4"
+      ]
+    },
+    {
+      "barIndex": 4,
+      "time": 16,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "G4"
+      ]
+    },
+    {
+      "barIndex": 4,
+      "time": 17,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "A#3"
+      ]
+    },
+    {
+      "barIndex": 4,
+      "time": 18,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "D4"
+      ]
+    },
+    {
+      "barIndex": 4,
+      "time": 19,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "G4"
+      ]
+    },
+    {
+      "barIndex": 5,
+      "time": 20,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "E4"
+      ]
+    },
+    {
+      "barIndex": 5,
+      "time": 21,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "G4"
+      ]
+    },
+    {
+      "barIndex": 5,
+      "time": 22,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "A#3"
+      ]
+    },
+    {
+      "barIndex": 5,
+      "time": 23,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "E3"
+      ]
+    },
+    {
+      "barIndex": 6,
+      "time": 24,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "F3"
+      ]
+    },
+    {
+      "barIndex": 6,
+      "time": 25,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "G#3"
+      ]
+    },
+    {
+      "barIndex": 6,
+      "time": 26,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "C4"
+      ]
+    },
+    {
+      "barIndex": 6,
+      "time": 27,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "F4"
+      ]
+    },
+    {
+      "barIndex": 7,
+      "time": 28,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "F4"
+      ]
+    },
+    {
+      "barIndex": 7,
+      "time": 29,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "G#3"
+      ]
+    },
+    {
+      "barIndex": 7,
+      "time": 30,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "C4"
+      ]
+    },
+    {
+      "barIndex": 7,
+      "time": 31,
+      "beats": 1,
+      "dur": "4n",
+      "notes": [
+        "F4"
+      ]
+    }
+  ],
+  "rh": [
+    {
+      "time": 0,
+      "beats": 0.5,
+      "dur": "8n",
+      "rest": false,
+      "notes": [
+        "F4"
+      ],
+      "degree": 1
+    },
+    {
+      "time": 0.5,
+      "beats": 0.5,
+      "dur": "8n",
+      "rest": true,
+      "notes": [],
+      "degree": null
+    },
+    {
+      "time": 1,
+      "beats": 0.5,
+      "dur": "8n",
+      "rest": false,
+      "notes": [
+        "C5"
+      ],
+      "degree": 5
+    },
+    {
+      "time": 1.5,
+      "beats": 1.5,
+      "dur": "4n.",
+      "rest": false,
+      "notes": [
+        "F4"
+      ],
+      "degree": 1
+    },
+    {
+      "time": 3,
+      "beats": 0.5,
+      "dur": "8n",
+      "rest": true,
+      "notes": [],
+      "degree": null
+    },
+    {
+      "time": 3.5,
+      "beats": 0.5,
+      "dur": "8n",
+      "rest": false,
+      "notes": [
+        "C5"
+      ],
+      "degree": 5
+    },
+    {
+      "time": 4,
+      "beats": 1,
+      "dur": "4n",
+      "rest": false,
+      "notes": [
+        "E5"
+      ],
+      "degree": 7
+    },
+    {
+      "time": 5,
+      "beats": 3,
+      "dur": "4n",
+      "rest": false,
+      "notes": [
+        "F4"
+      ],
+      "degree": 1
+    }
+  ],
+  "rhTotalBeats": 8
+}
