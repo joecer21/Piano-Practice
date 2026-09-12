@@ -511,8 +511,10 @@ export function playPreviewNoteDown(note, options = {}) {
   if (!synth || typeof synth.triggerAttack !== "function") return false;
   const velocity =
     typeof options.velocity === "number" ? clamp(options.velocity, 0.05, 1) : BASE_VELOCITIES[part] || 0.85;
+  // Deliberately no note-play event: that event means "the assignment is sounding"
+  // and paints the key in its hand's hue. Notes the player plays are mirrored from
+  // the note-input stream instead, as a ring.
   synth.triggerAttack(note, undefined, velocity);
-  dispatchNoteEvent("note-play", { note, part });
   return true;
 }
 
@@ -522,7 +524,6 @@ export function playPreviewNoteUp(note, options = {}) {
   const synth = synths[part] || synths.lead || synths.left;
   if (!synth || typeof synth.triggerRelease !== "function") return false;
   synth.triggerRelease(note);
-  dispatchNoteEvent("note-stop", { note, part });
   return true;
 }
 

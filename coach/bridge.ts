@@ -1,5 +1,7 @@
 import type { AudioEngine } from "../audio/playback-engine.js";
 import type { Score } from "../domain/score.js";
+import type { MidiInput } from "../input/midi.js";
+import type { NoteInputHub } from "../input/note-input.js";
 import type { SamplerSnapshot } from "./sampler.js";
 
 /** The slice of the committed assignment the coach renders. */
@@ -30,4 +32,9 @@ export type CoachBridge = {
   reportError(message: string): void;
   openAssignmentDrawer(): void;
   getKeyboardElement(): HTMLElement | null;
+  /** Everything the player plays, from any input. The coach mirrors it. */
+  noteInput: NoteInputHub;
+  midiInput: MidiInput;
+  /** Called from a click, so enabling can unlock audio. */
+  setMidiPlayThrough(enabled: boolean): Promise<void>;
 };

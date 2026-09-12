@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_ASSIGNMENT_INPUTS, generateAssignment } from "../domain/assignment.js";
 import { buildScore } from "../domain/score.ts";
 import { CoachApp } from "../coach/CoachApp.tsx";
+import { createNoteInputHub } from "../input/note-input.ts";
+import { createMidiInput } from "../input/midi.ts";
 
 function assignmentFor(inputs) {
   const generated = generateAssignment({ ...DEFAULT_ASSIGNMENT_INPUTS, ...inputs });
@@ -51,7 +53,31 @@ function createFakeEngine() {
   return engine;
 }
 
-function createFakeBridge({ assignment, sampler = READY, unlock = true } = {}) {
+function createFakeMidiAccess() {
+  const inputs = new Map();
+  const access = { inputs: { forEach: (callback) => inputs.forEach(callback) }, onstatechange: null };
+  return {
+    access,
+    plug(id, name) {
+      inputs.set(id, { id, name, state: "connected", onmidimessage: null });
+      access.onstatechange?.({ port: { type: "input" } });
+    },
+    send(id, ...bytes) {
+      inputs.get(id).onmidimessage?.({ data: Uint8Array.from(bytes) });
+    },
+  };
+}
+
+function createFakeBridge({ assignment, sampler = READY, unlock = true, midiEnvironment } = {}) {
+  const noteInput = createNoteInputHub();
+  const fakeMidi = createFakeMidiAccess();
+  const midiInput = createMidiInput(
+    noteInput,
+    midiEnvironment ?? {
+      isSecureContext: true,
+      navigator: { requestMIDIAccess: async () => fakeMidi.access },
+    },
+  );
   const assignmentListeners = new Set();
   const samplerListeners = new Set();
   const keyboard = document.createElement("div");
@@ -82,6 +108,10 @@ function createFakeBridge({ assignment, sampler = READY, unlock = true } = {}) {
     openAssignmentDrawer: vi.fn(),
     getKeyboardElement: () => keyboard,
     keyboard,
+    noteInput,
+    midiInput,
+    fakeMidi,
+    setMidiPlayThrough: vi.fn(async (enabled) => midiInput.setPlayThrough(enabled)),
     setAssignment(nextAssignment) {
       current = nextAssignment;
       assignmentListeners.forEach((listener) => listener());
@@ -250,5 +280,67 @@ describe("CoachApp", () => {
     render(<CoachApp bridge={bridge} summaryContainer={null} />);
     await click(screen.getByRole("button", { name: "Change the assignment" }));
     expect(bridge.openAssignmentDrawer).toHaveBeenCalled();
+  });
+
+  it("mirrors what the player plays as a ring, never as a hand colour", async () => {
+    bridge = createFakeBridge({ assignment: cMajor });
+    render(<CoachApp bridge={bridge} summaryContainer={null} />);
+    const key = (note) => bridge.keyboard.querySelector(`[data-note="${note}"]`);
+
+    await act(async () =>
+      bridge.noteInput.emit({ type: "noteOn", midi: 60, velocity: 0.8, source: "pointer" }),
+    );
+    expect(key("C4").dataset.played).toBe("held");
+    expect(key("C4").classList.contains("lh") || key("C4").classList.contains("rh")).toBe(false);
+
+    await act(async () => bridge.noteInput.emit({ type: "noteOff", midi: 60, source: "pointer" }));
+    expect(key("C4").dataset.played).toBeUndefined();
+  });
+
+  it("connects a MIDI keyboard on request, mirrors it including the pedal, and offers play-through", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    bridge = createFakeBridge({ assignment: cMajor });
+    render(<CoachApp bridge={bridge} summaryContainer={null} inputContainer={container} />);
+    const key = (note) => bridge.keyboard.querySelector(`[data-note="${note}"]`);
+
+    await click(within(container).getByRole("button", { name: "Connect MIDI keyboard" }));
+    expect(within(container).getByText(/No MIDI keyboard found/)).toBeTruthy();
+
+    await act(async () => bridge.fakeMidi.plug("piano", "Stage Piano"));
+    expect(within(container).getByText("Mirroring Stage Piano")).toBeTruthy();
+
+    await act(async () => {
+      bridge.fakeMidi.send("piano", 0xb0, 64, 127);
+      bridge.fakeMidi.send("piano", 0x90, 64, 100);
+      bridge.fakeMidi.send("piano", 0x80, 64, 0);
+    });
+    expect(key("E4").dataset.played).toBe("sustained");
+    await act(async () => bridge.fakeMidi.send("piano", 0xb0, 64, 0));
+    expect(key("E4").dataset.played).toBeUndefined();
+
+    const playThrough = within(container).getByRole("button", { name: "Play through the app" });
+    expect(playThrough.getAttribute("aria-pressed")).toBe("false");
+    await click(playThrough);
+    expect(bridge.setMidiPlayThrough).toHaveBeenCalledWith(true);
+    expect(playThrough.getAttribute("aria-pressed")).toBe("true");
+
+    await act(async () => bridge.fakeMidi.send("piano", 0x90, 24, 100));
+    expect(within(container).getByText("Playing below the keys shown.")).toBeTruthy();
+    container.remove();
+  });
+
+  it("explains a browser without Web MIDI in one line and offers no control", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    bridge = createFakeBridge({
+      assignment: cMajor,
+      midiEnvironment: { isSecureContext: true, navigator: {} },
+    });
+    render(<CoachApp bridge={bridge} summaryContainer={null} inputContainer={container} />);
+
+    expect(container.textContent).toContain("this browser does not support them");
+    expect(within(container).queryByRole("button")).toBeNull();
+    container.remove();
   });
 });

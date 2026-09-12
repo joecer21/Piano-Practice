@@ -81,6 +81,27 @@ export const QWERTY_PIANO_NOTES = Object.freeze({
   j: "B4",
   k: "C5",
 });
+/** Z and X move the computer-key octave, as in most DAWs. */
+export const QWERTY_OCTAVE_KEYS = Object.freeze({ z: -1, x: 1 });
+const QWERTY_OCTAVE_SHIFT_RANGE = Object.freeze({ min: -2, max: 2 });
+
+export function clampQwertyOctaveShift(shift) {
+  return Math.min(QWERTY_OCTAVE_SHIFT_RANGE.max, Math.max(QWERTY_OCTAVE_SHIFT_RANGE.min, shift));
+}
+
+export function transposeOctaves(note, octaves) {
+  const match = /^([A-G]#?)(-?\d+)$/.exec(note);
+  return match ? `${match[1]}${Number(match[2]) + octaves}` : note;
+}
+
+function renderQwertyHelp(dom, shift) {
+  const help = dom.pianoQwertyHelp || document.getElementById("piano-qwerty-help");
+  if (!help) return;
+  const low = transposeOctaves("C4", shift);
+  const high = transposeOctaves("C5", shift);
+  help.textContent = `Computer keys: A W S E D F T G Y H U J K play ${low}–${high}; Z and X change octave. Shortcuts pause while using a form control.`;
+}
+
 let statusResetTimer = null;
 let lastPersistentStatus = "";
 
@@ -264,6 +285,8 @@ function wireLivePianoInteractions(dom, handlers) {
   let activePointerNote = null;
   let keyboardActivationNote = null;
   const activeComputerKeys = new Map();
+  let qwertyOctaveShift = 0;
+  renderQwertyHelp(dom, qwertyOctaveShift);
 
   const noteAtEvent = (event) => {
     let target = event.target;
@@ -279,14 +302,14 @@ function wireLivePianoInteractions(dom, handlers) {
 
   const pressPointerNote = (note) => {
     if (!note || note === activePointerNote) return;
-    if (activePointerNote) handlers.onPianoKeyUp?.(activePointerNote);
+    if (activePointerNote) handlers.onPianoKeyUp?.(activePointerNote, "pointer");
     activePointerNote = note;
-    handlers.onPianoKeyDown?.(note);
+    handlers.onPianoKeyDown?.(note, "pointer");
   };
 
   const releasePointerNote = () => {
     if (!activePointerNote) return;
-    handlers.onPianoKeyUp?.(activePointerNote);
+    handlers.onPianoKeyUp?.(activePointerNote, "pointer");
     activePointerNote = null;
   };
 
@@ -358,14 +381,14 @@ function wireLivePianoInteractions(dom, handlers) {
     if ((event.key === "Enter" || event.key === " ") && !event.repeat && !keyboardActivationNote) {
       event.preventDefault();
       keyboardActivationNote = key.dataset.note;
-      handlers.onPianoKeyDown?.(keyboardActivationNote);
+      handlers.onPianoKeyDown?.(keyboardActivationNote, "screenKey");
     }
   });
 
   dom.pianoVisual.addEventListener("keyup", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
-    if (keyboardActivationNote) handlers.onPianoKeyUp?.(keyboardActivationNote);
+    if (keyboardActivationNote) handlers.onPianoKeyUp?.(keyboardActivationNote, "screenKey");
     keyboardActivationNote = null;
   });
 
@@ -373,7 +396,7 @@ function wireLivePianoInteractions(dom, handlers) {
     !!target?.closest?.("input, select, textarea, button, [contenteditable='true']");
 
   const releaseComputerKeys = () => {
-    activeComputerKeys.forEach((note) => handlers.onPianoKeyUp?.(note));
+    activeComputerKeys.forEach((note) => handlers.onPianoKeyUp?.(note, "computerKeyboard"));
     activeComputerKeys.clear();
   };
 
@@ -389,11 +412,23 @@ function wireLivePianoInteractions(dom, handlers) {
     }
     if (isFormControl(event.target)) return;
     const key = event.key.toLowerCase();
-    const note = QWERTY_PIANO_NOTES[key];
-    if (!note || activeComputerKeys.has(key)) return;
+    const shift = QWERTY_OCTAVE_KEYS[key];
+    if (shift) {
+      event.preventDefault();
+      const next = clampQwertyOctaveShift(qwertyOctaveShift + shift);
+      if (next === qwertyOctaveShift) return;
+      // Release what is held first so no key is left sounding at the old octave.
+      releaseComputerKeys();
+      qwertyOctaveShift = next;
+      renderQwertyHelp(dom, qwertyOctaveShift);
+      return;
+    }
+    const baseNote = QWERTY_PIANO_NOTES[key];
+    if (!baseNote || activeComputerKeys.has(key)) return;
+    const note = transposeOctaves(baseNote, qwertyOctaveShift);
     event.preventDefault();
     activeComputerKeys.set(key, note);
-    handlers.onPianoKeyDown?.(note);
+    handlers.onPianoKeyDown?.(note, "computerKeyboard");
   });
 
   window.addEventListener("keyup", (event) => {
@@ -402,12 +437,12 @@ function wireLivePianoInteractions(dom, handlers) {
     if (!note) return;
     event.preventDefault();
     activeComputerKeys.delete(key);
-    handlers.onPianoKeyUp?.(note);
+    handlers.onPianoKeyUp?.(note, "computerKeyboard");
   });
 
   window.addEventListener("blur", () => {
     finishPointer();
-    if (keyboardActivationNote) handlers.onPianoKeyUp?.(keyboardActivationNote);
+    if (keyboardActivationNote) handlers.onPianoKeyUp?.(keyboardActivationNote, "screenKey");
     keyboardActivationNote = null;
     releaseComputerKeys();
   });

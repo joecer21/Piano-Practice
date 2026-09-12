@@ -84,6 +84,31 @@ export default [
   },
 
   {
+    files: ["input/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "../application/**",
+                "../coach/**",
+                "../ui.js",
+                "../main.js",
+                "../audio.js",
+                "../audio/**",
+              ],
+              message:
+                "input/ is a neutral stream of what the player plays; it must not know about the app, UI, coach or audio.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
     files: ["tests/**/*.{js,jsx}"],
     languageOptions: {
       ecmaVersion: 2024,

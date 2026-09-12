@@ -4,6 +4,8 @@
   MOTIF_STYLES,
   getProgressionPreset,
   getStyleProfile,
+  midiToNote,
+  noteStringToMidi,
 } from "./theory.js";
 import "./style.css";
 
@@ -19,6 +21,9 @@ import {
 } from "./components/piano.js";
 import { PRESET_CONFIGS, DEFAULT_PRESET_ID, getPresetConfig } from "./presets.js";
 import { mountCoach } from "./coach/mount.tsx";
+import { createNoteInputHub } from "./input/note-input.ts";
+import { createMidiInput } from "./input/midi.ts";
+import { EMPTY_HELD_NOTES, playedNotes, reduceHeldNotes, soundingChanges } from "./input/held-notes.ts";
 import {
   isPianoLoaded,
   audioEngine,
@@ -97,13 +102,22 @@ if (typeof window !== "undefined") {
 let librarySwitchPending = false;
 let playbackSession = null;
 let playbackRafId = null;
+/** rootNote -> { notes, source } for keys the player is holding on the page. */
 const activeLivePianoNotes = new Map();
 const pressedLivePianoRoots = new Set();
+
+/** Every note the player plays, from any input, flows through this one stream. */
+const noteInput = createNoteInputHub();
+const midiInput = createMidiInput(noteInput, typeof window === "undefined" ? {} : window);
+let audioRunning = false;
 
 const dom = {};
 const unlockAudio = createAudioUnlock({
   start: () => startAudioContext(),
-  onUnlocked: () => window.removeEventListener("click", handleUnlockClick),
+  onUnlocked: () => {
+    audioRunning = true;
+    window.removeEventListener("click", handleUnlockClick);
+  },
   onBlocked: (error, message) => {
     console.warn("Audio unlock failed", error);
     setStatusMessage(dom, message, { tone: "error" });
@@ -211,6 +225,8 @@ function init() {
     handleGenerate({ auto: true });
   }
 
+  startMidiPlayThrough();
+  window.addEventListener("pagehide", () => midiInput.disconnect());
   mountCoach(createCoachBridge());
 }
 
@@ -261,6 +277,9 @@ function createCoachBridge() {
       drawer.querySelector("summary")?.focus();
     },
     getKeyboardElement: () => dom.pianoVisual || null,
+    noteInput,
+    midiInput,
+    setMidiPlayThrough,
   };
 }
 
@@ -562,33 +581,85 @@ function handleStopAll() {
   stopAllPlayback();
 }
 
-async function handlePianoKeyDown(rootNote) {
+async function handlePianoKeyDown(rootNote, source = "pointer") {
   if (!rootNote) return;
+  releaseLivePianoRoot(rootNote);
+  const notes = getLivePianoChordNotes(rootNote, state.ui.livePianoChordMode, state.derived.scale);
+  const entry = { notes, source };
+  activeLivePianoNotes.set(rootNote, entry);
   pressedLivePianoRoots.add(rootNote);
-  if (!ensureSamplerReady()) {
-    pressedLivePianoRoots.delete(rootNote);
-    return;
-  }
-  if (!(await unlockAudio())) {
-    pressedLivePianoRoots.delete(rootNote);
-    return;
-  }
+  // Mirror what was played straight away, even before audio can sound it.
+  notes.forEach((note) => emitPlayedNote("noteOn", note, source));
+
+  if (!ensureSamplerReady()) return;
+  if (!(await unlockAudio())) return;
   // A quick tap can end while the AudioContext is still resuming. Do not start
   // a sustained note after its corresponding key-up has already happened.
-  if (!pressedLivePianoRoots.has(rootNote)) return;
-  const priorNotes = activeLivePianoNotes.get(rootNote) || [];
-  priorNotes.forEach((note) => playPreviewNoteUp(note, { part: "lead" }));
-  const notes = getLivePianoChordNotes(rootNote, state.ui.livePianoChordMode, state.derived.scale);
-  activeLivePianoNotes.set(rootNote, notes);
+  if (activeLivePianoNotes.get(rootNote) !== entry) return;
   notes.forEach((note) => playPreviewNoteDown(note, { part: "lead" }));
 }
 
 function handlePianoKeyUp(rootNote) {
-  if (!rootNote) return;
+  releaseLivePianoRoot(rootNote);
+}
+
+function releaseLivePianoRoot(rootNote) {
   pressedLivePianoRoots.delete(rootNote);
-  const notes = activeLivePianoNotes.get(rootNote) || [];
-  notes.forEach((note) => playPreviewNoteUp(note, { part: "lead" }));
+  const entry = activeLivePianoNotes.get(rootNote);
+  if (!entry) return;
   activeLivePianoNotes.delete(rootNote);
+  entry.notes.forEach((note) => {
+    playPreviewNoteUp(note, { part: "lead" });
+    emitPlayedNote("noteOff", note, entry.source);
+  });
+}
+
+function releaseAllLivePianoRoots() {
+  [...activeLivePianoNotes.keys()].forEach(releaseLivePianoRoot);
+  pressedLivePianoRoots.clear();
+}
+
+function emitPlayedNote(type, note, source, velocity = 0.8) {
+  const midi = noteStringToMidi(note);
+  if (!Number.isInteger(midi)) return;
+  noteInput.emit(type === "noteOn" ? { type, midi, velocity, source } : { type, midi, source });
+}
+
+/**
+ * MIDI play-through. A MIDI keyboard usually has its own sound, so by default its
+ * notes are only mirrored; with play-through on they also sound on the app's
+ * piano. Held-note state includes the sustain pedal, so a pedalled note keeps
+ * sounding until the pedal lifts.
+ */
+function startMidiPlayThrough() {
+  let held = EMPTY_HELD_NOTES;
+  let sounding = new Map();
+  const velocities = new Map();
+
+  const sync = () => {
+    const enabled = midiInput.getState().status === "connected" && midiInput.getState().playThrough;
+    const next = enabled && audioRunning && isPianoLoaded() ? playedNotes(held, ["midi"]) : new Map();
+    const { started, stopped } = soundingChanges(sounding, next);
+    stopped.forEach((midi) => playPreviewNoteUp(midiToNote(midi), { part: "lead" }));
+    started.forEach((midi) =>
+      playPreviewNoteDown(midiToNote(midi), { part: "lead", velocity: velocities.get(midi) ?? 0.8 }),
+    );
+    sounding = next;
+  };
+
+  noteInput.subscribe((event) => {
+    if (event.source !== "midi") return;
+    if (event.type === "noteOn") velocities.set(event.midi, event.velocity);
+    held = reduceHeldNotes(held, event);
+    sync();
+  });
+  midiInput.subscribe(sync);
+}
+
+async function setMidiPlayThrough(enabled) {
+  // Called from a click, so this is the gesture that lets MIDI notes sound.
+  if (enabled && !(await unlockAudio())) return;
+  midiInput.setPlayThrough(enabled);
 }
 
 function handlePianoIndicatorModeChange(mode) {
@@ -672,8 +743,7 @@ function applyPlayAllLoop(enabled) {
 
 function stopAllPlayback() {
   stopTransport();
-  pressedLivePianoRoots.clear();
-  activeLivePianoNotes.clear();
+  releaseAllLivePianoRoots();
   publishTransportState();
   stopPlaybackVisuals();
   highlightScaleNote(dom, null);

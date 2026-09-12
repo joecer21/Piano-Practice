@@ -57,6 +57,7 @@ Sample filenames spell sharps with `s` (`ds3vl.mp3`), because a literal `#` in a
 - `domain/random.js` provides the reproducible pseudo-random stream and derived seeds.
 - `domain/live-piano.js` expands interactive keys into deterministic chord shapes.
 - `coach/` is the practice surface, a React root layered over the page: the one-sentence summary and five-minute session (`CoachApp.tsx`), the Score-drawn timeline (`Timeline.tsx`), the degree and note-role overlay on the keyboard (`keyboard-overlay.ts`), and the pure request and playhead logic behind slow, loop and isolate (`practice.ts`). It reaches the rest of the app only through `bridge.ts`.
+- `input/` is the single stream of notes the player plays, from any source: pointer, on-screen key, computer keys or MIDI (`note-input.ts`), the held and pedal-sustained state derived from it (`held-notes.ts`), and the Web MIDI adapter (`midi.ts`). It imports nothing from the app, UI or audio.
 - `application/state.js` owns assignment commits, bounded undo/redo history, and component locks without imposing a UI framework.
 - `components/piano.js` renders the Live Piano and responds to playback note events.
 - `main.js` coordinates UI state and requests playback without importing Tone.js.
@@ -69,9 +70,15 @@ Sample filenames spell sharps with `s` (`ds3vl.mp3`), because a literal `#` in a
 - `tests/browser/` covers the practice flow and pins previously-shipped defects as user-visible behaviour.
 - `tests/support/fingerprint.js` and `scripts/fingerprint.mjs` implement the musical fingerprint; `tests/support/score-fingerprint.js`, `tests/score-fingerprint.spec.js` and `scripts/score-fingerprint.mjs` implement the Score fingerprint.
 
+## Playing along
+
+The keyboard mirrors whatever you play. Mouse, touch, the focused on-screen key and computer keys all feed one note stream, and so does a MIDI keyboard once connected. Computer keys A W S E D F T G Y H U J K play one octave; Z and X move it.
+
+**MIDI** is progressive enhancement. Nothing is requested until you press "Connect MIDI keyboard", because browsers prompt for permission. Keyboards plugged in later appear automatically; unplugging one mid-note releases its keys; the sustain pedal is honoured. By default MIDI notes are only mirrored, since most MIDI keyboards make their own sound; "Play through the app" also sounds them on the app's piano. Safari does not implement Web MIDI and pages must be served over https, so in those cases the app says so in one line and everything else keeps working. `tests/browser/midi.spec.js` drives a fake MIDIAccess, because real hardware cannot run in CI.
+
 ## Visual channels
 
-The coach gives each musical fact one visual channel, so none can be mistaken for another. Hue means only which hand is sounding. Note role is fill weight: chord tones and the root are solid marks, scale tones are outlined, and notes outside the scale are unmarked. The root carries a heavier ring. Chord provenance (borrowed, secondary) is a text badge. Interface controls use neutral ink, so no button can be read as a hand. `tests/browser/coach.spec.js` asserts this against computed styles.
+The coach gives each musical fact one visual channel, so none can be mistaken for another. Hue means only which hand is sounding. Note role is fill weight: chord tones and the root are solid marks, scale tones are outlined, and notes outside the scale are unmarked. The root carries a heavier ring. Chord provenance (borrowed, secondary) is a text badge. What you play is a neutral ring on the key, solid while held and a thin double ring while it rings on the pedal, so your own notes are never mistaken for the assignment sounding. Interface controls use neutral ink, so no button can be read as a hand. `tests/browser/coach.spec.js` asserts this against computed styles.
 
 ## Fingerprints
 

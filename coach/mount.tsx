@@ -15,7 +15,11 @@ export function mountCoach(bridge: CoachBridge, doc: Document = document): () =>
   const root = createRoot(rootElement);
   root.render(
     <StrictMode>
-      <CoachApp bridge={bridge} summaryContainer={doc.getElementById("coach-summary")} />
+      <CoachApp
+        bridge={bridge}
+        summaryContainer={doc.getElementById("coach-summary")}
+        inputContainer={doc.getElementById("coach-input")}
+      />
     </StrictMode>,
   );
   return () => root.unmount();

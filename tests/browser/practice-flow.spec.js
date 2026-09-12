@@ -47,10 +47,12 @@ test("loads, generates, plays, stops, and switches piano models", async ({ page 
   await middleC.scrollIntoViewIfNeeded();
   await middleC.hover();
   await page.mouse.down();
-  await expect(middleC).toHaveClass(/active/);
-  await expect(middleC).toHaveClass(/rh/);
+  await expect(middleC).toHaveAttribute("data-played", "held");
+  // A press is the player, not the right hand of the assignment: no hand hue.
+  const pressedClasses = await middleC.evaluate((element) => [...element.classList]);
+  expect(pressedClasses.filter((name) => ["active", "lh", "rh"].includes(name))).toEqual([]);
   await page.mouse.up();
-  await expect(middleC).not.toHaveClass(/active/);
+  await expect(middleC).not.toHaveAttribute("data-played");
 
   await page.getByRole("button", { name: "Play All" }).click();
   await expect.poll(() => page.evaluate(() => window.__transportState)).toBe("started");

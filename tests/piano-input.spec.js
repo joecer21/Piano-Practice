@@ -27,6 +27,7 @@ beforeEach(() => {
     <input id="piano-gliss-mode" type="checkbox">
     <input id="piano-computer-keyboard" type="checkbox">
     <input id="text-control">
+    <p id="piano-qwerty-help"></p>
     <select id="select-control"><option>Choice</option></select>
     <div id="piano-visual"></div>`);
   global.window = environment.window;
@@ -66,9 +67,9 @@ describe("Live Piano input", () => {
     expect(middleC.tabIndex).toBe(-1);
 
     cSharp.dispatchEvent(keyboardEvent("keydown", " "));
-    expect(onPianoKeyDown).toHaveBeenLastCalledWith("C#4");
+    expect(onPianoKeyDown).toHaveBeenLastCalledWith("C#4", "screenKey");
     cSharp.dispatchEvent(keyboardEvent("keyup", " "));
-    expect(onPianoKeyUp).toHaveBeenLastCalledWith("C#4");
+    expect(onPianoKeyUp).toHaveBeenLastCalledWith("C#4", "screenKey");
 
     cSharp.dispatchEvent(keyboardEvent("keydown", "Home"));
     expect(document.activeElement.dataset.note).toBe("C2");
@@ -84,9 +85,9 @@ describe("Live Piano input", () => {
     dom.pianoComputerKeyboardToggle.checked = true;
     dom.pianoComputerKeyboardToggle.dispatchEvent(new window.Event("change", { bubbles: true }));
     window.dispatchEvent(keyboardEvent("keydown", "a"));
-    expect(onPianoKeyDown).toHaveBeenLastCalledWith("C4");
+    expect(onPianoKeyDown).toHaveBeenLastCalledWith("C4", "computerKeyboard");
     window.dispatchEvent(keyboardEvent("keyup", "a"));
-    expect(onPianoKeyUp).toHaveBeenLastCalledWith("C4");
+    expect(onPianoKeyUp).toHaveBeenLastCalledWith("C4", "computerKeyboard");
 
     const callsBeforeTyping = onPianoKeyDown.mock.calls.length;
     const textControl = document.getElementById("text-control");
@@ -96,10 +97,34 @@ describe("Live Piano input", () => {
 
     document.body.focus();
     window.dispatchEvent(keyboardEvent("keydown", "d"));
-    expect(onPianoKeyDown).toHaveBeenLastCalledWith("E4");
+    expect(onPianoKeyDown).toHaveBeenLastCalledWith("E4", "computerKeyboard");
     dom.pianoComputerKeyboardToggle.checked = false;
     dom.pianoComputerKeyboardToggle.dispatchEvent(new window.Event("change", { bubbles: true }));
-    expect(onPianoKeyUp).toHaveBeenLastCalledWith("E4");
+    expect(onPianoKeyUp).toHaveBeenLastCalledWith("E4", "computerKeyboard");
+  });
+
+  it("shifts the computer-key octave with Z and X, releasing held keys first", () => {
+    dom.pianoComputerKeyboardToggle.checked = true;
+    dom.pianoComputerKeyboardToggle.dispatchEvent(new window.Event("change", { bubbles: true }));
+    const help = document.getElementById("piano-qwerty-help");
+
+    expect(help.textContent).toContain("C4–C5");
+    window.dispatchEvent(keyboardEvent("keydown", "a"));
+    expect(onPianoKeyDown).toHaveBeenLastCalledWith("C4", "computerKeyboard");
+
+    window.dispatchEvent(keyboardEvent("keydown", "x"));
+    // The held C4 is released before the octave moves, so it cannot stick.
+    expect(onPianoKeyUp).toHaveBeenLastCalledWith("C4", "computerKeyboard");
+    expect(help.textContent).toContain("C5–C6");
+
+    window.dispatchEvent(keyboardEvent("keydown", "a"));
+    expect(onPianoKeyDown).toHaveBeenLastCalledWith("C5", "computerKeyboard");
+    window.dispatchEvent(keyboardEvent("keyup", "a"));
+
+    for (let i = 0; i < 6; i += 1) window.dispatchEvent(keyboardEvent("keydown", "z"));
+    window.dispatchEvent(keyboardEvent("keydown", "k"));
+    // Clamped two octaves below the default: k is C5 by default, so C3.
+    expect(onPianoKeyDown).toHaveBeenLastCalledWith("C3", "computerKeyboard");
   });
 
   it("allows default touch gestures but captures pointers in explicit gliss mode", () => {
@@ -107,9 +132,9 @@ describe("Live Piano input", () => {
     const defaultPointer = pointerEvent("pointerdown");
     middleC.dispatchEvent(defaultPointer);
     expect(defaultPointer.defaultPrevented).toBe(false);
-    expect(onPianoKeyDown).toHaveBeenLastCalledWith("C4");
+    expect(onPianoKeyDown).toHaveBeenLastCalledWith("C4", "pointer");
     middleC.dispatchEvent(pointerEvent("pointercancel"));
-    expect(onPianoKeyUp).toHaveBeenLastCalledWith("C4");
+    expect(onPianoKeyUp).toHaveBeenLastCalledWith("C4", "pointer");
 
     dom.pianoGlissToggle.checked = true;
     dom.pianoGlissToggle.dispatchEvent(new window.Event("change", { bubbles: true }));

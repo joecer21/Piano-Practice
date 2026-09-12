@@ -3,7 +3,11 @@ import { createPortal } from "react-dom";
 import type { PlayRequest, PlaybackSession } from "../audio/playback-engine.js";
 import { describeAssignment, describeChordFunction } from "../domain/describe.js";
 import type { CoachBridge } from "./bridge.js";
+import { EMPTY_HELD_NOTES, playedNotes, reduceHeldNotes } from "../input/held-notes.js";
 import { applyKeyboardOverlay, clearKeyboardOverlay } from "./keyboard-overlay.js";
+import { MidiControl } from "./MidiControl.js";
+import { applyPlayedKeys } from "./played-keys.js";
+import type { OffKeyboard } from "./played-keys.js";
 import type { LabelMode } from "./keyboard-overlay.js";
 import {
   DEFAULT_PRACTICE_CONTROLS,
@@ -24,6 +28,8 @@ type CoachAppProps = {
   bridge: CoachBridge;
   /** Where the one-sentence summary and session controls render. */
   summaryContainer: HTMLElement | null;
+  /** Where the MIDI keyboard control renders, beside the keyboard. */
+  inputContainer?: HTMLElement | null;
 };
 
 const SESSION_MS = SESSION_SECONDS * 1000;
@@ -35,7 +41,7 @@ const LENS_OPTIONS: ReadonlyArray<{ lens: Lens; label: string }> = [
   { lens: "rh", label: "Right hand" },
 ];
 
-export function CoachApp({ bridge, summaryContainer }: CoachAppProps) {
+export function CoachApp({ bridge, summaryContainer, inputContainer = null }: CoachAppProps) {
   const assignment = useSyncExternalStore(bridge.subscribeAssignment, bridge.getAssignment);
   const samplerSnapshot = useSyncExternalStore(bridge.subscribeSampler, bridge.getSamplerSnapshot);
   const readiness = useMemo(() => pianoReadiness(samplerSnapshot), [samplerSnapshot]);
@@ -47,6 +53,7 @@ export function CoachApp({ bridge, summaryContainer }: CoachAppProps) {
   const [countInBeat, setCountInBeat] = useState<number | null>(null);
   const [playheadBar, setPlayheadBar] = useState(0);
   const [session, setSession] = useState<SessionState>({ status: "idle" });
+  const [offKeyboard, setOffKeyboard] = useState<OffKeyboard>({ below: 0, above: 0 });
 
   const sessionRef = useRef<PlaybackSession | null>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
@@ -170,6 +177,30 @@ export function CoachApp({ bridge, summaryContainer }: CoachAppProps) {
     },
     [bridge],
   );
+
+  // Show me what I played: mirror every input onto the keyboard as a ring. This
+  // writes to the DOM directly on each event; React state changes only when the
+  // count of notes played off the visible keys changes.
+  useEffect(() => {
+    let held = EMPTY_HELD_NOTES;
+    let lastOff = "0:0";
+    const unsubscribe = bridge.noteInput.subscribe((event) => {
+      held = reduceHeldNotes(held, event);
+      const keyboard = bridge.getKeyboardElement();
+      if (!keyboard) return;
+      const off = applyPlayedKeys(keyboard, playedNotes(held));
+      const key = `${off.below}:${off.above}`;
+      if (key !== lastOff) {
+        lastOff = key;
+        setOffKeyboard(off);
+      }
+    });
+    return () => {
+      unsubscribe();
+      const keyboard = bridge.getKeyboardElement();
+      if (keyboard) applyPlayedKeys(keyboard, new Map());
+    };
+  }, [bridge]);
 
   const updateControls = useCallback(
     (patch: Partial<PracticeControls>) => {
@@ -299,6 +330,16 @@ export function CoachApp({ bridge, summaryContainer }: CoachAppProps) {
   return (
     <>
       {summaryContainer ? createPortal(summary, summaryContainer) : summary}
+      {inputContainer
+        ? createPortal(
+            <MidiControl
+              midi={bridge.midiInput}
+              setPlayThrough={bridge.setMidiPlayThrough}
+              offKeyboard={offKeyboard}
+            />,
+            inputContainer,
+          )
+        : null}
 
       <section className="coach-practice-panel" aria-label="Practice controls">
         <div className="coach-transport">

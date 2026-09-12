@@ -297,6 +297,62 @@ body {
   --mark-contrast: #2a1f19;
 }
 
+/* Played by you: the ring channel. Neutral ink, never a hand hue, so your own
+   notes cannot be mistaken for the assignment sounding. Solid while held; a thin
+   double ring while it only rings on the pedal. */
+.piano-key[data-played] {
+  --key-ring: var(--key-mark-on-white);
+  box-shadow: inset 0 0 0 3px var(--key-ring);
+}
+
+.piano-key.black[data-played] {
+  --key-ring: var(--key-mark-on-black);
+}
+
+.piano-key[data-played="sustained"] {
+  box-shadow:
+    inset 0 0 0 1.5px var(--key-ring),
+    inset 0 0 0 5px color-mix(in srgb, var(--key-ring) 22%, transparent);
+}
+
+/* Playing along with the assignment: keep the hand's fill and glow, ring on top. */
+.piano-key.active.lh[data-played] {
+  box-shadow:
+    inset 0 0 0 3px #fffdfa,
+    0 0 16px 3px var(--piano-lh-glow);
+}
+
+.piano-key.active.rh[data-played] {
+  box-shadow:
+    inset 0 0 0 3px #fffdfa,
+    0 0 16px 3px var(--piano-rh-glow);
+}
+
+.coach-input,
+.coach-midi {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.coach-midi-note {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+}
+
+.coach-midi-select {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.85rem;
+}
+
+.coach-midi-select select {
+  min-height: var(--touch-target);
+}
+
 /* ---- Below: practice controls and the timeline --------------------------- */
 
 .coach-focus {
