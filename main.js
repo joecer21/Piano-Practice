@@ -5,7 +5,6 @@
   getProgressionPreset,
   getStyleProfile,
 } from "./theory.js";
-import * as Tone from "tone";
 import "./style.css";
 
 import { generateAssignment, validateAssignmentInputs } from "./domain/assignment.js";
@@ -20,13 +19,12 @@ import {
 } from "./components/piano.js";
 import { PRESET_CONFIGS, DEFAULT_PRESET_ID, getPresetConfig } from "./presets.js";
 import {
-  initSynths,
   isPianoLoaded,
+  audioEngine,
+  startAudioContext,
+  getTransportSnapshot,
   stopTransport,
   playScale,
-  playLeftHand,
-  playMotif,
-  playAll,
   playPreviewNoteDown,
   playPreviewNoteUp,
   configureLoop,
@@ -93,7 +91,7 @@ const state = appStore.state;
 let samplerSnapshot = getSamplerStatusSnapshot();
 if (typeof window !== "undefined") {
   window.__samplerSnapshot = samplerSnapshot;
-  window.__transportState = Tone.Transport.state;
+  window.__transportState = getTransportSnapshot().state;
 }
 let librarySwitchPending = false;
 let playbackSession = null;
@@ -103,7 +101,7 @@ const pressedLivePianoRoots = new Set();
 
 const dom = {};
 const unlockAudio = createAudioUnlock({
-  start: () => Tone.start(),
+  start: () => startAudioContext(),
   onUnlocked: () => window.removeEventListener("click", handleUnlockClick),
   onBlocked: (error, message) => {
     console.warn("Audio unlock failed", error);
@@ -145,7 +143,7 @@ function init() {
   toggleCustomCard(dom, false);
 
   onSamplerStatus(handleSamplerStatus);
-  initSynths().catch((err) => {
+  audioEngine.init().catch((err) => {
     console.error("Sampler init failed", err);
     handleSamplerStatus({ phase: "error", error: err?.message || "Unable to load piano" });
   });
@@ -215,7 +213,7 @@ function init() {
 
 function updateTempo(value) {
   state.tempo = value;
-  Tone.Transport.bpm.value = value;
+  audioEngine.setTempo(Number(value));
   setTempoValue(dom, value);
 }
 
@@ -467,7 +465,7 @@ async function handlePlay(target) {
     case "progression": {
       const totalBeats = getLeftHandBeats();
       const loopEnabled = dom.loopToggle?.checked || false;
-      playLeftHand(state.derived.leftHand, totalBeats, loopEnabled);
+      playScoreParts(["lh"], loopEnabled);
       startPlaybackVisuals({
         totalBeats,
         loopEnabled,
@@ -478,7 +476,7 @@ async function handlePlay(target) {
     case "left-hand": {
       const totalBeats = getLeftHandBeats();
       const loopEnabled = dom.lhLoop?.checked || false;
-      playLeftHand(state.derived.leftHand, totalBeats, loopEnabled);
+      playScoreParts(["lh"], loopEnabled);
       startPlaybackVisuals({
         totalBeats,
         loopEnabled,
@@ -494,8 +492,8 @@ async function handlePlay(target) {
         return;
       }
       const loopEnabled = dom.motifLoop?.checked || false;
-      playMotif(motif, loopEnabled);
-      const motifBeats = motif.totalBeats || 0;
+      const motifBeats = Math.min(motif.totalBeats || 0, state.derived.score.meta.totalBeats);
+      playScoreParts(["rh"], loopEnabled, [0, Math.ceil(motifBeats / 4) - 1]);
       startPlaybackVisuals({
         totalBeats: motifBeats,
         loopEnabled,
@@ -566,14 +564,7 @@ async function handlePlayAll() {
   const loopEnabled = dom.playAllLoop?.checked || false;
   updateLoopBadge(dom, loopEnabled);
   applyPlayAllLoop(loopEnabled);
-  playAll(
-    {
-      progression: state.derived.progression,
-      leftHand: state.derived.leftHand,
-      motif: state.derived.motif,
-    },
-    loopEnabled,
-  );
+  playScoreParts(["lh", "rh"], loopEnabled);
   publishTransportState();
   const motifBeats = state.derived?.motif?.totalBeats || 0;
   startPlaybackVisuals({
@@ -591,6 +582,20 @@ function handlePlayAllLoopToggle(event) {
   const enabled = !!event.target.checked;
   updateLoopBadge(dom, enabled);
   applyPlayAllLoop(enabled);
+}
+
+function playScoreParts(parts, loopEnabled, barRange) {
+  const score = state.derived?.score;
+  if (!score) throw new Error("A canonical score is required for playback");
+  return audioEngine.play({
+    score,
+    parts,
+    barRange: barRange || [0, score.meta.bars - 1],
+    rate: 1,
+    loop: !!loopEnabled,
+    countIn: false,
+    tempoBpm: Number(state.tempo),
+  });
 }
 
 function getLeftHandBeats() {
@@ -623,7 +628,7 @@ function stopAllPlayback() {
 
 function publishTransportState() {
   if (typeof window !== "undefined") {
-    window.__transportState = Tone.Transport.state;
+    window.__transportState = getTransportSnapshot().state;
   }
 }
 
@@ -676,7 +681,7 @@ function schedulePlaybackVisualTick() {
 
 function updatePlaybackVisuals() {
   if (!playbackSession) return;
-  const isRunning = Tone.Transport.state === "started";
+  const isRunning = getTransportSnapshot().state === "started";
   if (!isRunning) {
     stopPlaybackVisuals();
     return;
@@ -736,23 +741,7 @@ function updatePlaybackVisuals() {
 }
 
 function getTransportBeats() {
-  const position = Tone.Transport.position;
-  if (typeof position === "number") {
-    return position;
-  }
-  if (typeof position === "string") {
-    const [bars = 0, beats = 0, sixteenths = 0] = position.split(":");
-    const numericBars = Number(bars) || 0;
-    const numericBeats = Number(beats) || 0;
-    const numericSixteenths = Number(sixteenths) || 0;
-    return numericBars * 4 + numericBeats + numericSixteenths / 4;
-  }
-  if (position && typeof position.toSeconds === "function") {
-    const seconds = position.toSeconds();
-    const bpm = Tone.Transport.bpm?.value || state.tempo || 60;
-    return (seconds * bpm) / 60;
-  }
-  return 0;
+  return getTransportSnapshot().positionBeats;
 }
 
 function cancelVisualTick(id) {

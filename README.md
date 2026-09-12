@@ -51,15 +51,16 @@ Sample filenames spell sharps with `s` (`ds3vl.mp3`), because a literal `#` in a
 ## Project layout
 
 - `domain/assignment.js` defines and validates the versioned assignment schema, orchestrates deterministic generation, and provides seeded rerolls.
-- `domain/score.ts` derives the canonical, runtime-validated musical event model consumed by presentation and, in the next slice, playback.
+- `domain/score.ts` derives the canonical, runtime-validated musical event model consumed by presentation and playback.
 - `domain/score-query.ts` provides bar, part, chord, and pitch-classification queries over Score.
 - `domain/describe.ts` turns Score facts into deterministic practice-coach language.
 - `domain/random.js` provides the reproducible pseudo-random stream and derived seeds.
 - `domain/live-piano.js` expands interactive keys into deterministic chord shapes.
 - `application/state.js` owns assignment commits, bounded undo/redo history, and component locks without imposing a UI framework.
 - `components/piano.js` renders the Live Piano and responds to playback note events.
-- `main.js` coordinates UI state and playback.
-- `audio.js` owns Tone.js instruments, sample loading, transport, mix, and effects.
+- `main.js` coordinates UI state and requests playback without importing Tone.js.
+- `audio/playback-engine.ts` owns validated Score playback requests, scheduled-event ownership, count-in, rate conversion, and session lifecycle.
+- `audio.js` adapts that engine to Tone.js instruments, sample loading, transport, mix, and effects.
 - `engine.js`, `theory.js`, and `presets.js` generate the musical material.
 - `ui.js` renders and wires the interface.
 - `audio/local-samples.js` is the local sample manifest, free of Tone.js so it can be validated directly.
@@ -93,3 +94,5 @@ build uses a relative base, so the same artifact works at a domain root or under
 Assignments are versioned, runtime-validated, and JSON-safe. Seeds reproduce the same input choices and stable assignment ID. The assignment workbench exposes deterministic rerolls, `key`/`harmony`/`groove`/`motif` locks, and bounded undo/redo history without changing the musical engine.
 
 Each committed assignment also produces a derived Score with stable per-note IDs, numeric beat timing, structured degrees, chord roles, and exact expression intent. The piano roll reads this Score directly, so its displayed octaves now match the pitches sent to playback.
+
+Assignment playback is scheduled from that same Score through owned playback sessions. A session can be stopped without clearing another session's events, count-in sits outside the loop region, and rate changes stretch beat timing and duration without changing MIDI pitch or voicing. Humanization also remains in beat space until Tone schedules it, so tempo changes cannot desynchronize the groove.

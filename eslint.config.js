@@ -55,6 +55,24 @@ export default [
   },
 
   {
+    files: ["audio.js", "audio/**/*.{js,ts}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["./application/**", "../application/**", "./ui.js", "../ui.js"],
+              message:
+                "The audio layer accepts domain data through its public contract; it must not read app state or UI.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
     files: ["tests/**/*.js"],
     languageOptions: {
       ecmaVersion: 2024,

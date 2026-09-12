@@ -3,8 +3,9 @@
 
 import * as Tone from "tone";
 import { LOCAL_SAMPLE_BASE_URL, LOCAL_VH_URL_MAP, LOCAL_VL_URL_MAP } from "./audio/local-samples.js";
+import { createAudioEngine } from "./audio/playback-engine.js";
 
-import { beatsToTransport, beatsToTone, noteToMidi, NOTE_TO_INDEX } from "./theory.js";
+import { beatsToTransport, midiToNote, noteToMidi, NOTE_TO_INDEX } from "./theory.js";
 import {
   createHumanizeContext,
   applyHumanizeToBeat,
@@ -220,8 +221,8 @@ const PART_IDS = ["left", "lead"];
 // without stopping everything, and re-playing a part without an intervening stop
 // stacked a duplicate copy of it onto the transport.
 //
-// This is deliberately narrow bookkeeping, not the full playback-session facade;
-// that arrives with the AudioEngine rebuild.
+// Scale audition remains a short UI preview rather than Score playback. Keep
+// ownership of those preview events separate from AudioEngine sessions.
 const scheduledEventIds = { left: [], lead: [] };
 
 function trackScheduledEvent(partId, eventId) {
@@ -280,6 +281,7 @@ let fallbackLoadPromise = null;
 let reverbSendEnabled = false;
 
 let humanizeContext = createHumanizeContext();
+let playbackTempoBpm = 90;
 let masterLimiter = null;
 let sharedReverb = null;
 let motifWidthNode = null;
@@ -390,20 +392,109 @@ export function requestLibraryLoad(libraryId, options = {}) {
   return loadLibrary(libraryId, options);
 }
 
+const scorePartToAudioPart = { lh: "left", rh: "lead" };
+
+const tonePlaybackDriver = {
+  init() {
+    return initSynths();
+  },
+
+  dispose() {
+    disposeAudio();
+  },
+
+  configure({ tempoBpm, loop, loopStartBeat, loopEndBeat }) {
+    playbackTempoBpm = tempoBpm;
+    Tone.Transport.bpm.value = tempoBpm;
+    Tone.Transport.loop = loop;
+    Tone.Transport.loopStart = toToneTicks(loopStartBeat);
+    Tone.Transport.loopEnd = loop ? toToneTicks(loopEndBeat) : 0;
+    if (Tone.Transport.state !== "started") Tone.Transport.position = 0;
+  },
+
+  setTempo(tempoBpm) {
+    playbackTempoBpm = tempoBpm;
+    Tone.Transport.bpm.value = tempoBpm;
+  },
+
+  scheduleNote(group, onStart) {
+    const humanizedSourceBeat = applyHumanizeToBeat(
+      group.sourceStartBeat,
+      humanizeContext,
+      group.expression.swingWeight,
+    );
+    const humanizedBeat = Math.max(
+      0,
+      group.atBeat + (humanizedSourceBeat - group.sourceStartBeat) / group.rate,
+    );
+    return Tone.Transport.schedule((time) => {
+      const partId = scorePartToAudioPart[group.part];
+      const synth = synths[partId];
+      if (!synth) return;
+      const notes = group.midis.map((midi) => midiToNote(midi));
+      const baseVelocity = scaleVelocityByDynamics(BASE_VELOCITIES[partId], group.expression);
+      const velocity = getHumanizedVelocity(baseVelocity, humanizeContext);
+      const durationSeconds = (group.durationBeats * 60) / playbackTempoBpm;
+      onStart();
+      notes.forEach((note) =>
+        dispatchNoteEvent("note-play", { note, part: partId, duration: durationSeconds }),
+      );
+      synth.triggerAttackRelease(notes.length === 1 ? notes[0] : notes, durationSeconds, time, velocity);
+    }, toToneTicks(humanizedBeat));
+  },
+
+  scheduleCountIn(atBeat, beatIndex, onStart) {
+    return Tone.Transport.schedule((time) => {
+      onStart();
+      const synth = synths.lead || synths.left;
+      if (!synth) return;
+      synth.triggerAttackRelease("C6", 0.08, time, beatIndex === 0 ? 0.8 : 0.55);
+    }, toToneTicks(atBeat));
+  },
+
+  scheduleEnd(atBeat, onEnd) {
+    return Tone.Transport.schedule(onEnd, toToneTicks(atBeat));
+  },
+
+  clear(eventId) {
+    Tone.Transport.clear(eventId);
+  },
+
+  start() {
+    Tone.Transport.start();
+  },
+
+  stop() {
+    stopToneTransport();
+  },
+
+  release(parts) {
+    parts.forEach((part) => synths[scorePartToAudioPart[part]]?.releaseAll?.());
+  },
+
+  getSnapshot() {
+    return {
+      state: Tone.Transport.state,
+      positionBeats: readTransportPositionBeats(),
+    };
+  },
+};
+
+/** Canonical Score-driven playback boundary. */
+export const audioEngine = createAudioEngine(tonePlaybackDriver);
+
+export function startAudioContext() {
+  return Tone.start();
+}
+
+export function getTransportSnapshot() {
+  return audioEngine.getSnapshot();
+}
+
 export function stopTransport() {
-  Tone.Transport.stop();
+  audioEngine.stopAll();
   Tone.Transport.cancel();
   clearAllScheduledEvents();
-  Tone.Transport.position = 0;
-  Tone.Transport.loop = false;
-  dispatchNoteEvent("notes-stop-all");
-
-  PART_IDS.forEach((partId) => {
-    const synth = synths[partId];
-    if (synth && typeof synth.releaseAll === "function") {
-      synth.releaseAll();
-    }
-  });
 }
 
 export function configureLoop(totalBeats, enabled) {
@@ -411,104 +502,6 @@ export function configureLoop(totalBeats, enabled) {
   Tone.Transport.loop = settings.shouldLoop;
   Tone.Transport.loopStart = settings.loopStart;
   Tone.Transport.loopEnd = settings.loopEnd;
-}
-
-export function patternEventsFromLeftHand(leftHand) {
-  const events = [];
-  if (!leftHand || !leftHand.bars) return events;
-
-  leftHand.bars.forEach((bar) => {
-    bar.steps.forEach((step) => {
-      const startBeats = step.time;
-      events.push({
-        startBeats,
-        duration: step.duration || beatsToTone(step.beats || 1),
-        note: step.note || null,
-        notes: step.notes || null,
-        dynamics: step.dynamics || null,
-        swingPosition: step.swingPosition || 0,
-      });
-    });
-  });
-
-  return events;
-}
-
-export function patternEventsFromMotif(motif, options = {}) {
-  const events = [];
-  if (!motif || !motif.steps || !motif.steps.length) return events;
-
-  const repeatToBeats = options.repeatToBeats || motif.totalBeats || 0;
-  const motifLength = motif.totalBeats || 0;
-
-  if (!repeatToBeats || !motifLength) {
-    motif.steps.forEach((step) => {
-      if (step.rest) return;
-      events.push({
-        startBeats: step.time,
-        duration: step.duration,
-        note: step.note,
-        notes: null,
-        dynamics: step.dynamics || null,
-        swingPosition: step.swingPosition || 0,
-      });
-    });
-    return events;
-  }
-
-  for (let offset = 0; offset < repeatToBeats; offset += motifLength) {
-    motif.steps.forEach((step) => {
-      if (step.rest) return;
-      const when = offset + step.time;
-      if (when >= repeatToBeats) return;
-      events.push({
-        startBeats: when,
-        duration: step.duration,
-        note: step.note,
-        notes: null,
-        dynamics: step.dynamics || null,
-        swingPosition: step.swingPosition || 0,
-      });
-    });
-  }
-
-  return events;
-}
-
-export function schedulePatternEvents(events, synth, options = {}) {
-  const partId = options.partId || "left";
-  events.forEach((ev) => {
-    const when = getHumanizedSeconds(ev.startBeats, ev.swingPosition);
-    const eventId = Tone.Transport.schedule((time) => {
-      const baseVelocity = scaleVelocityByDynamics(BASE_VELOCITIES[partId], ev.dynamics);
-      const velocity = getHumanizedVelocity(baseVelocity, humanizeContext);
-      const duration = ev.duration || "4n";
-      const durationSeconds = Tone.Time(duration).toSeconds();
-      if (ev.notes && ev.notes.length) {
-        ev.notes.forEach((note) =>
-          dispatchNoteEvent("note-play", { note, part: partId, duration: durationSeconds }),
-        );
-        synth.triggerAttackRelease(ev.notes, duration, time, velocity);
-      } else if (ev.note) {
-        dispatchNoteEvent("note-play", {
-          note: ev.note,
-          part: partId,
-          duration: durationSeconds,
-        });
-        synth.triggerAttackRelease(ev.note, duration, time, velocity);
-      }
-    }, when);
-    trackScheduledEvent(partId, eventId);
-  });
-}
-
-export function playFromEvents(events, synth, loopBeats, loopEnabled, partId) {
-  if (!events || !events.length) return;
-  // Self-cancelling: previously this relied on the caller having stopped first.
-  clearScheduledEvents(partId);
-  configureLoop(loopBeats, loopEnabled);
-  schedulePatternEvents(events, synth, { partId });
-  Tone.Transport.start();
 }
 
 export function playPreviewNoteDown(note, options = {}) {
@@ -577,40 +570,6 @@ export async function playScale(scale, loopEnabled, options = {}) {
       }, beatsToTransport(beatCursor)),
     );
   }
-  Tone.Transport.start();
-}
-
-export async function playLeftHand(leftHand, totalBeats, loopEnabled) {
-  if (!leftHand) return;
-  const events = patternEventsFromLeftHand(leftHand);
-  playFromEvents(events, synths.left, totalBeats, loopEnabled, "left");
-}
-
-export async function playMotif(motif, loopEnabled) {
-  if (!motif) return;
-  const totalBeats = motif.totalBeats || 0;
-  if (!totalBeats) return;
-  const events = patternEventsFromMotif(motif);
-  playFromEvents(events, synths.lead, totalBeats, loopEnabled, "lead");
-}
-
-export async function playAll({ progression, leftHand, motif }, loopEnabled) {
-  if (!progression || !leftHand) return;
-  stopTransport();
-
-  const bars = progression.bars;
-  const totalBars = bars.length;
-  const totalBeats = totalBars * 4;
-  configureLoop(totalBeats, loopEnabled);
-
-  const lhEvents = patternEventsFromLeftHand(leftHand);
-  schedulePatternEvents(lhEvents, synths.left, { partId: "left" });
-
-  if (motif && motif.steps.length && motif.totalBeats > 0) {
-    const motifEvents = patternEventsFromMotif(motif, { repeatToBeats: totalBeats });
-    schedulePatternEvents(motifEvents, synths.lead, { partId: "lead" });
-  }
-
   Tone.Transport.start();
 }
 
@@ -705,6 +664,34 @@ function getPartInputNode(partId) {
   return channels[partId];
 }
 
+function toToneTicks(beats) {
+  return Tone.Ticks(Math.max(0, beats) * Tone.Transport.PPQ);
+}
+
+function stopToneTransport() {
+  Tone.Transport.stop();
+  Tone.Transport.position = 0;
+  Tone.Transport.loop = false;
+  dispatchNoteEvent("notes-stop-all");
+  PART_IDS.forEach((partId) => synths[partId]?.releaseAll?.());
+}
+
+function readTransportPositionBeats() {
+  const position = Tone.Transport.position;
+  if (typeof position === "number") return position;
+  if (typeof position === "string") {
+    const [bars = 0, beats = 0, sixteenths = 0] = position.split(":");
+    return (Number(bars) || 0) * 4 + (Number(beats) || 0) + (Number(sixteenths) || 0) / 4;
+  }
+  if (position && typeof position.toTicks === "function") {
+    return position.toTicks() / Tone.Transport.PPQ;
+  }
+  if (position && typeof position.toSeconds === "function") {
+    return (position.toSeconds() * (Tone.Transport.bpm?.value || playbackTempoBpm)) / 60;
+  }
+  return 0;
+}
+
 export function getLoopSettings(totalBeats, enabled) {
   const shouldLoop = !!enabled && totalBeats > 0;
   return {
@@ -726,15 +713,6 @@ function applyMixToChannel(partId) {
   channel.volume.value = settings.volume;
   channel.pan.value = settings.pan || 0;
   channel.mute = !!settings.mute;
-}
-
-function getHumanizedSeconds(startBeats, swingPosition = 0) {
-  const adjustedBeats = Math.max(0, applyHumanizeToBeat(startBeats, humanizeContext, swingPosition));
-  const baseSeconds = Tone.Time(beatsToTransport(startBeats)).toSeconds();
-  const beatDiff = adjustedBeats - startBeats;
-  const secondsPerBeat = Tone.Time("4n").toSeconds();
-  const humanized = baseSeconds + beatDiff * secondsPerBeat;
-  return Math.max(0, humanized);
 }
 
 function getReverbConfig(size = FX_DEFAULTS.roomSize) {

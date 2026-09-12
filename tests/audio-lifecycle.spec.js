@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_ASSIGNMENT_INPUTS, generateAssignment } from "../domain/assignment.js";
+import { buildScore } from "../domain/score.js";
 
 // A minimal Tone double that records every node ever constructed and whether it
 // was disposed, so leaks are observable rather than inferred.
@@ -60,6 +62,7 @@ vi.mock("tone", () => {
   }
   let nextEventId = 1;
   const Transport = {
+    PPQ: 192,
     bpm: { value: 90 },
     state: "stopped",
     position: 0,
@@ -112,6 +115,7 @@ vi.mock("tone", () => {
     Sampler,
     Transport,
     getTransport: () => Transport,
+    Ticks: (value) => ({ ticks: value, toTicks: () => value, valueOf: () => value }),
     Time: () => ({ toSeconds: () => 0.5 }),
     start: async () => {},
     context: { lookAhead: 0.1, state: "running" },
@@ -133,17 +137,17 @@ afterEach(() => {
 
 describe("audio graph lifecycle", () => {
   it("builds exactly one limiter and one reverb", async () => {
-    await audio.initSynths();
+    await audio.audioEngine.init();
     expect(countLive("Limiter")).toBe(1);
     expect(countLive("Reverb")).toBe(1);
   });
 
   it("is idempotent: a second init does not orphan the first graph", async () => {
-    await audio.initSynths();
+    await audio.audioEngine.init();
     const firstLimiter = built.find((node) => node.kind === "Limiter");
     const firstReverb = built.find((node) => node.kind === "Reverb");
 
-    await audio.initSynths();
+    await audio.audioEngine.init();
 
     // Previously both were replaced by new nodes while the originals stayed
     // connected to the destination and were never disposed.
@@ -154,10 +158,10 @@ describe("audio graph lifecycle", () => {
   });
 
   it("disposeAudio leaves no live node behind", async () => {
-    await audio.initSynths();
+    await audio.audioEngine.init();
     expect(live.size).toBeGreaterThan(0);
 
-    audio.disposeAudio();
+    audio.audioEngine.dispose();
 
     const survivors = [...live].map((node) => node.kind);
     expect(survivors, `nodes still live after disposeAudio: ${survivors.join(", ")}`).toEqual([]);
@@ -165,15 +169,15 @@ describe("audio graph lifecycle", () => {
 
   it("survives repeated init/dispose cycles without accumulating nodes", async () => {
     for (let i = 0; i < 3; i += 1) {
-      await audio.initSynths();
-      audio.disposeAudio();
+      await audio.audioEngine.init();
+      audio.audioEngine.dispose();
     }
     expect(live.size).toBe(0);
     expect(built.length).toBeGreaterThan(0);
   });
 
   it("disposes a successful part when its sibling sampler load fails", async () => {
-    await audio.initSynths();
+    await audio.audioEngine.init();
     const initialSamplerCount = built.filter((node) => node.kind === "Sampler").length;
 
     // Fuhton constructs low/high layers for left, then low/high for lead. Let
@@ -194,53 +198,38 @@ describe("audio graph lifecycle", () => {
   });
 });
 
-describe("scheduled event ownership", () => {
-  const notes = (count, part) =>
-    Array.from({ length: count }, (_, i) => ({
-      startBeats: i,
-      swingPosition: 0,
-      note: part === "left" ? "C3" : "C5",
-      duration: "4n",
-      dynamics: { accent: 0, ghost: 0 },
-    }));
+describe("Tone playback adapter", () => {
+  it("keeps scheduled positions in beats when tempo changes", async () => {
+    const Tone = await import("tone");
+    await audio.audioEngine.init();
+    const score = buildScore(
+      generateAssignment({
+        ...DEFAULT_ASSIGNMENT_INPUTS,
+        length: 4,
+        seed: "beat-domain-scheduling",
+      }),
+    );
+    const request = {
+      score,
+      parts: ["lh"],
+      barRange: [0, 0],
+      rate: 1,
+      loop: true,
+      countIn: false,
+      tempoBpm: 60,
+    };
 
-  let Tone;
-  beforeEach(async () => {
-    Tone = await import("tone");
-    await audio.initSynths();
-    Tone.Transport.scheduled.clear();
-  });
+    const first = audio.audioEngine.play(request);
+    const atSixty = [...Tone.Transport.scheduled.values()].map(({ when }) => when.ticks);
+    first.stop();
 
-  it("re-playing a part replaces its events instead of stacking duplicates", () => {
-    audio.playFromEvents(notes(4, "left"), audio.synths.left, 4, false, "left");
-    expect(Tone.Transport.scheduled.size).toBe(4);
+    const second = audio.audioEngine.play({ ...request, tempoBpm: 120 });
+    const atOneTwenty = [...Tone.Transport.scheduled.values()].map(({ when }) => when.ticks);
+    second.stop();
 
-    // Previously this stacked a second copy: playFromEvents scheduled without
-    // cancelling, and only worked because callers stopped the transport first.
-    audio.playFromEvents(notes(4, "left"), audio.synths.left, 4, false, "left");
-    expect(Tone.Transport.scheduled.size).toBe(4);
-  });
-
-  it("replacing one part leaves the other part's events intact", () => {
-    audio.playFromEvents(notes(3, "left"), audio.synths.left, 4, false, "left");
-    audio.playFromEvents(notes(2, "lead"), audio.synths.lead, 4, false, "lead");
-    expect(Tone.Transport.scheduled.size).toBe(5);
-
-    // Re-play only the left hand. The lead's two events must survive; before,
-    // the only cancellation available was a global Transport.cancel().
-    audio.playFromEvents(notes(3, "left"), audio.synths.left, 4, false, "left");
-    expect(Tone.Transport.scheduled.size).toBe(5);
-  });
-
-  it("stopTransport clears everything", () => {
-    audio.playFromEvents(notes(3, "left"), audio.synths.left, 4, false, "left");
-    audio.playFromEvents(notes(2, "lead"), audio.synths.lead, 4, false, "lead");
-
-    audio.stopTransport();
-    expect(Tone.Transport.scheduled.size).toBe(0);
-
-    // And the bookkeeping is empty too, so the next play starts from a clean slate.
-    audio.playFromEvents(notes(2, "lead"), audio.synths.lead, 4, false, "lead");
-    expect(Tone.Transport.scheduled.size).toBe(2);
+    // The former adapter scheduled absolute seconds, so changing BPM after
+    // event creation moved notes off their intended beat grid.
+    expect(atOneTwenty).toEqual(atSixty);
+    expect(atSixty.every(Number.isFinite)).toBe(true);
   });
 });
