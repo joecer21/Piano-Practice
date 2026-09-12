@@ -9,7 +9,7 @@
 } from "./theory.js";
 import "./style.css";
 
-import { generateAssignment, validateAssignmentInputs } from "./domain/assignment.js";
+import { generateAssignment, rerollAssignmentInputs, validateAssignmentInputs } from "./domain/assignment.js";
 import { getLivePianoChordNotes } from "./domain/live-piano.js";
 import { createAppStore } from "./application/state.js";
 import { createAudioUnlock } from "./application/audio-unlock.js";
@@ -280,6 +280,7 @@ function createCoachBridge() {
     noteInput,
     midiInput,
     setMidiPlayThrough,
+    rerollIntoNewKey,
   };
 }
 
@@ -898,6 +899,25 @@ function renderAll() {
     canRedo: appStore.canRedo(),
   });
   syncPlayButtonsAvailability();
+}
+
+/**
+ * The same material in a different key: progression, groove and motif are kept,
+ * and so is the mode - rerollAssignmentInputs changes key and mode together
+ * unless the mode catalog is narrowed to the current one. The player's own lock
+ * choices are not touched.
+ */
+function rerollIntoNewKey() {
+  stopAllPlayback();
+  const next = rerollAssignmentInputs(state.inputs, {
+    locks: { key: false, harmony: true, groove: true, motif: true },
+    catalog: { modes: [state.inputs.mode] },
+  });
+  appStore.updateInputs(next);
+  if (!computeDerived().ok) return false;
+  syncAssignmentUiFromState();
+  renderAll();
+  return true;
 }
 
 function handleAssignmentReroll() {

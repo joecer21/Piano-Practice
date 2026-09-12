@@ -37,4 +37,6 @@ export type CoachBridge = {
   midiInput: MidiInput;
   /** Called from a click, so enabling can unlock audio. */
   setMidiPlayThrough(enabled: boolean): Promise<void>;
+  /** Same progression, groove, motif and mode in a new key. False if it could not be built. */
+  rerollIntoNewKey(): boolean;
 };

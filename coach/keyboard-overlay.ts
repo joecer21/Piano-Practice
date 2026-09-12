@@ -11,6 +11,13 @@ export type KeyboardOverlayOptions = {
   barIndex: number;
   lens: Lens;
   labelMode: LabelMode;
+  /**
+   * Exact keys of a chord's written voicing, for chord by chord. Drawn on the
+   * shape channel so the player can copy the hand position.
+   */
+  shape?: readonly number[] | null;
+  /** Dim every key that is not a tone of the current chord. */
+  dimOutsideChord?: boolean;
 };
 
 const ROLE_TEXT: Record<NoteRole, string> = {
@@ -20,7 +27,13 @@ const ROLE_TEXT: Record<NoteRole, string> = {
   chromatic: "outside the scale",
 };
 
-const OVERLAY_ATTRIBUTES = ["data-role", "data-degree", "data-out-of-lens"] as const;
+const OVERLAY_ATTRIBUTES = [
+  "data-role",
+  "data-degree",
+  "data-out-of-lens",
+  "data-shape",
+  "data-dimmed",
+] as const;
 
 /**
  * Decorate the existing keyboard with what the current bar means.
@@ -32,7 +45,8 @@ const OVERLAY_ATTRIBUTES = ["data-role", "data-degree", "data-out-of-lens"] as c
  * sounding, which components/piano.js applies as the .lh/.rh classes.
  */
 export function applyKeyboardOverlay(container: HTMLElement, options: KeyboardOverlayOptions): void {
-  const { score, barIndex, lens, labelMode } = options;
+  const { score, barIndex, lens, labelMode, shape = null, dimOutsideChord = false } = options;
+  const shapeKeys = new Set(shape ?? []);
   const bar = score.bars[barIndex];
   if (!bar) {
     clearKeyboardOverlay(container);
@@ -55,6 +69,14 @@ export function applyKeyboardOverlay(container: HTMLElement, options: KeyboardOv
     if (outOfLens) key.dataset.outOfLens = "true";
     else delete key.dataset.outOfLens;
 
+    const inShape = shapeKeys.has(midi);
+    if (inShape) key.dataset.shape = "true";
+    else delete key.dataset.shape;
+
+    const dimmed = dimOutsideChord && role !== "root" && role !== "chordTone";
+    if (dimmed) key.dataset.dimmed = "true";
+    else delete key.dataset.dimmed;
+
     const labelText = !inHarmony
       ? ""
       : labelMode === "letters"
@@ -65,6 +87,7 @@ export function applyKeyboardOverlay(container: HTMLElement, options: KeyboardOv
     const facts = inHarmony
       ? [key.dataset.degree ? `degree ${key.dataset.degree}` : null, ROLE_TEXT[role]]
       : [ROLE_TEXT[role]];
+    if (inShape) facts.push("in the chord shape");
     key.setAttribute("aria-label", [`${note} piano key`, ...facts.filter(Boolean)].join(", "));
   });
 }

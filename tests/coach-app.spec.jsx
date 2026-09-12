@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_ASSIGNMENT_INPUTS, generateAssignment } from "../domain/assignment.js";
 import { buildScore } from "../domain/score.ts";
 import { CoachApp } from "../coach/CoachApp.tsx";
+import { chordShapeMidis } from "../coach/views.ts";
+import { noteStringToMidi } from "../theory.js";
 import { createNoteInputHub } from "../input/note-input.ts";
 import { createMidiInput } from "../input/midi.ts";
 
@@ -131,9 +133,25 @@ const click = async (element) => {
 };
 
 let bridge;
+let frames = [];
+/**
+ * Run animation frames at a given transport position, as the browser would. Under
+ * fake timers Vitest also fakes requestAnimationFrame, so frames come from
+ * advancing fake time; otherwise they come from the manual queue below.
+ */
+const frame = async (positionBeats) => {
+  bridge.audioEngine.positionBeats = positionBeats;
+  if (vi.isFakeTimers()) {
+    await act(async () => vi.advanceTimersByTime(50));
+    return;
+  }
+  const pending = frames;
+  frames = [];
+  await act(async () => pending.forEach((callback) => callback(0)));
+};
 beforeEach(() => {
-  // jsdom does not run animation frames; the playhead loop only needs to be callable.
-  vi.stubGlobal("requestAnimationFrame", () => 1);
+  frames = [];
+  vi.stubGlobal("requestAnimationFrame", (callback) => frames.push(callback));
   vi.stubGlobal("cancelAnimationFrame", () => {});
 });
 afterEach(() => {
@@ -162,6 +180,7 @@ describe("CoachApp", () => {
     bridge = createFakeBridge({ assignment: cMajor });
     render(<CoachApp bridge={bridge} summaryContainer={null} />);
 
+    await click(screen.getByRole("button", { name: "Hands apart" }));
     await click(screen.getByRole("button", { name: /^Bar 3,/ }));
     await click(screen.getByRole("button", { name: "Left hand" }));
     await click(screen.getByRole("button", { name: "Half speed" }));
@@ -185,11 +204,13 @@ describe("CoachApp", () => {
     render(<CoachApp bridge={bridge} summaryContainer={null} />);
 
     await click(screen.getByRole("button", { name: "Play" }));
+    await click(screen.getByRole("button", { name: "Hands apart" }));
     await click(screen.getByRole("button", { name: "Right hand" }));
 
-    const [first, second] = bridge.audioEngine.sessions;
-    expect(first.stop).toHaveBeenCalled();
-    expect(second.request).toMatchObject({ parts: ["rh"], countIn: false });
+    const sessions = bridge.audioEngine.sessions;
+    expect(sessions[0].stop).toHaveBeenCalled();
+    expect(sessions[1].request).toMatchObject({ parts: ["lh"], countIn: false });
+    expect(sessions.at(-1).request).toMatchObject({ parts: ["rh"], countIn: false });
   });
 
   it("does not start when the browser keeps audio blocked", async () => {
@@ -203,30 +224,147 @@ describe("CoachApp", () => {
     expect(screen.queryByRole("timer")).toBeNull();
   });
 
-  it("runs a five-minute session that pauses, resumes and stops playback at zero", async () => {
+  it("guides a session step by step, changing step only on a bar line", async () => {
     vi.useFakeTimers();
     bridge = createFakeBridge({ assignment: cMajor });
     render(<CoachApp bridge={bridge} summaryContainer={null} />);
 
     await click(screen.getByRole("button", { name: "Start 5 minutes" }));
     expect(screen.getByRole("timer").textContent).toBe("5:00");
-    expect(bridge.audioEngine.requests[0].countIn).toBe(true);
+    expect(bridge.audioEngine.requests[0]).toMatchObject({ parts: ["lh", "rh"], countIn: true });
+    expect(screen.getByText(/Listen once through/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "The whole thing" }).getAttribute("aria-pressed")).toBe("true");
 
+    // The first step's minute is up, but the music is mid-bar: nothing changes yet.
+    await frame(4.5); // past the count-in, half a beat into bar 1
     await act(async () => vi.advanceTimersByTime(61_000));
-    expect(screen.getByRole("timer").textContent).toBe("3:59");
+    expect(screen.getByText(/Moving on at the next bar/)).toBeTruthy();
+    expect(bridge.audioEngine.requests).toHaveLength(1);
+
+    // Crossing into bar 2 moves on: left hand alone, restarted without a count-in.
+    await frame(8.25);
+    expect(screen.getByText(/Left hand alone/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Hands apart" }).getAttribute("aria-pressed")).toBe("true");
+    expect(bridge.audioEngine.requests.at(-1)).toMatchObject({ parts: ["lh"], countIn: false });
 
     await click(screen.getByRole("button", { name: "Pause" }));
-    expect(bridge.audioEngine.sessions[0].stop).toHaveBeenCalled();
+    expect(bridge.audioEngine.sessions.at(-1).stop).toHaveBeenCalled();
+    const paused = screen.getByRole("timer").textContent;
     await act(async () => vi.advanceTimersByTime(30_000));
-    expect(screen.getByRole("timer").textContent).toBe("3:59");
+    expect(screen.getByRole("timer").textContent).toBe(paused);
 
     await click(screen.getByRole("button", { name: "Resume" }));
-    await act(async () => vi.advanceTimersByTime(240_000));
+    expect(bridge.audioEngine.requests.at(-1)).toMatchObject({ parts: ["lh"], countIn: true });
+  });
+
+  it("moves on at once when nothing is playing, since there is no bar line to wait for", async () => {
+    vi.useFakeTimers();
+    bridge = createFakeBridge({ assignment: cMajor });
+    render(<CoachApp bridge={bridge} summaryContainer={null} />);
+
+    await click(screen.getByRole("button", { name: "Start 5 minutes" }));
+    await click(screen.getByRole("button", { name: "Stop" }));
+    await act(async () => vi.advanceTimersByTime(61_000));
+
+    expect(screen.getByText(/Left hand alone/)).toBeTruthy();
+  });
+
+  it("finishes with a summary and offers the same assignment or a new key", async () => {
+    vi.useFakeTimers();
+    const dMajor = assignmentFor({
+      key: "D",
+      mode: "major",
+      progressionPresetId: "pop-4",
+      seed: "coach-app",
+    });
+    bridge = createFakeBridge({ assignment: cMajor });
+    bridge.rerollIntoNewKey = vi.fn(() => {
+      bridge.setAssignment(dMajor);
+      return true;
+    });
+    render(<CoachApp bridge={bridge} summaryContainer={null} />);
+
+    await click(screen.getByRole("button", { name: "Start 5 minutes" }));
+    await act(async () => vi.advanceTimersByTime(20_000));
+    for (let step = 0; step < 5; step += 1) await click(screen.getByRole("button", { name: "Next step" }));
+    await click(screen.getByRole("button", { name: "Finish" }));
 
     expect(screen.queryByRole("timer")).toBeNull();
-    expect(screen.getByText("Five minutes done.")).toBeTruthy();
+    expect(screen.getByText("5 minutes done.")).toBeTruthy();
+    expect(
+      within(screen.getByRole("list", { name: "What you covered" })).getByText(/The whole thing/),
+    ).toBeTruthy();
     expect(bridge.audioEngine.sessions.at(-1).stop).toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Play" })).toBeTruthy();
+
+    const playsBefore = bridge.audioEngine.requests.length;
+    await click(screen.getByRole("button", { name: "Again in a new key" }));
+    expect(bridge.rerollIntoNewKey).toHaveBeenCalled();
+    expect(screen.getByTestId("coach-sentence").textContent).toMatch(/^D major/);
+    expect(screen.getByRole("timer").textContent).toBe("5:00");
+    expect(bridge.audioEngine.requests.length).toBe(playsBefore + 1);
+    expect(bridge.audioEngine.requests.at(-1).countIn).toBe(true);
+  });
+
+  it("offers two, ten and untimed sessions, and an untimed one never ends on its own", async () => {
+    vi.useFakeTimers();
+    bridge = createFakeBridge({ assignment: cMajor });
+    render(<CoachApp bridge={bridge} summaryContainer={null} />);
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("Session length"), { target: { value: "untimed" } });
+    });
+    await click(screen.getByRole("button", { name: "Start practising" }));
+    await click(screen.getByRole("button", { name: "Stop" }));
+    await act(async () => vi.advanceTimersByTime(20 * 60_000));
+
+    expect(screen.getByRole("timer", { name: "Time practised" }).textContent).toBe("20:00");
+    expect(screen.getByText(/Listen once through/)).toBeTruthy();
+  });
+
+  it("chord by chord marks the voicing's keys, dims the rest, and steps through chords", async () => {
+    bridge = createFakeBridge({ assignment: cMajor });
+    render(<CoachApp bridge={bridge} summaryContainer={null} />);
+    await click(screen.getByRole("button", { name: "Chord by chord" }));
+
+    const shape = new Set(chordShapeMidis(cMajor.score.bars[0]));
+    bridge.keyboard.querySelectorAll(".piano-key").forEach((key) => {
+      expect(key.dataset.shape === "true", key.dataset.note).toBe(
+        shape.has(noteStringToMidi(key.dataset.note)),
+      );
+    });
+    const key = (note) => bridge.keyboard.querySelector(`[data-note="${note}"]`);
+    expect(key("C#4").dataset.dimmed).toBe("true");
+    expect(key("C4").dataset.dimmed).toBeUndefined();
+    expect(screen.getByText("Chord 1 of 8")).toBeTruthy();
+    expect(screen.getByText("I — home. Every phrase can land here.")).toBeTruthy();
+
+    await click(screen.getByRole("button", { name: "Next chord" }));
+    expect(screen.getByText("Chord 2 of 8")).toBeTruthy();
+    expect(screen.getByText("V — the strongest pull back to home.")).toBeTruthy();
+
+    await click(screen.getByRole("button", { name: "The whole thing" }));
+    expect(bridge.keyboard.querySelectorAll("[data-shape], [data-dimmed]")).toHaveLength(0);
+  });
+
+  it("note by note shows the motif in degrees and plays it with the right hand at half speed", async () => {
+    bridge = createFakeBridge({ assignment: cMajor });
+    render(<CoachApp bridge={bridge} summaryContainer={null} />);
+    await click(screen.getByRole("button", { name: "Note by note" }));
+
+    const motif = screen.getByRole("list", { name: /Motif degrees/ });
+    expect([...motif.querySelectorAll("li")].map((li) => li.textContent)).toEqual(["1", "3", "5", "1"]);
+    expect(screen.getByText("The motif climbs and lands.")).toBeTruthy();
+
+    await click(screen.getByRole("button", { name: "Play" }));
+    expect(bridge.audioEngine.requests.at(-1)).toMatchObject({ parts: ["rh"], rate: 0.5, loop: true });
+  });
+
+  it("says so when there is no motif, and cannot play one", async () => {
+    bridge = createFakeBridge({ assignment: assignmentFor({ motifId: "none", seed: "no-motif" }) });
+    render(<CoachApp bridge={bridge} summaryContainer={null} />);
+    await click(screen.getByRole("button", { name: "Note by note" }));
+    expect(screen.getByText(/has no motif/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Play" }).disabled).toBe(true);
   });
 
   it("reflects playback stopped from outside the coach", async () => {

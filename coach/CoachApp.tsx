@@ -1,28 +1,41 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import type { PlayRequest, PlaybackSession } from "../audio/playback-engine.js";
-import { describeAssignment, describeChordFunction } from "../domain/describe.js";
-import type { CoachBridge } from "./bridge.js";
+import { describeAssignment } from "../domain/describe.js";
 import { EMPTY_HELD_NOTES, playedNotes, reduceHeldNotes } from "../input/held-notes.js";
+import type { CoachBridge } from "./bridge.js";
 import { applyKeyboardOverlay, clearKeyboardOverlay } from "./keyboard-overlay.js";
+import type { LabelMode } from "./keyboard-overlay.js";
 import { MidiControl } from "./MidiControl.js";
 import { applyPlayedKeys } from "./played-keys.js";
 import type { OffKeyboard } from "./played-keys.js";
-import type { LabelMode } from "./keyboard-overlay.js";
 import {
   DEFAULT_PRACTICE_CONTROLS,
-  SESSION_SECONDS,
   buildPracticeRequest,
   clampFocusBar,
-  formatClock,
   playheadFromTransport,
 } from "./practice.js";
-import type { Lens, PracticeControls } from "./practice.js";
+import type { PracticeControls } from "./practice.js";
+import { PracticePanel } from "./PracticePanel.js";
 import { pianoReadiness } from "./sampler.js";
-import { Timeline } from "./Timeline.js";
-
-type SessionState =
-  { status: "idle" } | { status: "running" | "paused"; remainingMs: number } | { status: "complete" };
+import { SessionHeader } from "./SessionHeader.js";
+import {
+  DEFAULT_SESSION_LENGTH,
+  IDLE_SESSION,
+  crossedBarBoundary,
+  sessionReducer,
+  sessionSteps,
+} from "./session.js";
+import type { SessionLength, SessionStep } from "./session.js";
+import {
+  activeMotifNoteIndex,
+  chordShapeMidis,
+  controlsForView,
+  hasMotif,
+  motifCycleNotes,
+  stepChord,
+} from "./views.js";
+import type { BreakdownView } from "./views.js";
 
 type CoachAppProps = {
   bridge: CoachBridge;
@@ -32,14 +45,7 @@ type CoachAppProps = {
   inputContainer?: HTMLElement | null;
 };
 
-const SESSION_MS = SESSION_SECONDS * 1000;
 const TIMER_TICK_MS = 250;
-
-const LENS_OPTIONS: ReadonlyArray<{ lens: Lens; label: string }> = [
-  { lens: "both", label: "Both hands" },
-  { lens: "lh", label: "Left hand" },
-  { lens: "rh", label: "Right hand" },
-];
 
 export function CoachApp({ bridge, summaryContainer, inputContainer = null }: CoachAppProps) {
   const assignment = useSyncExternalStore(bridge.subscribeAssignment, bridge.getAssignment);
@@ -47,16 +53,23 @@ export function CoachApp({ bridge, summaryContainer, inputContainer = null }: Co
   const readiness = useMemo(() => pianoReadiness(samplerSnapshot), [samplerSnapshot]);
   const score = assignment?.score ?? null;
 
+  const [view, setView] = useState<BreakdownView>("whole");
   const [controls, setControls] = useState<PracticeControls>(DEFAULT_PRACTICE_CONTROLS);
   const [labelMode, setLabelMode] = useState<LabelMode>("degrees");
   const [playingRequest, setPlayingRequest] = useState<PlayRequest | null>(null);
   const [countInBeat, setCountInBeat] = useState<number | null>(null);
   const [playheadBar, setPlayheadBar] = useState(0);
-  const [session, setSession] = useState<SessionState>({ status: "idle" });
+  const [activeMotifIndex, setActiveMotifIndex] = useState(-1);
   const [offKeyboard, setOffKeyboard] = useState<OffKeyboard>({ below: 0, above: 0 });
+  const [sessionLength, setSessionLength] = useState<SessionLength>(DEFAULT_SESSION_LENGTH);
+  const [session, dispatch] = useReducer(sessionReducer, IDLE_SESSION);
 
   const sessionRef = useRef<PlaybackSession | null>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef(view);
+  viewRef.current = view;
+
+  // ---- Playback ------------------------------------------------------------
 
   const stopPlayback = useCallback(() => {
     const current = sessionRef.current;
@@ -106,12 +119,47 @@ export function CoachApp({ bridge, summaryContainer, inputContainer = null }: Co
     [bridge],
   );
 
+  // Stop whatever the coach started when it unmounts.
+  useEffect(() => () => sessionRef.current?.stop(), []);
+
+  // Apply new practice controls; if music is playing, restart at once without a
+  // second count-in so the change is heard immediately.
+  const applyControls = useCallback(
+    (next: PracticeControls) => {
+      setControls(next);
+      if (playingRequest) void startPlayback(next, { countIn: false });
+    },
+    [playingRequest, startPlayback],
+  );
+
+  const updateControls = useCallback(
+    (patch: Partial<PracticeControls>) => applyControls({ ...controls, ...patch }),
+    [applyControls, controls],
+  );
+
+  const selectView = useCallback(
+    (nextView: BreakdownView) => {
+      if (!score) return;
+      setView(nextView);
+      applyControls(controlsForView(nextView, controls, score));
+    },
+    [applyControls, controls, score],
+  );
+
+  const togglePlayback = useCallback(() => {
+    if (playingRequest) stopPlayback();
+    else void startPlayback(controls, { countIn: true });
+  }, [controls, playingRequest, startPlayback, stopPlayback]);
+
   // A new assignment replaces the music under the player: stop, and drop a bar
-  // selection that no longer exists.
+  // selection that no longer exists. "Again in a new key" starts a session once
+  // the new assignment has arrived.
+  const pendingSessionStart = useRef(false);
   const assignmentId = score?.sourceAssignmentId ?? null;
   useEffect(() => {
     stopPlayback();
     setPlayheadBar(0);
+    setActiveMotifIndex(-1);
     setControls((previous) =>
       score ? { ...previous, focusBar: clampFocusBar(score, previous.focusBar) } : previous,
     );
@@ -119,20 +167,25 @@ export function CoachApp({ bridge, summaryContainer, inputContainer = null }: Co
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignmentId, stopPlayback]);
 
-  // Stop whatever the coach started when it unmounts.
-  useEffect(() => () => sessionRef.current?.stop(), []);
+  // ---- Playhead ------------------------------------------------------------
 
-  // The playhead runs on requestAnimationFrame and writes straight to the DOM.
-  // React state is touched only when the count-in beat or the bar changes.
+  // Runs on requestAnimationFrame and writes the playhead straight to the DOM.
+  // React state is touched only when something visible changes: the count-in
+  // beat, the bar, or the motif note. Crossing a bar line is reported to the
+  // session so due steps change on the beat, never mid-bar.
   useEffect(() => {
     const playhead = playheadRef.current;
     if (!playingRequest) {
       if (playhead) playhead.hidden = true;
       return;
     }
+    const score = playingRequest.score;
+    const motifNotes = motifCycleNotes(score);
     let frame = 0;
     let lastBar = -1;
     let lastCountIn = -1;
+    let lastBeat = Number.NaN;
+    let lastMotifIndex = -2;
     const tick = () => {
       const position = playheadFromTransport(playingRequest, bridge.audioEngine.getSnapshot().positionBeats);
       if (position.phase === "countIn") {
@@ -148,11 +201,22 @@ export function CoachApp({ bridge, summaryContainer, inputContainer = null }: Co
         }
         if (playhead) {
           playhead.hidden = false;
-          playhead.style.left = `${(position.sourceBeat / playingRequest.score.meta.totalBeats) * 100}%`;
+          playhead.style.left = `${(position.sourceBeat / score.meta.totalBeats) * 100}%`;
         }
         if (position.barIndex !== lastBar) {
           lastBar = position.barIndex;
           setPlayheadBar(position.barIndex);
+        }
+        if (crossedBarBoundary(lastBeat, position.sourceBeat, score.meta.beatsPerBar)) {
+          dispatch({ type: "barBoundary" });
+        }
+        lastBeat = position.sourceBeat;
+        if (viewRef.current === "notes") {
+          const motifIndex = activeMotifNoteIndex(motifNotes, score, position.sourceBeat);
+          if (motifIndex !== lastMotifIndex) {
+            lastMotifIndex = motifIndex;
+            setActiveMotifIndex(motifIndex);
+          }
         }
       }
       frame = requestAnimationFrame(tick);
@@ -161,14 +225,25 @@ export function CoachApp({ bridge, summaryContainer, inputContainer = null }: Co
     return () => cancelAnimationFrame(frame);
   }, [bridge, playingRequest]);
 
+  // ---- Keyboard ------------------------------------------------------------
+
   // The keyboard teaches the bar in front of the player: the selected bar if
-  // there is one, otherwise the bar under the playhead.
+  // there is one, otherwise the bar under the playhead. Chord by chord also marks
+  // the voicing's exact keys and dims everything outside the chord.
   const overlayBar = controls.focusBar ?? playheadBar;
   useEffect(() => {
     const keyboard = bridge.getKeyboardElement();
     if (!keyboard || !score) return;
-    applyKeyboardOverlay(keyboard, { score, barIndex: overlayBar, lens: controls.lens, labelMode });
-  }, [bridge, score, overlayBar, controls.lens, labelMode]);
+    const bar = score.bars[overlayBar] ?? score.bars[0];
+    applyKeyboardOverlay(keyboard, {
+      score,
+      barIndex: bar.barIndex,
+      lens: controls.lens,
+      labelMode,
+      shape: view === "chords" ? chordShapeMidis(bar) : null,
+      dimOutsideChord: view === "chords",
+    });
+  }, [bridge, score, overlayBar, controls.lens, labelMode, view]);
 
   useEffect(
     () => () => {
@@ -202,66 +277,109 @@ export function CoachApp({ bridge, summaryContainer, inputContainer = null }: Co
     };
   }, [bridge]);
 
-  const updateControls = useCallback(
-    (patch: Partial<PracticeControls>) => {
-      const next = { ...controls, ...patch };
-      setControls(next);
-      // Changing what is being practised restarts playback immediately, without
-      // a second count-in, so the change is heard at once.
-      if (playingRequest) void startPlayback(next, { countIn: false });
+  const stepChordBy = useCallback(
+    (direction: 1 | -1) => {
+      if (!score) return;
+      updateControls({ focusBar: stepChord(score, controls.focusBar ?? playheadBar, direction) });
     },
-    [controls, playingRequest, startPlayback],
+    [controls.focusBar, playheadBar, score, updateControls],
   );
 
-  // Session countdown. Timing is measured from wall-clock deltas, so a throttled
-  // background tab does not stretch five minutes into seven.
+  // ---- Session -------------------------------------------------------------
+
+  const controlsForStep = useCallback(
+    (step: SessionStep, from: PracticeControls): PracticeControls => {
+      if (!score) return from;
+      const next = controlsForView(step.view, { ...from, focusBar: null }, score);
+      return step.lens ? { ...next, lens: step.lens } : next;
+    },
+    [score],
+  );
+
+  const appliedStep = useRef<number | null>(null);
+
+  const startSession = useCallback(async () => {
+    if (!score) return;
+    dispatch({ type: "start", length: sessionLength, hasMotif: hasMotif(score) });
+    appliedStep.current = 0;
+    const [firstStep] = sessionSteps(hasMotif(score));
+    const next = controlsForStep(firstStep, controls);
+    setView(firstStep.view);
+    setControls(next);
+    if (!(await startPlayback(next, { countIn: true }))) {
+      dispatch({ type: "end" });
+      appliedStep.current = null;
+    }
+  }, [controls, controlsForStep, score, sessionLength, startPlayback]);
+
+  // Timer. Wall-clock deltas, so a throttled background tab does not stretch the session.
   useEffect(() => {
     if (session.status !== "running") return;
     let last = Date.now();
     const timer = setInterval(() => {
       const now = Date.now();
-      const elapsed = now - last;
+      dispatch({ type: "tick", elapsedMs: now - last });
       last = now;
-      setSession((current) => {
-        if (current.status !== "running") return current;
-        const remainingMs = current.remainingMs - elapsed;
-        return remainingMs > 0 ? { status: "running", remainingMs } : { status: "complete" };
-      });
     }, TIMER_TICK_MS);
     return () => clearInterval(timer);
   }, [session.status]);
 
+  // A step whose time is up waits for the next bar line - unless nothing is
+  // playing, in which case there is no bar line to wait for.
   useEffect(() => {
-    if (session.status === "complete") stopPlayback();
-  }, [session.status, stopPlayback]);
+    if (session.status === "running" && session.advanceDue && !playingRequest) dispatch({ type: "next" });
+  }, [session, playingRequest]);
 
-  const startSession = useCallback(async () => {
-    if (await startPlayback(controls, { countIn: true })) {
-      setSession({ status: "running", remainingMs: SESSION_MS });
+  // Entering a new step sets its view and hands and carries playback across.
+  const activeStepIndex =
+    session.status === "running" || session.status === "paused" ? session.stepIndex : null;
+  useEffect(() => {
+    if (activeStepIndex == null || session.status === "complete" || session.status === "idle") return;
+    if (appliedStep.current === activeStepIndex) return;
+    appliedStep.current = activeStepIndex;
+    const step = session.steps[activeStepIndex];
+    const next = controlsForStep(step, controls);
+    setView(step.view);
+    applyControls(next);
+    // Only a step change should run this.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeStepIndex]);
+
+  useEffect(() => {
+    if (session.status === "complete" || session.status === "idle") {
+      appliedStep.current = null;
+      if (session.status === "complete") stopPlayback();
     }
-  }, [controls, startPlayback]);
+  }, [session.status, stopPlayback]);
 
   const pauseSession = useCallback(() => {
     stopPlayback();
-    setSession((current) => (current.status === "running" ? { ...current, status: "paused" } : current));
+    dispatch({ type: "pause" });
   }, [stopPlayback]);
 
   const resumeSession = useCallback(async () => {
-    if (session.status !== "paused") return;
-    if (await startPlayback(controls, { countIn: true })) {
-      setSession({ status: "running", remainingMs: session.remainingMs });
-    }
-  }, [controls, session, startPlayback]);
+    if (await startPlayback(controls, { countIn: true })) dispatch({ type: "resume" });
+  }, [controls, startPlayback]);
 
   const endSession = useCallback(() => {
     stopPlayback();
-    setSession({ status: "idle" });
+    dispatch({ type: "end" });
   }, [stopPlayback]);
 
-  const togglePlayback = useCallback(() => {
-    if (playingRequest) stopPlayback();
-    else void startPlayback(controls, { countIn: true });
-  }, [controls, playingRequest, startPlayback, stopPlayback]);
+  const againInNewKey = useCallback(() => {
+    pendingSessionStart.current = true;
+    if (!bridge.rerollIntoNewKey()) pendingSessionStart.current = false;
+  }, [bridge]);
+
+  useEffect(() => {
+    if (!pendingSessionStart.current || !score) return;
+    pendingSessionStart.current = false;
+    void startSession();
+    // Fires once the new key's assignment has been committed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignmentId]);
+
+  // ---- Render --------------------------------------------------------------
 
   const sentence = score
     ? describeAssignment(score, { leftHand: assignment?.leftHand, motif: assignment?.motif })
@@ -273,63 +391,28 @@ export function CoachApp({ bridge, summaryContainer, inputContainer = null }: Co
       : readiness.state === "error"
         ? readiness.message
         : null;
-  const focusedBar = score && controls.focusBar != null ? score.bars[controls.focusBar] : null;
 
-  const summary = (
-    <div className="coach-summary-body">
-      <p className="coach-sentence" data-testid="coach-sentence">
-        {sentence}
-      </p>
-      <div className="coach-session" aria-label="Practice session">
-        {session.status === "idle" ? (
-          <button type="button" className="coach-start" disabled={!ready} onClick={() => void startSession()}>
-            Start 5 minutes
-          </button>
-        ) : null}
-        {session.status === "running" || session.status === "paused" ? (
-          <>
-            <span className="coach-clock" role="timer" aria-label="Time left in session">
-              {formatClock(session.remainingMs / 1000)}
-            </span>
-            {session.status === "running" ? (
-              <button type="button" className="coach-secondary" onClick={pauseSession}>
-                Pause
-              </button>
-            ) : (
-              <button type="button" className="coach-start" onClick={() => void resumeSession()}>
-                Resume
-              </button>
-            )}
-            <button type="button" className="coach-secondary" onClick={endSession}>
-              End
-            </button>
-          </>
-        ) : null}
-        {session.status === "complete" ? (
-          <>
-            <span className="coach-complete">Five minutes done.</span>
-            <button
-              type="button"
-              className="coach-start"
-              disabled={!ready}
-              onClick={() => void startSession()}
-            >
-              Start again
-            </button>
-          </>
-        ) : null}
-        {readinessNote ? (
-          <span className="coach-readiness" role="status">
-            {readinessNote}
-          </span>
-        ) : null}
-      </div>
-    </div>
+  const header = (
+    <SessionHeader
+      sentence={sentence}
+      readinessNote={readinessNote}
+      ready={ready}
+      session={session}
+      length={sessionLength}
+      onLengthChange={setSessionLength}
+      onStart={() => void startSession()}
+      onPause={pauseSession}
+      onResume={() => void resumeSession()}
+      onNext={() => dispatch({ type: "next" })}
+      onPrevious={() => dispatch({ type: "previous" })}
+      onEnd={endSession}
+      onAgainNewKey={againInNewKey}
+    />
   );
 
   return (
     <>
-      {summaryContainer ? createPortal(summary, summaryContainer) : summary}
+      {summaryContainer ? createPortal(header, summaryContainer) : header}
       {inputContainer
         ? createPortal(
             <MidiControl
@@ -341,98 +424,24 @@ export function CoachApp({ bridge, summaryContainer, inputContainer = null }: Co
           )
         : null}
 
-      <section className="coach-practice-panel" aria-label="Practice controls">
-        <div className="coach-transport">
-          <button
-            type="button"
-            className="coach-play"
-            disabled={!ready}
-            aria-pressed={!!playingRequest}
-            onClick={togglePlayback}
-          >
-            {playingRequest ? "Stop" : "Play"}
-          </button>
-          <span className="coach-count-in" aria-hidden="true">
-            {countInBeat != null ? `Count-in ${countInBeat}` : ""}
-          </span>
-
-          <div className="coach-segmented" role="group" aria-label="Hands">
-            {LENS_OPTIONS.map((option) => (
-              <button
-                key={option.lens}
-                type="button"
-                aria-pressed={controls.lens === option.lens}
-                onClick={() => updateControls({ lens: option.lens })}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-
-          <button
-            type="button"
-            className="coach-toggle"
-            aria-pressed={controls.slow}
-            onClick={() => updateControls({ slow: !controls.slow })}
-          >
-            Half speed
-          </button>
-          <button
-            type="button"
-            className="coach-toggle"
-            aria-pressed={controls.loop}
-            onClick={() => updateControls({ loop: !controls.loop })}
-          >
-            Loop
-          </button>
-
-          <div className="coach-segmented" role="group" aria-label="Key labels">
-            <button
-              type="button"
-              aria-pressed={labelMode === "degrees"}
-              onClick={() => setLabelMode("degrees")}
-            >
-              Degrees
-            </button>
-            <button
-              type="button"
-              aria-pressed={labelMode === "letters"}
-              onClick={() => setLabelMode("letters")}
-            >
-              Letters
-            </button>
-          </div>
-        </div>
-
-        <p className="coach-focus" aria-live="polite">
-          {focusedBar ? (
-            <>
-              <span>
-                Bar {focusedBar.barIndex + 1} · {describeChordFunction(focusedBar)}
-              </span>{" "}
-              <button type="button" className="coach-link" onClick={() => updateControls({ focusBar: null })}>
-                Practice the whole piece
-              </button>
-            </>
-          ) : (
-            "Select a bar to practice it on its own."
-          )}
-        </p>
-
-        {score ? (
-          <Timeline
-            score={score}
-            lens={controls.lens}
-            focusBar={controls.focusBar}
-            onSelectBar={(focusBar) => updateControls({ focusBar })}
-            playheadRef={playheadRef}
-          />
-        ) : null}
-
-        <button type="button" className="coach-link coach-change" onClick={bridge.openAssignmentDrawer}>
-          Change the assignment
-        </button>
-      </section>
+      <PracticePanel
+        score={score}
+        view={view}
+        controls={controls}
+        labelMode={labelMode}
+        ready={ready}
+        playing={!!playingRequest}
+        countInBeat={countInBeat}
+        chordBar={controls.focusBar ?? playheadBar}
+        activeMotifIndex={activeMotifIndex}
+        playheadRef={playheadRef}
+        onView={selectView}
+        onControls={updateControls}
+        onLabelMode={setLabelMode}
+        onTogglePlayback={togglePlayback}
+        onStepChord={stepChordBy}
+        onChangeAssignment={bridge.openAssignmentDrawer}
+      />
     </>
   );
 }

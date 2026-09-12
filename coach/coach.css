@@ -7,6 +7,8 @@
  *   text label    -> scale degree or letter      (.key-label)
  *   stroke weight -> root                        (ring on the root mark)
  *   badge + label -> chord provenance            (.coach-timeline-badge)
+ *   ring          -> a note you are playing      (data-played)
+ *   shape bar     -> the keys of a chord voicing  (data-shape, chord by chord)
  * Interface chrome uses ink and surface tokens only, so no control can be
  * mistaken for a hand.
  */
@@ -287,8 +289,31 @@ body {
   background: transparent;
 }
 
-.piano-key[data-out-of-lens] {
+.piano-key[data-out-of-lens],
+.piano-key[data-dimmed] {
   opacity: 0.35;
+}
+
+/* The chord shape: an ink bar across each key to press, just above its degree
+   label. It sits in the lower part of the key because black keys cover the top of
+   the white ones. Neutral, like the role marks, so it never reads as a hand. */
+.piano-key[data-shape]::before {
+  content: "";
+  position: absolute;
+  bottom: 30px;
+  left: 4px;
+  right: 4px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--key-mark-on-white);
+  pointer-events: none;
+}
+
+.piano-key.black[data-shape]::before {
+  bottom: 27px;
+  left: 3px;
+  right: 3px;
+  background: var(--key-mark-on-black);
 }
 
 /* A sounding key is filled with its hand's hue; keep the mark legible on it. */
@@ -514,6 +539,160 @@ body {
 
 .coach-change {
   margin-top: var(--space-2);
+}
+
+/* ---- Session: steps, instruction, summary ----------------------------- */
+
+.coach-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.coach-length select {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+}
+
+.coach-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+  gap: var(--space-2);
+  margin: var(--space-3) 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.coach-step {
+  display: grid;
+  gap: var(--space-1);
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.coach-step[data-state="current"] {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.coach-step-bar {
+  display: block;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+  overflow: hidden;
+}
+
+.coach-step-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--ink);
+  transform-origin: left center;
+  transition: transform 250ms linear;
+}
+
+.coach-instruction {
+  margin: var(--space-2) 0 0;
+  line-height: 1.4;
+}
+
+.coach-due {
+  color: var(--ink-muted);
+}
+
+.coach-summary-done .coach-complete {
+  margin: 0 0 var(--space-2);
+}
+
+.coach-covered {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+}
+
+.coach-covered-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* ---- Breakdown views ------------------------------------------------------ */
+
+.coach-views {
+  margin-bottom: var(--space-3);
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.coach-detail {
+  margin: var(--space-3) 0;
+}
+
+.coach-chord {
+  margin: 0;
+  min-width: 9rem;
+  text-align: center;
+}
+
+.coach-chord-name {
+  font-size: 1.5rem;
+  font-weight: 750;
+}
+
+.coach-chord-count,
+.coach-hint {
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+}
+
+.coach-blurb {
+  margin: var(--space-2) 0 var(--space-1);
+  font-size: 1.05rem;
+}
+
+.coach-hint {
+  margin: 0;
+}
+
+.coach-motif {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.coach-motif-note {
+  min-width: 2.75rem;
+  min-height: var(--touch-target);
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+/* The note sounding now: weight and ink, not a hand colour. */
+.coach-motif-note[aria-current="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--surface);
 }
 
 /* ---- The drawer: legacy controls, relocated rather than ported ----------- */

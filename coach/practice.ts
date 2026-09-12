@@ -11,6 +11,11 @@ export type PracticeControls = {
   loop: boolean;
   /** Zero-based bar the player has isolated, or null for the whole piece. */
   focusBar: number | null;
+  /**
+   * Play only the first N bars when no bar is isolated, e.g. one pass of a motif
+   * that is shorter than the progression. Null plays every bar.
+   */
+  phraseBars: number | null;
 };
 
 export const DEFAULT_PRACTICE_CONTROLS: Readonly<PracticeControls> = Object.freeze({
@@ -18,6 +23,7 @@ export const DEFAULT_PRACTICE_CONTROLS: Readonly<PracticeControls> = Object.free
   slow: false,
   loop: true,
   focusBar: null,
+  phraseBars: null,
 });
 
 export const HALF_SPEED_RATE = 0.5;
@@ -39,12 +45,19 @@ export function buildPracticeRequest(
   return {
     score,
     parts: partsForLens(controls.lens),
-    barRange: focusBar == null ? [0, score.meta.bars - 1] : [focusBar, focusBar],
+    barRange: barRangeFor(score, focusBar, controls.phraseBars),
     rate: controls.slow ? HALF_SPEED_RATE : 1,
     loop: controls.loop,
     countIn: options.countIn,
     tempoBpm: options.tempoBpm,
   };
+}
+
+function barRangeFor(score: Score, focusBar: number | null, phraseBars: number | null): [number, number] {
+  if (focusBar != null) return [focusBar, focusBar];
+  const lastBar = score.meta.bars - 1;
+  if (phraseBars == null || !Number.isInteger(phraseBars) || phraseBars < 1) return [0, lastBar];
+  return [0, Math.min(lastBar, phraseBars - 1)];
 }
 
 /** A focus bar that no longer exists after the assignment changes is dropped. */

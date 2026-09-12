@@ -52,8 +52,8 @@ describe("Score descriptions", () => {
     expect(describeAssignment(score, assignment)).toBe(
       "C major. I–V–vi–IV. Pop 8ths (Root/Octave) underneath, 1 → 3 → 5 → 1, climbs and lands on top.",
     );
-    expect(describeChordFunction(score.bars[0])).toBe("I — feels like home.");
-    expect(describeChordFunction(score.bars[1])).toBe("V — pulls toward home.");
+    expect(describeChordFunction(score.bars[0], score)).toBe("I — home. Every phrase can land here.");
+    expect(describeChordFunction(score.bars[1], score)).toBe("V — the strongest pull back to home.");
   });
 
   it("describes one motif cycle even when the score ends partway through a later repeat", () => {

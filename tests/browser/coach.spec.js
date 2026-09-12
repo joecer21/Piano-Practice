@@ -32,6 +32,7 @@ test("land, start five minutes, then loop bar 3 with the left hand at half speed
     });
   await expect(page.locator(".coach-count-in")).toHaveText(/Count-in [1-4]/);
 
+  await page.getByRole("button", { name: "Hands apart" }).click();
   await page.getByRole("button", { name: /^Bar 3,/ }).click();
   await page.getByRole("button", { name: "Left hand" }).click();
   await page.getByRole("button", { name: "Half speed" }).click();
@@ -129,7 +130,7 @@ test("coach controls meet touch targets and the page never scrolls sideways", as
 
   const undersized = await page
     .locator(
-      ".coach-session button, .coach-transport button, .coach-timeline-bar, .coach-link, .coach-more > summary",
+      ".coach-session button, .coach-transport button, .coach-views button, .coach-length select, .coach-timeline-bar, .coach-link, .coach-more > summary",
     )
     .evaluateAll((elements) =>
       elements
@@ -145,4 +146,78 @@ test("coach controls meet touch targets and the page never scrolls sideways", as
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );
   expect(overflow).toBeLessThanOrEqual(0);
+});
+
+test("a guided session walks the breakdown views and ends with a summary", async ({ page }) => {
+  const pageErrors = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  await page.goto("/");
+  await waitForPiano(page);
+
+  await page.getByRole("button", { name: "Start 5 minutes" }).click();
+  const steps = page.getByRole("list", { name: "Session steps" }).getByRole("listitem");
+  await expect(steps).toHaveCount(6);
+  await expect(steps.nth(0)).toHaveAttribute("aria-current", "step");
+  await expect(page.locator(".coach-instruction")).toContainText("Listen once through");
+
+  await page.getByRole("button", { name: "Next step" }).click();
+  await expect(page.getByRole("button", { name: "Hands apart" })).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(() => page.evaluate(() => window.__coachPlayback)).toMatchObject({ parts: ["lh"] });
+
+  await page.getByRole("button", { name: "Next step" }).click();
+  await page.getByRole("button", { name: "Next step" }).click();
+  await expect(page.getByRole("button", { name: "Chord by chord" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#piano-visual .piano-key[data-shape]").first()).toBeAttached();
+  await expect(page.locator(".coach-blurb")).toContainText(" — ");
+
+  await page.getByRole("button", { name: "Next step" }).click();
+  await expect(page.getByRole("list", { name: /Motif degrees/ })).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => window.__coachPlayback))
+    .toMatchObject({ parts: ["rh"], rate: 0.5 });
+
+  await page.getByRole("button", { name: "Next step" }).click();
+  await page.getByRole("button", { name: "Finish" }).click();
+  await expect(page.getByText("5 minutes done.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Again, same assignment" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Play", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+
+  const before = await page.getByTestId("coach-sentence").textContent();
+  await page.getByRole("button", { name: "Again in a new key" }).click();
+  await expect(page.getByRole("timer")).toBeVisible();
+  const after = await page.getByTestId("coach-sentence").textContent();
+  // Same material, new key: the key changes, the rest of the sentence does not.
+  expect(after.split(". ")[0]).not.toBe(before.split(". ")[0]);
+  expect(after.split(". ").slice(1).join(". ")).toBe(before.split(". ").slice(1).join(". "));
+  expect(pageErrors).toEqual([]);
+});
+
+test("the chord shape mark is neutral ink, never a hand colour", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Chord by chord" }).click();
+  await expect(page.locator("#piano-visual .piano-key[data-shape]").first()).toBeAttached();
+
+  const audit = await page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement);
+    const toRgb = (value) => {
+      const probe = document.createElement("span");
+      probe.style.color = value.trim();
+      document.body.append(probe);
+      const rgb = getComputedStyle(probe).color;
+      probe.remove();
+      return rgb;
+    };
+    const hands = [toRgb(root.getPropertyValue("--hand-lh")), toRgb(root.getPropertyValue("--hand-rh"))];
+    const marks = [...document.querySelectorAll("#piano-visual .piano-key[data-shape]:not(.active)")].map(
+      (key) => getComputedStyle(key, "::before").backgroundColor,
+    );
+    const dimmed = document.querySelectorAll("#piano-visual .piano-key[data-dimmed]").length;
+    return { count: marks.length, usesHandHue: marks.some((colour) => hands.includes(colour)), dimmed };
+  });
+  expect(audit.count).toBeGreaterThan(0);
+  expect(audit.usesHandHue).toBe(false);
+  expect(audit.dimmed).toBeGreaterThan(0);
 });

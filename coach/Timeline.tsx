@@ -72,7 +72,7 @@ export const Timeline = memo(function Timeline({
               type="button"
               className="coach-timeline-bar"
               aria-pressed={selected}
-              aria-label={`Bar ${bar.barIndex + 1}, ${bar.chordSymbol}. ${describeChordFunction(bar)}${
+              aria-label={`Bar ${bar.barIndex + 1}, ${bar.chordSymbol}. ${describeChordFunction(bar, score)}${
                 selected ? " Selected; press again to play the whole piece." : " Select to practice this bar."
               }`}
               onClick={() => onSelectBar(selected ? null : bar.barIndex)}

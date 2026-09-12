@@ -70,6 +70,12 @@ Sample filenames spell sharps with `s` (`ds3vl.mp3`), because a literal `#` in a
 - `tests/browser/` covers the practice flow and pins previously-shipped defects as user-visible behaviour.
 - `tests/support/fingerprint.js` and `scripts/fingerprint.mjs` implement the musical fingerprint; `tests/support/score-fingerprint.js`, `tests/score-fingerprint.spec.js` and `scripts/score-fingerprint.mjs` implement the Score fingerprint.
 
+## Practising
+
+**Start 5 minutes** runs a guided session: the whole thing, left hand, right hand, chord by chord, note by note, then free improvisation over the loop, with one line of instruction for each step. Time is shared 60/45/45/60/45/45 seconds, and a step whose time is up moves on at the next bar line rather than mid-bar. Sessions can also be 2 or 10 minutes, or untimed. The summary shows what was covered and offers the same assignment again, or the same material in a new key.
+
+Outside a session the same four views are one click apart. **Hands apart** isolates a hand; selecting a bar loops it. **Chord by chord** marks the exact keys of each chord's voicing, dims everything outside the chord, and says why the chord is there ("V — the strongest pull back to home."). That wording comes from the chord's real distance from the key and its intervals, not from how the numeral is spelled. **Note by note** shows the motif as degrees and plays it with the right hand at half speed.
+
 ## Playing along
 
 The keyboard mirrors whatever you play. Mouse, touch, the focused on-screen key and computer keys all feed one note stream, and so does a MIDI keyboard once connected. Computer keys A W S E D F T G Y H U J K play one octave; Z and X move it.
@@ -78,7 +84,7 @@ The keyboard mirrors whatever you play. Mouse, touch, the focused on-screen key 
 
 ## Visual channels
 
-The coach gives each musical fact one visual channel, so none can be mistaken for another. Hue means only which hand is sounding. Note role is fill weight: chord tones and the root are solid marks, scale tones are outlined, and notes outside the scale are unmarked. The root carries a heavier ring. Chord provenance (borrowed, secondary) is a text badge. What you play is a neutral ring on the key, solid while held and a thin double ring while it rings on the pedal, so your own notes are never mistaken for the assignment sounding. Interface controls use neutral ink, so no button can be read as a hand. `tests/browser/coach.spec.js` asserts this against computed styles.
+The coach gives each musical fact one visual channel, so none can be mistaken for another. Hue means only which hand is sounding. Note role is fill weight: chord tones and the root are solid marks, scale tones are outlined, and notes outside the scale are unmarked. The root carries a heavier ring. Chord provenance (borrowed, secondary) is a text badge. In chord by chord, an ink bar marks each key of the voicing. What you play is a neutral ring on the key, solid while held and a thin double ring while it rings on the pedal, so your own notes are never mistaken for the assignment sounding. Interface controls use neutral ink, so no button can be read as a hand. `tests/browser/coach.spec.js` asserts this against computed styles.
 
 ## Fingerprints
 
