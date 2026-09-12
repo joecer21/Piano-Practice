@@ -559,7 +559,7 @@
     {
       "time": 0,
       "beats": 4,
-      "dur": "4n",
+      "dur": "1m",
       "rest": false,
       "notes": [
         "G4"

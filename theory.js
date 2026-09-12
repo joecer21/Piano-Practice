@@ -161,14 +161,30 @@ const DEGREE_TO_ROMAN = [
   "VII",
 ];
 
-export const DURATION_LABELS = {
-  2: "half",
-  1: "quarter",
-  0.5: "eighth",
-  0.25: "sixteenth",
-  1.5: "dotted-quarter",
-  0.75: "dotted-eighth",
-};
+// One source of truth for duration. Every `beats` value the engine can emit must
+// appear here; the three derived views below are generated from it rather than
+// hand-maintained in parallel, which is how 3- and 4-beat notes silently became
+// quarter notes. `beats` is canonical - Tone notation is a rendering of it.
+export const DURATION_TABLE = Object.freeze([
+  { beats: 0.25, tone: "16n", label: "sixteenth" },
+  { beats: 0.5, tone: "8n", label: "eighth" },
+  { beats: 0.75, tone: "8n.", label: "dotted-eighth" },
+  { beats: 1, tone: "4n", label: "quarter" },
+  { beats: 1.5, tone: "4n.", label: "dotted-quarter" },
+  { beats: 2, tone: "2n", label: "half" },
+  { beats: 3, tone: "2n.", label: "dotted-half" },
+  { beats: 4, tone: "1m", label: "whole" },
+]);
+
+export const DURATION_LABELS = Object.freeze(
+  Object.fromEntries(DURATION_TABLE.map((entry) => [entry.beats, entry.label])),
+);
+
+const TONE_BY_BEATS = new Map(DURATION_TABLE.map((entry) => [entry.beats, entry.tone]));
+const BEATS_BY_TONE = new Map([
+  ...DURATION_TABLE.map((entry) => [entry.tone, entry.beats]),
+  ["1n", 4], // common alias for a whole note
+]);
 
 export const DEGREE_POOLS = {
   simple: [1, 2, 3, 5],
@@ -1008,14 +1024,18 @@ export function durationToNotation(beats) {
   return DURATION_LABELS[beats] || `${beats.toFixed(2)} beat`;
 }
 
+/**
+ * Render numeric beats as Tone.js notation.
+ * An unmapped value resolves to the nearest tabled duration rather than a fixed
+ * quarter note, so a long note can never again be silently truncated.
+ */
 export function beatsToTone(beats) {
-  if (beats === 2) return "2n";
-  if (beats === 1.5) return "4n.";
-  if (beats === 1) return "4n";
-  if (beats === 0.75) return "8n.";
-  if (beats === 0.5) return "8n";
-  if (beats === 0.25) return "16n";
-  return "4n";
+  const exact = TONE_BY_BEATS.get(beats);
+  if (exact) return exact;
+  const nearest = DURATION_TABLE.reduce((best, entry) =>
+    Math.abs(entry.beats - beats) < Math.abs(best.beats - beats) ? entry : best,
+  );
+  return nearest.tone;
 }
 
 export function timeFromBar(bar, beatFraction) {
@@ -1042,16 +1062,7 @@ export function transportToBeats(timeStr) {
 }
 
 export function toneToBeatsFromDuration(duration) {
-  switch (duration) {
-    case "1m": return 4;
-    case "2n": return 2;
-    case "4n": return 1;
-    case "4n.": return 1.5;
-    case "8n": return 0.5;
-    case "8n.": return 0.75;
-    case "16n": return 0.25;
-    default: return 1;
-  }
+  return BEATS_BY_TONE.get(duration) ?? 1;
 }
 
 export function noteStringToMidi(noteStr) {
