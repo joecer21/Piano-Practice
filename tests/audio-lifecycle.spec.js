@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // was disposed, so leaks are observable rather than inferred.
 const live = new Set();
 const built = [];
+const samplerOutcomes = [];
 
 class MockNode {
   constructor(kind) {
@@ -47,7 +48,14 @@ vi.mock("tone", () => {
     constructor(options) {
       super("Sampler");
       // Tone loads asynchronously; resolve on a microtask like the real thing.
-      queueMicrotask(() => options?.onload?.());
+      const outcome = samplerOutcomes.shift() || "load";
+      queueMicrotask(() => {
+        if (outcome === "error") {
+          options?.onerror?.(new Error("simulated sampler failure"));
+        } else {
+          options?.onload?.();
+        }
+      });
     }
   }
   let nextEventId = 1;
@@ -114,6 +122,7 @@ let audio;
 beforeEach(async () => {
   live.clear();
   built.length = 0;
+  samplerOutcomes.length = 0;
   global.fetch = vi.fn(async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) }));
   vi.resetModules();
   audio = await import("../audio.js");
@@ -161,6 +170,27 @@ describe("audio graph lifecycle", () => {
     }
     expect(live.size).toBe(0);
     expect(built.length).toBeGreaterThan(0);
+  });
+
+  it("disposes a successful part when its sibling sampler load fails", async () => {
+    await audio.initSynths();
+    const initialSamplerCount = built.filter((node) => node.kind === "Sampler").length;
+
+    // Fuhton constructs low/high layers for left, then low/high for lead. Let
+    // the left part finish before the lead part fails. Promise.all used to lose
+    // ownership of the already-successful left sampler here.
+    samplerOutcomes.push("load", "load", "load", "error");
+
+    await expect(audio.requestLibraryLoad("fuhton-piano")).rejects.toThrow("simulated sampler failure");
+
+    const failedLibraryNodes = built
+      .filter((node) => node.kind === "Sampler")
+      .slice(initialSamplerCount, initialSamplerCount + 4);
+    expect(failedLibraryNodes).toHaveLength(4);
+    expect(failedLibraryNodes.every((node) => node.disposed)).toBe(true);
+
+    // The existing two single-layer default samplers remain active.
+    expect(countLive("Sampler")).toBe(2);
   });
 });
 

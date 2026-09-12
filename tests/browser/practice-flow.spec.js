@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("loads, generates, plays, stops, and switches piano models", async ({ page }) => {
+test("loads, generates, plays, stops, and switches piano models", async ({ page }, testInfo) => {
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "5-Minute Improv Coach" })).toBeVisible();
@@ -40,7 +40,7 @@ test("loads, generates, plays, stops, and switches piano models", async ({ page 
 
   const livePiano = page.locator("#piano-visual");
   await expect(page.getByRole("heading", { name: "Live Piano" })).toBeVisible();
-  await expect(livePiano.locator(".piano-key")).toHaveCount(53);
+  await expect(livePiano.locator(".piano-key")).toHaveCount(testInfo.project.name === "mobile" ? 25 : 53);
   const middleC = livePiano.locator('[data-note="C4"]');
   await middleC.scrollIntoViewIfNeeded();
   await middleC.hover();

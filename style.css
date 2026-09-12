@@ -242,6 +242,11 @@ body {
   cursor: pointer;
 }
 
+.piano-qwerty-help {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+}
+
 .piano-control {
   display: flex;
   flex-direction: column;
@@ -268,6 +273,7 @@ body {
   padding: 0.35rem 0 0.65rem;
   scrollbar-width: thin;
   overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .piano-visual {
@@ -281,7 +287,7 @@ body {
   border: 1px solid #dfcfc2;
   border-radius: 16px;
   background: #eee4dc;
-  touch-action: none;
+  touch-action: auto;
 }
 
 .piano-keys {
@@ -301,11 +307,27 @@ button.piano-key {
   border-radius: 0 0 5px 5px;
   box-shadow: none;
   cursor: pointer;
-  touch-action: none;
+  touch-action: auto;
   transition:
     background 80ms ease,
     border-color 80ms ease,
     box-shadow 80ms ease;
+}
+
+.piano-visual.gliss-mode,
+.piano-visual.gliss-mode .piano-key {
+  touch-action: none;
+}
+
+:where(button, input, select, textarea, [contenteditable="true"]):focus-visible {
+  outline: 3px solid #175f8f;
+  outline-offset: 3px;
+}
+
+button.piano-key:focus-visible {
+  z-index: 5;
+  outline-color: #ffb15c;
+  outline-offset: -4px;
 }
 
 button.piano-key:hover {
@@ -849,6 +871,13 @@ button.primary-action {
 }
 
 @media (max-width: 600px) {
+  :root {
+    --piano-white-width: 48px;
+    --piano-black-width: 44px;
+    --piano-white-height: 148px;
+    --piano-black-height: 104px;
+  }
+
   .hero {
     flex-direction: column;
     align-items: flex-start;
@@ -857,6 +886,11 @@ button.primary-action {
   button,
   select {
     font-size: 1rem;
+  }
+
+  .piano-indicator-toggle label,
+  .piano-hover-toggle {
+    min-height: 44px;
   }
 
   .timeline {
@@ -876,6 +910,17 @@ button.primary-action {
   .assignment-locks {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 .chord-palette {

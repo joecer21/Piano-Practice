@@ -17,7 +17,7 @@ npm run dev
 
 Open the local URL printed by Vite. Choose a preset for a ready-made assignment, or select **Show Controls** to customize it. Browser audio begins after the first click, as required by modern autoplay policies.
 
-The **Live Piano** renders C2-E6 and follows assignment playback with separate left- and right-hand colors. It can also be played directly with mouse or touch, including hover mode and single-note, diatonic, suspended, and extended chord shapes.
+The **Live Piano** renders C2-E6 on larger screens and a touch-friendly C3-C5 range on phones. It follows assignment playback with separate left- and right-hand colors and supports click/tap, an explicit gliss mode, roving arrow-key focus with Enter/Space, and opt-in A-W-S-E-D-F-T-G-Y-H-U-J-K note keys. Computer-key shortcuts pause while a form control has focus.
 
 ## Commands
 

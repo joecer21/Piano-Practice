@@ -881,7 +881,7 @@ function buildStyleVoicingCandidates({
   rawNotes,
   patternType,
   patternMetadata,
-  anchorMidi,
+  anchorMidi: _anchorMidi,
   styleStrategy,
 }) {
   const fallbackAnchor = patternMetadata.defaultAnchor || "C3";
@@ -1548,11 +1548,11 @@ function extractOctaveNumber(noteStr, defaultOctave = 3) {
 
 function computeDefaultHandAnchors({
   key,
-  mode,
+  mode: _mode,
   styleId,
   motifStyle,
   leftHandPatternId,
-  leftPatternMeta,
+  leftPatternMeta: _leftPatternMeta,
   styleAnchors,
 }) {
   const rhCandidate = deriveRhAnchorCandidate({ key, motifStyle, styleAnchors });

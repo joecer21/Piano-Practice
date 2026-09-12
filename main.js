@@ -11,6 +11,7 @@ import "./style.css";
 import { generateAssignment, validateAssignmentInputs } from "./domain/assignment.js";
 import { getLivePianoChordNotes } from "./domain/live-piano.js";
 import { createAppStore } from "./application/state.js";
+import { createAudioUnlock } from "./application/audio-unlock.js";
 import {
   attachPianoNoteListeners,
   buildPianoVisual,
@@ -98,13 +99,27 @@ let librarySwitchPending = false;
 let playbackSession = null;
 let playbackRafId = null;
 const activeLivePianoNotes = new Map();
+const pressedLivePianoRoots = new Set();
 
 const dom = {};
+const unlockAudio = createAudioUnlock({
+  start: () => Tone.start(),
+  onUnlocked: () => window.removeEventListener("click", handleUnlockClick),
+  onBlocked: (error, message) => {
+    console.warn("Audio unlock failed", error);
+    setStatusMessage(dom, message, { tone: "error" });
+  },
+});
 
 function init() {
   Object.assign(dom, cacheDom());
   dom.__pianoIndicatorMode = state.ui.livePianoIndicatorMode;
   dom.__pianoGlissMode = state.ui.livePianoGlissMode;
+  dom.__pianoComputerKeyboardEnabled = state.ui.livePianoComputerKeyboardEnabled;
+  if (dom.pianoGlissToggle) dom.pianoGlissToggle.checked = state.ui.livePianoGlissMode;
+  if (dom.pianoComputerKeyboardToggle) {
+    dom.pianoComputerKeyboardToggle.checked = state.ui.livePianoComputerKeyboardEnabled;
+  }
   if (dom.pianoChordMode) dom.pianoChordMode.value = state.ui.livePianoChordMode;
   buildPianoVisual(dom);
   attachPianoNoteListeners(dom);
@@ -180,6 +195,7 @@ function init() {
     onPianoKeyUp: handlePianoKeyUp,
     onPianoIndicatorModeChange: handlePianoIndicatorModeChange,
     onPianoGlissModeChange: handlePianoGlissModeChange,
+    onPianoComputerKeyboardChange: handlePianoComputerKeyboardChange,
     onPianoChordModeChange: handlePianoChordModeChange,
   });
   dom.playAllLoop?.addEventListener("change", handlePlayAllLoopToggle);
@@ -417,33 +433,6 @@ function ensureAssignmentReady() {
   return ready;
 }
 
-let audioUnlocked = false;
-
-/**
- * Bring the AudioContext out of its suspended state.
- *
- * Browsers require a user gesture, and Tone.start() can reject. Previously that
- * rejection was logged and swallowed: on boot the user saw nothing, and pressing
- * a piano key simply did nothing with no explanation.
- *
- * @returns {Promise<boolean>} whether audio is now running
- */
-async function unlockAudio() {
-  if (audioUnlocked) return true;
-  try {
-    await Tone.start();
-    audioUnlocked = true;
-    window.removeEventListener("click", handleUnlockClick);
-    return true;
-  } catch (error) {
-    console.warn("Audio unlock failed", error);
-    setStatusMessage(dom, "Sound is blocked by the browser. Click anywhere on the page to enable audio.", {
-      tone: "error",
-    });
-    return false;
-  }
-}
-
 function handleUnlockClick() {
   void unlockAudio();
 }
@@ -521,8 +510,19 @@ function handleStopAll() {
 }
 
 async function handlePianoKeyDown(rootNote) {
-  if (!rootNote || !ensureSamplerReady()) return;
-  if (!(await unlockAudio())) return;
+  if (!rootNote) return;
+  pressedLivePianoRoots.add(rootNote);
+  if (!ensureSamplerReady()) {
+    pressedLivePianoRoots.delete(rootNote);
+    return;
+  }
+  if (!(await unlockAudio())) {
+    pressedLivePianoRoots.delete(rootNote);
+    return;
+  }
+  // A quick tap can end while the AudioContext is still resuming. Do not start
+  // a sustained note after its corresponding key-up has already happened.
+  if (!pressedLivePianoRoots.has(rootNote)) return;
   const priorNotes = activeLivePianoNotes.get(rootNote) || [];
   priorNotes.forEach((note) => playPreviewNoteUp(note, { part: "lead" }));
   const notes = getLivePianoChordNotes(rootNote, state.ui.livePianoChordMode, state.derived.scale);
@@ -532,6 +532,7 @@ async function handlePianoKeyDown(rootNote) {
 
 function handlePianoKeyUp(rootNote) {
   if (!rootNote) return;
+  pressedLivePianoRoots.delete(rootNote);
   const notes = activeLivePianoNotes.get(rootNote) || [];
   notes.forEach((note) => playPreviewNoteUp(note, { part: "lead" }));
   activeLivePianoNotes.delete(rootNote);
@@ -544,6 +545,10 @@ function handlePianoIndicatorModeChange(mode) {
 
 function handlePianoGlissModeChange(enabled) {
   state.ui.livePianoGlissMode = !!enabled;
+}
+
+function handlePianoComputerKeyboardChange(enabled) {
+  state.ui.livePianoComputerKeyboardEnabled = !!enabled;
 }
 
 function handlePianoChordModeChange(mode) {
@@ -607,6 +612,7 @@ function applyPlayAllLoop(enabled) {
 
 function stopAllPlayback() {
   stopTransport();
+  pressedLivePianoRoots.clear();
   activeLivePianoNotes.clear();
   publishTransportState();
   stopPlaybackVisuals();

@@ -49,7 +49,15 @@
             >Preset
             <select id="preset-select"></select>
           </label>
-          <button id="advanced-controls-toggle" class="ghost small" type="button">Show Controls</button>
+          <button
+            id="advanced-controls-toggle"
+            class="ghost small"
+            type="button"
+            aria-expanded="false"
+            aria-controls="advanced-controls-card"
+          >
+            Show Controls
+          </button>
         </div>
         <p class="muted">
           Choose a curated setup to auto-fill everything. Reveal controls if you want to tweak before
@@ -187,12 +195,20 @@
           No chords yet. Click the buttons above to build your own sequence.
         </p>
       </article>
-      <section class="card mix-card collapsed">
+      <section class="card mix-card collapsed" id="mix-card">
         <div class="card-head">
           <h2>Mix & Feel</h2>
-          <button id="mix-card-toggle" class="ghost small" type="button">Show</button>
+          <button
+            id="mix-card-toggle"
+            class="ghost small"
+            type="button"
+            aria-expanded="false"
+            aria-controls="mix-card-content"
+          >
+            Show
+          </button>
         </div>
-        <div class="mix-grid">
+        <div class="mix-grid" id="mix-card-content">
           <div class="mix-row">
             <div class="mix-label">
               <h4>Left Hand</h4>
@@ -249,9 +265,9 @@
         <article class="card live-piano-card" id="piano-visual-card">
           <div class="card-head live-piano-head">
             <div>
-              <h2>Live Piano</h2>
-              <p class="muted live-piano-help">
-                Click or drag across the keys. Playback lights left and right hands separately.
+              <h2 id="live-piano-title">Live Piano</h2>
+              <p class="muted live-piano-help" id="live-piano-help">
+                Tap or click a key. Turn on Gliss / play to drag across notes; playback lights each hand.
               </p>
             </div>
             <div class="piano-controls">
@@ -280,12 +296,24 @@
                 </select>
               </label>
               <label class="piano-hover-toggle" for="piano-gliss-mode">
-                <input type="checkbox" id="piano-gliss-mode" /> Hover mode
+                <input type="checkbox" id="piano-gliss-mode" /> Gliss / play
+              </label>
+              <label class="piano-hover-toggle" for="piano-computer-keyboard">
+                <input type="checkbox" id="piano-computer-keyboard" /> Computer keys
               </label>
             </div>
           </div>
+          <p class="muted piano-qwerty-help" id="piano-qwerty-help">
+            Computer keys: A W S E D F T G Y H U J K play C4–C5. Shortcuts pause while using a form control.
+          </p>
           <div class="piano-visual-wrapper">
-            <div id="piano-visual" class="piano-visual" aria-label="Interactive piano keyboard"></div>
+            <div
+              id="piano-visual"
+              class="piano-visual"
+              role="group"
+              aria-labelledby="live-piano-title"
+              aria-describedby="live-piano-help piano-qwerty-help"
+            ></div>
           </div>
         </article>
         <article class="card" id="piano-roll-card">

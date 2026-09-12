@@ -887,23 +887,47 @@ async function prefetchLibrary(library, { signal, onProgress } = {}) {
 
 async function swapSamplersForLibrary(library) {
   const freshSamplers = {};
+  let loadFailed = false;
+
+  const disposeFreshSamplers = () => {
+    Object.entries(freshSamplers).forEach(([partId, sampler]) => {
+      disposeNode(sampler, `${library.label} ${partId} sampler (abandoned load)`);
+      delete freshSamplers[partId];
+    });
+  };
+
   try {
-    const results = await Promise.all(PART_IDS.map((partId) => createSamplerForPart(partId, library)));
-    results.forEach(({ partId, sampler }) => {
-      freshSamplers[partId] = sampler;
+    await Promise.all(
+      PART_IDS.map((partId) =>
+        createSamplerForPart(partId, library).then(
+          ({ sampler }) => {
+            // Promise.all rejects immediately. A sibling load may still finish
+            // afterward, so dispose that late success instead of orphaning it.
+            if (loadFailed) {
+              disposeNode(sampler, `${library.label} ${partId} sampler (late sibling load)`);
+              return;
+            }
+            freshSamplers[partId] = sampler;
+          },
+          (error) => {
+            loadFailed = true;
+            disposeFreshSamplers();
+            throw error;
+          },
+        ),
+      ),
+    );
+
+    PART_IDS.forEach((partId) => {
+      const sampler = freshSamplers[partId];
       const targetNode = getPartInputNode(partId);
-      if (targetNode) {
+      if (sampler && targetNode) {
         sampler.connect(targetNode);
       }
     });
   } catch (err) {
-    Object.values(freshSamplers).forEach((sampler) => {
-      try {
-        sampler.dispose();
-      } catch (disposeErr) {
-        console.warn("Failed to dispose sampler after error", disposeErr);
-      }
-    });
+    loadFailed = true;
+    disposeFreshSamplers();
     throw err;
   }
 

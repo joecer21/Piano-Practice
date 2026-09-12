@@ -46,6 +46,7 @@ export function createInitialAppState(overrides = {}) {
       advancedCollapsed: true,
       livePianoIndicatorMode: "both",
       livePianoGlissMode: false,
+      livePianoComputerKeyboardEnabled: false,
       livePianoChordMode: "single",
     },
     locks: createAssignmentLocks(),

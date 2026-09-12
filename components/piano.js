@@ -3,6 +3,9 @@ import { noteStringToMidi } from "../theory.js";
 const NOTE_ORDER = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const SHARP_TO_FLAT = { "C#": "Db", "D#": "Eb", "F#": "Gb", "G#": "Ab", "A#": "Bb" };
 const FLAT_TO_SHARP = Object.fromEntries(Object.entries(SHARP_TO_FLAT).map(([sharp, flat]) => [flat, sharp]));
+const DESKTOP_RANGE = Object.freeze({ start: "C2", end: "E6" });
+const PHONE_RANGE = Object.freeze({ start: "C3", end: "C5" });
+const PHONE_MEDIA_QUERY = "(max-width: 600px)";
 
 function normalizeNoteId(note) {
   const match = String(note || "")
@@ -74,7 +77,15 @@ function shouldHighlight(mode, part) {
   return true;
 }
 
-export function buildPianoVisual(dom) {
+function responsivePianoRange(compact) {
+  const useCompactRange =
+    typeof compact === "boolean"
+      ? compact
+      : typeof window !== "undefined" && window.matchMedia?.(PHONE_MEDIA_QUERY).matches;
+  return useCompactRange ? PHONE_RANGE : DESKTOP_RANGE;
+}
+
+export function buildPianoVisual(dom, options = {}) {
   const container = dom?.pianoVisual;
   if (!container) return;
 
@@ -82,7 +93,8 @@ export function buildPianoVisual(dom) {
   const wrapper = document.createElement("div");
   wrapper.className = "piano-keys";
 
-  const notes = noteRange();
+  const range = responsivePianoRange(options.compact);
+  const notes = noteRange(options.start || range.start, options.end || range.end);
   const whiteNotes = notes.filter((note) => !note.includes("#"));
   const blackNotes = notes.filter((note) => note.includes("#"));
   const { whiteWidth, blackWidth, whiteHeight, blackHeight } = getPianoDimensions();
@@ -91,7 +103,7 @@ export function buildPianoVisual(dom) {
   const keyMap = new Map();
 
   whiteNotes.forEach((note, index) => {
-    const key = createKey(note, "white");
+    const key = createKey(note, "white", note === "C4");
     const left = index * whiteWidth;
     key.style.left = `${left}px`;
     key.style.width = `${whiteWidth}px`;
@@ -102,7 +114,7 @@ export function buildPianoVisual(dom) {
   });
 
   blackNotes.forEach((note) => {
-    const key = createKey(note, "black");
+    const key = createKey(note, "black", note === "C4");
     const midi = noteStringToMidi(note);
     const previousWhite = noteRangeFromMidi(midi - 1);
     const nextWhite = noteRangeFromMidi(midi + 1);
@@ -119,6 +131,9 @@ export function buildPianoVisual(dom) {
   wrapper.style.width = `${totalWidth}px`;
   wrapper.style.height = `${whiteHeight}px`;
   container.appendChild(wrapper);
+  container.classList.toggle("gliss-mode", !!dom.__pianoGlissMode);
+  container.dataset.rangeStart = notes[0] || "";
+  container.dataset.rangeEnd = notes.at(-1) || "";
   dom.__pianoKeyMap = keyMap;
   dom.__pianoKeyMidiMap = new Map();
   keyMap.forEach((element, note) => {
@@ -127,14 +142,14 @@ export function buildPianoVisual(dom) {
   });
 }
 
-function createKey(note, color) {
+function createKey(note, color, initialTabStop = false) {
   const key = document.createElement("button");
   key.type = "button";
   key.className = `piano-key ${color}`;
   key.dataset.note = note;
-  key.setAttribute("aria-label", note);
+  key.setAttribute("aria-label", `${note} piano key`);
   key.setAttribute("aria-pressed", "false");
-  key.tabIndex = -1;
+  key.tabIndex = initialTabStop ? 0 : -1;
   return key;
 }
 

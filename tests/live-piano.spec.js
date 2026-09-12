@@ -32,6 +32,17 @@ describe("Live Piano", () => {
     expect(dom.pianoVisual.querySelector('[data-note="E6"]')).toBeTruthy();
   });
 
+  it("uses a focused C3-C5 range for phone-sized layouts", () => {
+    const dom = setupPiano();
+    buildPianoVisual(dom, { compact: true });
+
+    expect(dom.pianoVisual.querySelectorAll(".piano-key")).toHaveLength(25);
+    expect(dom.pianoVisual.dataset.rangeStart).toBe("C3");
+    expect(dom.pianoVisual.dataset.rangeEnd).toBe("C5");
+    expect(dom.pianoVisual.querySelector('[data-note="C2"]')).toBeNull();
+    expect(dom.pianoVisual.querySelector('[data-note="C4"]').tabIndex).toBe(0);
+  });
+
   it("lights enharmonic keys and distinguishes left from right hand", () => {
     const dom = setupPiano();
     const detach = attachPianoNoteListeners(dom);

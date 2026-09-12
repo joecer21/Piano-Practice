@@ -66,6 +66,21 @@ const FEEDBACK_DURATION_MAP = {
 const feedbackTimers = new WeakMap();
 const STATUS_DEFAULT_TONE = "neutral";
 const STATUS_TRANSIENT_MS = 4200;
+export const QWERTY_PIANO_NOTES = Object.freeze({
+  a: "C4",
+  w: "C#4",
+  s: "D4",
+  e: "D#4",
+  d: "E4",
+  f: "F4",
+  t: "F#4",
+  g: "G4",
+  y: "G#4",
+  h: "A4",
+  u: "A#4",
+  j: "B4",
+  k: "C5",
+});
 let statusResetTimer = null;
 let lastPersistentStatus = "";
 
@@ -105,6 +120,7 @@ export function cacheDom() {
     pianoVisual: document.getElementById("piano-visual"),
     pianoIndicatorRadios: document.querySelectorAll('input[name="piano-indicator-mode"]'),
     pianoGlissToggle: document.getElementById("piano-gliss-mode"),
+    pianoComputerKeyboardToggle: document.getElementById("piano-computer-keyboard"),
     pianoChordMode: document.getElementById("piano-chord-mode"),
     pianoRoll: document.getElementById("piano-roll"),
     progressionRoman: document.getElementById("progression-roman"),
@@ -200,6 +216,7 @@ export function wireEvents(dom, handlers) {
   });
   dom.pianoGlissToggle?.addEventListener("change", (event) => {
     dom.__pianoGlissMode = event.target.checked;
+    dom.pianoVisual?.classList.toggle("gliss-mode", event.target.checked);
     handlers.onPianoGlissModeChange?.(event.target.checked);
   });
   dom.pianoChordMode?.addEventListener("change", (event) => {
@@ -243,8 +260,10 @@ export function wireEvents(dom, handlers) {
 
 function wireLivePianoInteractions(dom, handlers) {
   if (!dom.pianoVisual || (!handlers.onPianoKeyDown && !handlers.onPianoKeyUp)) return;
-  let mouseDown = false;
-  let activeNote = null;
+  let activePointerId = null;
+  let activePointerNote = null;
+  let keyboardActivationNote = null;
+  const activeComputerKeys = new Map();
 
   const noteAtEvent = (event) => {
     let target = event.target;
@@ -258,60 +277,150 @@ function wireLivePianoInteractions(dom, handlers) {
     return target?.closest?.(".piano-key")?.dataset?.note || null;
   };
 
-  const press = (note) => {
-    if (!note || note === activeNote) return;
-    if (activeNote) handlers.onPianoKeyUp?.(activeNote);
-    activeNote = note;
+  const pressPointerNote = (note) => {
+    if (!note || note === activePointerNote) return;
+    if (activePointerNote) handlers.onPianoKeyUp?.(activePointerNote);
+    activePointerNote = note;
     handlers.onPianoKeyDown?.(note);
   };
 
-  const release = () => {
-    if (!activeNote) return;
-    handlers.onPianoKeyUp?.(activeNote);
-    activeNote = null;
+  const releasePointerNote = () => {
+    if (!activePointerNote) return;
+    handlers.onPianoKeyUp?.(activePointerNote);
+    activePointerNote = null;
   };
 
-  const onMouseUp = () => {
-    mouseDown = false;
-    release();
+  const finishPointer = (event) => {
+    if (event && activePointerId !== null && event.pointerId !== activePointerId) return;
+    releasePointerNote();
+    activePointerId = null;
   };
 
-  dom.pianoVisual.addEventListener("mousedown", (event) => {
+  dom.pianoVisual.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    activePointerId = event.pointerId;
+    if (dom.__pianoGlissMode) event.preventDefault();
+    dom.pianoVisual.setPointerCapture?.(event.pointerId);
+    pressPointerNote(noteAtEvent(event));
+  });
+
+  dom.pianoVisual.addEventListener("pointermove", (event) => {
+    if (event.pointerId !== activePointerId || !dom.__pianoGlissMode) return;
     event.preventDefault();
-    mouseDown = true;
-    press(noteAtEvent(event));
-    window.addEventListener("mouseup", onMouseUp, { once: true });
-  });
-  dom.pianoVisual.addEventListener("mousemove", (event) => {
-    if (!mouseDown && !dom.__pianoGlissMode) return;
     const note = noteAtEvent(event);
-    if (note) press(note);
-    else if (dom.__pianoGlissMode) release();
+    if (note) pressPointerNote(note);
+    else releasePointerNote();
   });
-  dom.pianoVisual.addEventListener("mouseleave", () => {
-    if (dom.__pianoGlissMode && !mouseDown) release();
+
+  dom.pianoVisual.addEventListener("pointerup", finishPointer);
+  dom.pianoVisual.addEventListener("pointercancel", finishPointer);
+  dom.pianoVisual.addEventListener("lostpointercapture", finishPointer);
+
+  const pianoKeysInPitchOrder = () =>
+    [...dom.pianoVisual.querySelectorAll(".piano-key")].sort(
+      (a, b) => noteStringToMidi(a.dataset.note) - noteStringToMidi(b.dataset.note),
+    );
+
+  const setRovingKey = (nextKey) => {
+    if (!nextKey) return;
+    pianoKeysInPitchOrder().forEach((key) => {
+      key.tabIndex = key === nextKey ? 0 : -1;
+    });
+    nextKey.focus();
+  };
+
+  dom.pianoVisual.addEventListener("focusin", (event) => {
+    const key = event.target.closest?.(".piano-key");
+    if (key) setRovingKey(key);
   });
-  dom.pianoVisual.addEventListener(
-    "touchstart",
-    (event) => {
+
+  dom.pianoVisual.addEventListener("keydown", (event) => {
+    const key = event.target.closest?.(".piano-key");
+    if (!key) return;
+
+    const keys = pianoKeysInPitchOrder();
+    const index = keys.indexOf(key);
+    const focusMoves = {
+      ArrowLeft: keys[Math.max(0, index - 1)],
+      ArrowDown: keys[Math.max(0, index - 1)],
+      ArrowRight: keys[Math.min(keys.length - 1, index + 1)],
+      ArrowUp: keys[Math.min(keys.length - 1, index + 1)],
+      Home: keys[0],
+      End: keys.at(-1),
+    };
+
+    if (focusMoves[event.key]) {
       event.preventDefault();
-      mouseDown = true;
-      press(noteAtEvent(event.touches[0] || event));
-    },
-    { passive: false },
-  );
-  dom.pianoVisual.addEventListener(
-    "touchmove",
-    (event) => {
+      setRovingKey(focusMoves[event.key]);
+      return;
+    }
+
+    if ((event.key === "Enter" || event.key === " ") && !event.repeat && !keyboardActivationNote) {
       event.preventDefault();
-      const touch = event.touches[0];
-      if (!touch) return;
-      press(noteAtEvent(touch));
-    },
-    { passive: false },
-  );
-  dom.pianoVisual.addEventListener("touchend", onMouseUp, { passive: true });
-  dom.pianoVisual.addEventListener("touchcancel", onMouseUp, { passive: true });
+      keyboardActivationNote = key.dataset.note;
+      handlers.onPianoKeyDown?.(keyboardActivationNote);
+    }
+  });
+
+  dom.pianoVisual.addEventListener("keyup", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    if (keyboardActivationNote) handlers.onPianoKeyUp?.(keyboardActivationNote);
+    keyboardActivationNote = null;
+  });
+
+  const isFormControl = (target) =>
+    !!target?.closest?.("input, select, textarea, button, [contenteditable='true']");
+
+  const releaseComputerKeys = () => {
+    activeComputerKeys.forEach((note) => handlers.onPianoKeyUp?.(note));
+    activeComputerKeys.clear();
+  };
+
+  window.addEventListener("keydown", (event) => {
+    if (
+      !dom.__pianoComputerKeyboardEnabled ||
+      event.repeat ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    if (isFormControl(event.target)) return;
+    const key = event.key.toLowerCase();
+    const note = QWERTY_PIANO_NOTES[key];
+    if (!note || activeComputerKeys.has(key)) return;
+    event.preventDefault();
+    activeComputerKeys.set(key, note);
+    handlers.onPianoKeyDown?.(note);
+  });
+
+  window.addEventListener("keyup", (event) => {
+    const key = event.key.toLowerCase();
+    const note = activeComputerKeys.get(key);
+    if (!note) return;
+    event.preventDefault();
+    activeComputerKeys.delete(key);
+    handlers.onPianoKeyUp?.(note);
+  });
+
+  window.addEventListener("blur", () => {
+    finishPointer();
+    if (keyboardActivationNote) handlers.onPianoKeyUp?.(keyboardActivationNote);
+    keyboardActivationNote = null;
+    releaseComputerKeys();
+  });
+
+  dom.pianoGlissToggle?.addEventListener("change", (event) => {
+    if (!event.target.checked) finishPointer();
+  });
+
+  dom.pianoComputerKeyboardToggle?.addEventListener("change", (event) => {
+    dom.__pianoComputerKeyboardEnabled = event.target.checked;
+    if (!event.target.checked) releaseComputerKeys();
+    handlers.onPianoComputerKeyboardChange?.(event.target.checked);
+  });
 }
 
 export function renderPlaceholders(dom) {
@@ -748,6 +857,7 @@ export function setMixCardCollapsed(dom, collapsed) {
   }
   if (dom.mixCardToggle) {
     dom.mixCardToggle.textContent = collapsed ? "Show" : "Hide";
+    dom.mixCardToggle.setAttribute("aria-expanded", String(!collapsed));
   }
 }
 
@@ -757,6 +867,7 @@ export function setAdvancedControlsCollapsed(dom, collapsed) {
   }
   if (dom.advancedControlsToggle) {
     dom.advancedControlsToggle.textContent = collapsed ? "Show Controls" : "Hide Controls";
+    dom.advancedControlsToggle.setAttribute("aria-expanded", String(!collapsed));
   }
 }
 

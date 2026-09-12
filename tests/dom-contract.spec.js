@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { JSDOM } from "jsdom";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { cacheDom, renderSamplerStatus } from "../ui.js";
+import { cacheDom, renderSamplerStatus, setAdvancedControlsCollapsed, setMixCardCollapsed } from "../ui.js";
 
 const html = readFileSync(fileURLToPath(new URL("../index.html", import.meta.url)), "utf8");
 
@@ -80,5 +80,19 @@ describe("index.html / cacheDom contract", () => {
     const statusLine = dom.window.document.getElementById("status-line");
     expect(statusLine.getAttribute("role")).toBe("status");
     expect(statusLine.getAttribute("aria-live")).toBe("polite");
+  });
+
+  it("keeps collapse labels and aria-expanded in sync", () => {
+    const cached = cacheDom();
+
+    setMixCardCollapsed(cached, true);
+    setAdvancedControlsCollapsed(cached, true);
+    expect(cached.mixCardToggle.getAttribute("aria-expanded")).toBe("false");
+    expect(cached.advancedControlsToggle.getAttribute("aria-expanded")).toBe("false");
+
+    setMixCardCollapsed(cached, false);
+    setAdvancedControlsCollapsed(cached, false);
+    expect(cached.mixCardToggle.getAttribute("aria-expanded")).toBe("true");
+    expect(cached.advancedControlsToggle.getAttribute("aria-expanded")).toBe("true");
   });
 });
