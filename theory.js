@@ -1227,7 +1227,9 @@ function resolveTriadQuality(parsed, options = {}) {
     options.modeQuality ?? (mode && typeof degree === "number" ? MODE_CHORD_QUALITIES[mode]?.[degree] : null);
   const modeQuality = triadTagToQualityWord(modeQualityTag);
   const romanQuality = parsed.quality || null;
-  const hasExplicitQuality = !!parsed.qualityExplicit;
+  // An altered numeral names a chord outside the mode's own degrees, so the mode's
+  // triad on that degree says nothing about it: "bVII" is major because it is upper case.
+  const hasExplicitQuality = !!parsed.qualityExplicit || !!parsed.accidental;
 
   if (romanQuality) {
     if (!preferModeQuality) return romanQuality;
@@ -1303,6 +1305,18 @@ export function formatChordLabel(rootNote, chordTag) {
   return `${rootNote}${suffix}`;
 }
 
+/**
+ * Semitones from the tonic to a numeral's root. A plain numeral is the mode's own
+ * degree ("VII" in minor is a whole step below home). An altered one is measured
+ * from the major scale, as musicians write it: "bVII" is a whole step below home in
+ * every mode, not a flat applied on top of minor's already-flat seventh.
+ */
+function romanRootOffset(degree, accidental, harmonicIntervals) {
+  if (accidental) return (MAJOR_SCALE_STEPS[degree] ?? 0) + accidental;
+  const interval = harmonicIntervals[degree];
+  return typeof interval === "number" ? interval : (MAJOR_SCALE_STEPS[degree] ?? 0);
+}
+
 export function buildChord(symbol, key, scale, options = {}) {
   const parsed = parseRomanSymbol(symbol);
   const mode = normalizeModeId(options.mode || scale?.mode);
@@ -1311,17 +1325,14 @@ export function buildChord(symbol, key, scale, options = {}) {
   const preferModeQuality = options.preferModeQuality !== false;
   const degree = parsed.degree;
   const accidental = parsed.accidental;
-  const preferFlatExplicit = (parsed.accStr || "").includes("b");
-  const preferSharpExplicit = (parsed.accStr || "").includes("#");
   const keyPrefersFlat = prefersFlatKeySignature(key || scale?.key, mode);
+  // A "b" on a numeral lowers a major-scale degree; it does not promise a flat note.
+  // In a sharp key the lowered degree is a natural or a sharp (bVII of G# minor is F#).
+  const keyHasSharps = /#/.test(key || scale?.key || "");
+  const preferFlatExplicit = (parsed.accStr || "").includes("b") && !keyHasSharps;
+  const preferSharpExplicit = (parsed.accStr || "").includes("#") || keyHasSharps;
   const baseIndex = NOTE_TO_INDEX[key] ?? NOTE_TO_INDEX.C;
   const harmonicIntervals = getHarmonicIntervals(mode);
-
-  const resolveInterval = (idx) => {
-    const interval = harmonicIntervals[idx];
-    if (typeof interval === "number") return interval;
-    return MAJOR_SCALE_STEPS[idx] ?? 0;
-  };
 
   const buildVoicing = (rootNote, chordTag) => {
     const intervals = chordTagToIntervals(chordTag);
@@ -1337,14 +1348,18 @@ export function buildChord(symbol, key, scale, options = {}) {
   const isSecondary = parsed.secondaryTargetDegree != null;
 
   if (isSecondary) {
-    const preferSecondaryFlatExplicit = (parsed.secondaryAccStr || "").includes("b");
-    const preferSecondarySharpExplicit = (parsed.secondaryAccStr || "").includes("#");
+    const preferSecondaryFlatExplicit = (parsed.secondaryAccStr || "").includes("b") && !keyHasSharps;
+    const preferSecondarySharpExplicit = (parsed.secondaryAccStr || "").includes("#") || keyHasSharps;
     const preferSecondaryFlat = preferSecondaryFlatExplicit
       ? true
       : preferSecondarySharpExplicit
         ? false
         : keyPrefersFlat;
-    const targetOffset = resolveInterval(parsed.secondaryTargetDegree) + parsed.secondaryAccidental;
+    const targetOffset = romanRootOffset(
+      parsed.secondaryTargetDegree,
+      parsed.secondaryAccidental,
+      harmonicIntervals,
+    );
     const targetRootIndex = (baseIndex + targetOffset + 120) % 12;
     const secRootIndex = (targetRootIndex + 7) % 12;
     const rootNote = noteNameFromIndex(secRootIndex, preferSecondaryFlat);
@@ -1370,7 +1385,7 @@ export function buildChord(symbol, key, scale, options = {}) {
     };
   }
 
-  const rootOffset = resolveInterval(degree) + accidental;
+  const rootOffset = romanRootOffset(parsed.degree, accidental, harmonicIntervals);
   const rootNoteIndex = (baseIndex + rootOffset + 120) % 12;
   const preferFlatResolved = preferFlatExplicit ? true : preferSharpExplicit ? false : keyPrefersFlat;
   const rootNote = noteNameFromIndex(rootNoteIndex, preferFlatResolved);
@@ -1465,6 +1480,21 @@ function formatSecondaryTargetRoman(parsed) {
   return `${accidental}${targetBase.toUpperCase()}`;
 }
 
+/**
+ * Whether an altered numeral is one of the mode's own chords written the major-scale
+ * way: "bVII" in minor is minor's own seventh chord, so nothing is borrowed.
+ */
+function alteredNumeralIsInMode(parsed, mode) {
+  if (typeof parsed.degree !== "number" || !parsed.accidental) return false;
+  const intervals = getHarmonicIntervals(mode);
+  const offset = ((((MAJOR_SCALE_STEPS[parsed.degree] ?? 0) + parsed.accidental) % 12) + 12) % 12;
+  const modeDegree = intervals.indexOf(offset);
+  if (modeDegree < 0) return false;
+  const tag = MODE_CHORD_QUALITIES[mode]?.[modeDegree];
+  // triadTagToQualityWord folds augmented into major; an augmented degree is not a major chord.
+  return !!tag && tag !== "aug" && triadTagToQualityWord(tag) === parsed.quality;
+}
+
 export function analyzeRomanAgainstMode(symbol, mode) {
   const parsed = typeof symbol === "string" ? parseRomanSymbol(symbol) : { ...symbol };
   const normalizedMode = normalizeModeId(mode);
@@ -1482,7 +1512,7 @@ export function analyzeRomanAgainstMode(symbol, mode) {
   if (isSecondary) {
     reasonCode = "secondary";
     reasonLabel = `Secondary function targeting ${formatSecondaryTargetRoman(parsed) || "another chord"}`;
-  } else if (hasAccidental) {
+  } else if (hasAccidental && !alteredNumeralIsInMode(parsed, normalizedMode)) {
     reasonCode = "accidental";
     const baseRoman = degreeIdx != null ? DEGREE_TO_ROMAN[degreeIdx] : "";
     reasonLabel = `Chromatic alteration (${parsed.accStr}${baseRoman})`;

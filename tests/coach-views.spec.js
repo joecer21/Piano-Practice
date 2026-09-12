@@ -112,7 +112,7 @@ describe("chord function wording", () => {
   // instead of Am-G-F-G. Fixing it changes generated music, so it belongs in its
   // own commit with a reviewed fingerprint re-freeze. When fixed, this test starts
   // failing; replace it.fails with it.
-  it.fails("KNOWN BUG: rock-minor in A minor plays G and F for bVII and bVI", () => {
+  it("plays rock-minor's bVII and bVI in A minor as G and F", () => {
     const minor = scoreFor({ key: "A", mode: "minor", progressionPresetId: "rock-minor", seed: "minor" });
     const roots = minor.bars.slice(0, 4).map((scoreBar) => scoreBar.rootPitchClass);
     expect(roots).toEqual([9, 7, 5, 7]);
