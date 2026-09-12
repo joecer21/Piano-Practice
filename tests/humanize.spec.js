@@ -5,7 +5,7 @@ import {
   scaleVelocityByDynamics,
 } from "../humanize.js";
 import { describe, it } from "vitest";
-import { expectContract as expect } from "./test-helpers.js";
+import { expect } from "vitest";
 
 function makeRng(sequence) {
   let index = 0;
@@ -26,7 +26,7 @@ function run() {
         styleDefaults: { timing: 0.02, velocity: 0.1, swing: 0.1 },
       });
       const beat = applyHumanizeToBeat(4, ctx, 0, () => 1);
-      expect(beat === 4, `Expected beat to remain unchanged, got ${beat}`);
+      expect(beat, `Expected beat to remain unchanged, got ${beat}`).toBe(4);
     });
 
     it("stays within jitter + swing bounds", () => {
@@ -41,9 +41,9 @@ function run() {
       const diff = beat - 8;
       const maxExpected = 0.02 + 0.15;
       expect(
-        diff <= maxExpected + 1e-6,
+        diff,
         `Exceeded jitter+ swing envelope. diff=${diff.toFixed(4)} expected<=${maxExpected}`,
-      );
+      ).toBeLessThanOrEqual(maxExpected + 1e-6);
     });
 
     it("only swings offbeats", () => {
@@ -56,8 +56,8 @@ function run() {
       const rng = makeRng([0.5]);
       const downbeat = applyHumanizeToBeat(4, ctx, 0, rng);
       const offbeat = applyHumanizeToBeat(4.5, ctx, 0, rng);
-      expect(Math.abs(downbeat - 4) < 0.02, `Downbeat should remain near grid, got ${downbeat}`);
-      expect(offbeat > 4.5, `Swing should delay offbeats, got ${offbeat}`);
+      expect(Math.abs(downbeat - 4), `Downbeat should remain near grid, got ${downbeat}`).toBeLessThan(0.02);
+      expect(offbeat, `Swing should delay offbeats, got ${offbeat}`).toBeGreaterThan(4.5);
     });
     it("applies explicit swing position hints", () => {
       const ctx = createHumanizeContext({
@@ -68,7 +68,9 @@ function run() {
       });
       const baseline = applyHumanizeToBeat(2.5, ctx, 0, () => 0.5);
       const swung = applyHumanizeToBeat(2.5, ctx, 0.5, () => 0.5);
-      expect(swung > baseline, `Expected swing-positioned note to be delayed (${swung} vs ${baseline})`);
+      expect(swung, `Expected swing-positioned note to be delayed (${swung} vs ${baseline})`).toBeGreaterThan(
+        baseline,
+      );
     });
   });
 
@@ -83,8 +85,8 @@ function run() {
       const rng = makeRng([0, 1]);
       const lower = getHumanizedVelocity(0.8, ctx, rng);
       const upper = getHumanizedVelocity(0.8, ctx, rng);
-      expect(lower < 0.8, `Expected downward variation, got ${lower}`);
-      expect(upper > 0.8, `Expected upward variation, got ${upper}`);
+      expect(lower, `Expected downward variation, got ${lower}`).toBeLessThan(0.8);
+      expect(upper, `Expected upward variation, got ${upper}`).toBeGreaterThan(0.8);
     });
   });
 
@@ -92,8 +94,8 @@ function run() {
     it("boosts accents and softens ghosts", () => {
       const accented = scaleVelocityByDynamics(0.7, { accent: 0.2 });
       const ghosted = scaleVelocityByDynamics(0.7, { ghost: 0.5 });
-      expect(accented > 0.7, `Accent should increase velocity, got ${accented}`);
-      expect(ghosted < 0.7, `Ghost should decrease velocity, got ${ghosted}`);
+      expect(accented, `Accent should increase velocity, got ${accented}`).toBeGreaterThan(0.7);
+      expect(ghosted, `Ghost should decrease velocity, got ${ghosted}`).toBeLessThan(0.7);
     });
   });
 }

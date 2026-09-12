@@ -1,7 +1,7 @@
 import { createPhrasePlan } from "../engine.js";
 import { noteStringToMidi } from "../theory.js";
 import { describe, it } from "vitest";
-import { expectContract as expect } from "./test-helpers.js";
+import { expect } from "vitest";
 
 const FIXTURES = [
   {
@@ -100,17 +100,16 @@ function run() {
       it(fixture.label, () => {
         const plan = createPhrasePlan(fixture.input);
         expect(
-          plan.rh.anchorNote === fixture.expected.rh,
+          plan.rh.anchorNote,
           `Expected RH anchor ${fixture.expected.rh}, got ${plan.rh.anchorNote}`,
-        );
+        ).toBe(fixture.expected.rh);
         expect(
-          plan.lh.anchorNote === fixture.expected.lh,
+          plan.lh.anchorNote,
           `Expected LH anchor ${fixture.expected.lh}, got ${plan.lh.anchorNote}`,
-        );
+        ).toBe(fixture.expected.lh);
         const gap = noteStringToMidi(plan.rh.anchorNote) - noteStringToMidi(plan.lh.anchorNote);
-        expect(
-          gap === fixture.expected.gap,
-          `Expected LH/RH midi gap ${fixture.expected.gap}, observed ${gap}`,
+        expect(gap, `Expected LH/RH midi gap ${fixture.expected.gap}, observed ${gap}`).toBe(
+          fixture.expected.gap,
         );
       });
     });

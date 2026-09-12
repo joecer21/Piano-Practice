@@ -2,7 +2,7 @@ import { PRESET_CONFIGS } from "../presets.js";
 import { createPhrasePlan, generateProgression, generateScale } from "../engine.js";
 import { getStyleProfile, noteStringToMidi } from "../theory.js";
 import { describe, it } from "vitest";
-import { expectContract as expect } from "./test-helpers.js";
+import { expect } from "vitest";
 
 function runPresetAssertions(preset) {
   const scale = generateScale({ key: preset.key, mode: preset.mode });
@@ -19,13 +19,13 @@ function runPresetAssertions(preset) {
   );
 
   expect(
-    progression?.roman?.length === preset.length,
+    progression?.roman?.length,
     `Preset ${preset.id} expected ${preset.length} bars, received ${progression?.roman?.length}`,
-  );
+  ).toBe(preset.length);
   expect(
     Array.isArray(progression.bars) && progression.bars.every((bar) => bar?.label),
     `Preset ${preset.id} progression returned unlabeled bars`,
-  );
+  ).toBe(true);
 
   const plan = createPhrasePlan({
     key: preset.key,
@@ -36,38 +36,38 @@ function runPresetAssertions(preset) {
     anchors: preset.anchors,
   });
 
-  expect(plan?.lh?.anchorNote, `Preset ${preset.id} missing LH anchor`);
-  expect(plan?.rh?.anchorNote, `Preset ${preset.id} missing RH anchor`);
+  expect(plan?.lh?.anchorNote, `Preset ${preset.id} missing LH anchor`).toBeTruthy();
+  expect(plan?.rh?.anchorNote, `Preset ${preset.id} missing RH anchor`).toBeTruthy();
 
   if (preset.anchors?.lh) {
     const expectedMidi = noteStringToMidi(preset.anchors.lh);
     const actualMidi = noteStringToMidi(plan.lh.anchorNote);
     expect(
-      actualMidi === expectedMidi,
+      actualMidi,
       `Preset ${preset.id} LH anchor drifted (${plan.lh.anchorNote} vs ${preset.anchors.lh})`,
-    );
+    ).toBe(expectedMidi);
   }
 
   if (preset.anchors?.rh) {
     const expectedMidi = noteStringToMidi(preset.anchors.rh);
     const actualMidi = noteStringToMidi(plan.rh.anchorNote);
     expect(
-      actualMidi === expectedMidi,
+      actualMidi,
       `Preset ${preset.id} RH anchor drifted (${plan.rh.anchorNote} vs ${preset.anchors.rh})`,
-    );
+    ).toBe(expectedMidi);
   }
 
   if (preset.anchors?.chords) {
-    expect(
-      plan.lh.chordAnchors === preset.anchors.chords,
-      `Preset ${preset.id} did not forward chord anchors`,
+    expect(plan.lh.chordAnchors, `Preset ${preset.id} did not forward chord anchors`).toBe(
+      preset.anchors.chords,
     );
   }
 
   const lhMidi = noteStringToMidi(plan.lh.anchorNote);
   const rhMidi = noteStringToMidi(plan.rh.anchorNote);
   const gap = rhMidi - lhMidi;
-  expect(gap >= 10 && gap <= 30, `Preset ${preset.id} LH/RH anchor gap ${gap} outside safe range`);
+  expect(gap, `Preset ${preset.id} LH/RH anchor gap ${gap} outside safe range`).toBeGreaterThanOrEqual(10);
+  expect(gap, `Preset ${preset.id} LH/RH anchor gap ${gap} outside safe range`).toBeLessThanOrEqual(30);
 }
 
 function run() {

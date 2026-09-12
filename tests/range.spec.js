@@ -7,7 +7,7 @@ import {
 } from "../engine.js";
 import { HAND_RANGE_SPECS, noteStringToMidi } from "../theory.js";
 import { describe, it } from "vitest";
-import { expectContract as expect } from "./test-helpers.js";
+import { expect } from "vitest";
 
 function collectMidisFromSteps(steps = []) {
   const values = [];
@@ -57,16 +57,20 @@ function run() {
       const lhMidis = leftHand.bars.flatMap((bar) => collectMidisFromSteps(bar.steps));
       const minLh = Math.min(...lhMidis);
       const maxLh = Math.max(...lhMidis);
-      expect(minLh >= noteStringToMidi("C2"), `Left hand dropped below comfort zone: ${minLh}`);
-      expect(maxLh <= noteStringToMidi("C4"), `Left hand exceeded upper comfort zone: ${maxLh}`);
+      expect(minLh, `Left hand dropped below comfort zone: ${minLh}`).toBeGreaterThanOrEqual(
+        noteStringToMidi("C2"),
+      );
+      expect(maxLh, `Left hand exceeded upper comfort zone: ${maxLh}`).toBeLessThanOrEqual(
+        noteStringToMidi("C4"),
+      );
 
       const motif = generateMotif({ motifPatternId: "pop-hook-1351", styleId: "pop", phrasePlan }, scale);
       const motifMidis = collectMidisFromSteps(motif.steps);
       const avgMid = average(motifMidis);
       expect(
-        Math.abs(avgMid - noteStringToMidi("C5")) <= 6,
+        Math.abs(avgMid - noteStringToMidi("C5")),
         `Motif center drifted too far from C5 (avg ${avgMid})`,
-      );
+      ).toBeLessThanOrEqual(6);
     });
 
     it("Arch contour motif stays in RH comfort and peaks once", () => {
@@ -83,11 +87,15 @@ function run() {
       const rhComfort = HAND_RANGE_SPECS.rh.comfort;
       const minMidi = Math.min(...motifMidis);
       const maxMidi = Math.max(...motifMidis);
-      expect(minMidi >= noteStringToMidi(rhComfort.low), `Motif dipped below RH comfort: ${minMidi}`);
-      expect(maxMidi <= noteStringToMidi(rhComfort.high), `Motif exceeded RH comfort: ${maxMidi}`);
+      expect(minMidi, `Motif dipped below RH comfort: ${minMidi}`).toBeGreaterThanOrEqual(
+        noteStringToMidi(rhComfort.low),
+      );
+      expect(maxMidi, `Motif exceeded RH comfort: ${maxMidi}`).toBeLessThanOrEqual(
+        noteStringToMidi(rhComfort.high),
+      );
       const peakThreshold = noteStringToMidi(rhComfort.high) - 1;
       const peaks = motifMidis.filter((midi) => midi >= peakThreshold).length;
-      expect(peaks === 1, `Expected one expressive peak, saw ${peaks}`);
+      expect(peaks, `Expected one expressive peak, saw ${peaks}`).toBe(1);
     });
   });
 }

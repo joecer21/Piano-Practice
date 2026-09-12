@@ -1,25 +1,25 @@
 import { getLoopSettings } from "../audio.js";
 import { describe, it } from "vitest";
-import { expectContract as expect } from "./test-helpers.js";
+import { expect } from "vitest";
 
 function run() {
   describe("Loop helper", () => {
     it("enables looping when total beats present", () => {
       const { shouldLoop, loopStart, loopEnd } = getLoopSettings(16, true);
-      expect(shouldLoop === true, "Expected loop to be enabled for 16 beats");
-      expect(loopStart === 0, `Loop start should be 0, got ${loopStart}`);
-      expect(loopEnd === "4:0:0", `Unexpected loop end ${loopEnd}`);
+      expect(shouldLoop, "Expected loop to be enabled for 16 beats").toBe(true);
+      expect(loopStart, `Loop start should be 0, got ${loopStart}`).toBe(0);
+      expect(loopEnd, `Unexpected loop end ${loopEnd}`).toBe("4:0:0");
     });
 
     it("disables loop when length missing", () => {
       const { shouldLoop, loopEnd } = getLoopSettings(0, true);
-      expect(shouldLoop === false, "Loop should disable when total beats are zero");
-      expect(loopEnd === 0, `Loop end should reset to 0, got ${loopEnd}`);
+      expect(shouldLoop, "Loop should disable when total beats are zero").toBe(false);
+      expect(loopEnd, `Loop end should reset to 0, got ${loopEnd}`).toBe(0);
     });
 
     it("respects toggle flag", () => {
       const { shouldLoop } = getLoopSettings(8, false);
-      expect(shouldLoop === false, "Loop should disable when toggle off");
+      expect(shouldLoop, "Loop should disable when toggle off").toBe(false);
     });
   });
 }

@@ -1,7 +1,7 @@
 import { JSDOM } from "jsdom";
 import { renderSamplerStatus } from "../ui.js";
 import { afterEach, describe, it } from "vitest";
-import { expectContract as expect } from "./test-helpers.js";
+import { expect } from "vitest";
 
 afterEach(() => {
   delete global.document;
@@ -66,8 +66,8 @@ function run() {
       const { pianoSelect } = createSelectorDom();
       const uiDom = { pianoModel: pianoSelect };
       renderSamplerStatus(uiDom, { libraries: {} });
-      expect(pianoSelect.disabled === true, "Selector should disable while loading");
-      expect(/Loading models/.test(pianoSelect.options[0].textContent), "Placeholder label missing");
+      expect(pianoSelect.disabled, "Selector should disable while loading").toBe(true);
+      expect(pianoSelect.options[0].textContent, "Placeholder label missing").toMatch(/Loading models/);
     });
 
     it("populates models with the default first", () => {
@@ -75,13 +75,12 @@ function run() {
       const uiDom = { pianoModel: pianoSelect };
       const snapshot = snapshotWith();
       renderSamplerStatus(uiDom, snapshot);
-      expect(pianoSelect.options.length === 3, "Expected three piano models");
-      expect(
-        /Piano Lite - Soft/.test(pianoSelect.options[0].textContent),
-        "Bundled soft piano should be first option",
+      expect(pianoSelect.options.length, "Expected three piano models").toBe(3);
+      expect(pianoSelect.options[0].textContent, "Bundled soft piano should be first option").toMatch(
+        /Piano Lite - Soft/,
       );
-      expect(/Default/.test(pianoSelect.options[0].textContent), "Default label missing");
-      expect(pianoSelect.value === "local-soft", "Selector should default to the bundled soft piano");
+      expect(pianoSelect.options[0].textContent, "Default label missing").toMatch(/Default/);
+      expect(pianoSelect.value, "Selector should default to the bundled soft piano").toBe("local-soft");
     });
 
     it("tracks the active library when switching", () => {
@@ -101,7 +100,7 @@ function run() {
         },
       });
       renderSamplerStatus(uiDom, snapshot);
-      expect(pianoSelect.value === "salamander-lite", "Selector should reflect the active library");
+      expect(pianoSelect.value, "Selector should reflect the active library").toBe("salamander-lite");
     });
   });
 }

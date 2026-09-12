@@ -1,7 +1,7 @@
 import { buildChord, getStyleProfile, degreeToNote } from "../theory.js";
 import { generateProgression, generateScale } from "../engine.js";
 import { describe, it } from "vitest";
-import { expectContract as expect } from "./test-helpers.js";
+import { expect } from "vitest";
 
 function run() {
   describe("Chord tagging decoupled from style", () => {
@@ -17,9 +17,8 @@ function run() {
         scale,
       );
       const qualities = progression.bars.map((bar) => bar.quality);
-      expect(
-        qualities.join(",") === "maj,maj,min,maj",
-        `Pop preset should stay triadic, got ${qualities.join(",")}`,
+      expect(qualities.join(","), `Pop preset should stay triadic, got ${qualities.join(",")}`).toBe(
+        "maj,maj,min,maj",
       );
     });
 
@@ -29,8 +28,8 @@ function run() {
       const key = "C";
       const dominant = buildChord("V7", key, scale, { mode: "major", styleProfile: style });
       const minorTriad = buildChord("ii", key, scale, { mode: "major", styleProfile: style });
-      expect(dominant.quality === "dom7", `Expected dom7, got ${dominant.quality}`);
-      expect(minorTriad.quality === "min", `Expected minor triad, got ${minorTriad.quality}`);
+      expect(dominant.quality, `Expected dom7, got ${dominant.quality}`).toBe("dom7");
+      expect(minorTriad.quality, `Expected minor triad, got ${minorTriad.quality}`).toBe("min");
     });
 
     it("Explicit jazz romans emit sevenths", () => {
@@ -42,7 +41,7 @@ function run() {
       expect(
         qualities[0] === "min7" && qualities[1] === "dom7" && qualities[2] === "maj7",
         `Explicit jazz romans failed: ${qualities.join(", ")}`,
-      );
+      ).toBe(true);
     });
   });
 
@@ -51,8 +50,8 @@ function run() {
       const scale = { mode: "major", key: "C" };
       const flatThree = degreeToNote("\u266d3", scale.mode, scale);
       const sharpFour = degreeToNote("\u266f4", scale.mode, scale);
-      expect(flatThree === "D#" || flatThree === "Eb", `Unexpected ♭3: ${flatThree}`);
-      expect(sharpFour === "F#" || sharpFour === "Gb", `Unexpected ♯4: ${sharpFour}`);
+      expect(["D#", "Eb"], `Unexpected ♭3: ${flatThree}`).toContain(flatThree);
+      expect(["F#", "Gb"], `Unexpected ♯4: ${sharpFour}`).toContain(sharpFour);
     });
   });
 
@@ -63,9 +62,9 @@ function run() {
       const progression = ["I7", "IV7", "V7"];
       const chords = progression.map((roman) => buildChord(roman, key, scale, { mode: "minorBlues" }));
       const labels = chords.map((c) => c.label);
-      expect(labels[0] === "C7", `Expected C7, got ${labels[0]}`);
-      expect(labels[1] === "F7", `Expected F7, got ${labels[1]}`);
-      expect(labels[2] === "G7", `Expected G7, got ${labels[2]}`);
+      expect(labels[0], `Expected C7, got ${labels[0]}`).toBe("C7");
+      expect(labels[1], `Expected F7, got ${labels[1]}`).toBe("F7");
+      expect(labels[2], `Expected G7, got ${labels[2]}`).toBe("G7");
     });
   });
 }
