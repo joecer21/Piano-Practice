@@ -21,7 +21,9 @@ describe("duration table", () => {
     const tabled = new Set(DURATION_TABLE.map((entry) => entry.beats));
     for (const [styleId, style] of Object.entries(MOTIF_STYLES)) {
       for (const step of style.rhythm || []) {
-        expect(tabled.has(step.beats), `${styleId} uses an untabled duration: ${step.beats} beats`).toBe(true);
+        expect(tabled.has(step.beats), `${styleId} uses an untabled duration: ${step.beats} beats`).toBe(
+          true,
+        );
       }
     }
   });
@@ -33,7 +35,10 @@ describe("duration table", () => {
     for (let i = 1; i < sorted.length; i += 1) {
       const previous = toneToBeatsFromDuration(beatsToTone(sorted[i - 1].beats));
       const current = toneToBeatsFromDuration(beatsToTone(sorted[i].beats));
-      expect(current, `${sorted[i].beats} beats must not sound shorter than ${sorted[i - 1].beats}`).toBeGreaterThan(previous);
+      expect(
+        current,
+        `${sorted[i].beats} beats must not sound shorter than ${sorted[i - 1].beats}`,
+      ).toBeGreaterThan(previous);
     }
   });
 

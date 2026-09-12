@@ -7,10 +7,14 @@ test("loads, generates, plays, stops, and switches piano models", async ({ page 
   await expect(page.locator("#scale-name")).not.toHaveText("--");
   await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Redo" })).toBeDisabled();
-  await expect.poll(() => page.locator("#progression-visual").evaluate((timeline) => ({
-    overflowX: getComputedStyle(timeline).overflowX,
-    pageFitsViewport: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
-  }))).toEqual({ overflowX: "auto", pageFitsViewport: true });
+  await expect
+    .poll(() =>
+      page.locator("#progression-visual").evaluate((timeline) => ({
+        overflowX: getComputedStyle(timeline).overflowX,
+        pageFitsViewport: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      })),
+    )
+    .toEqual({ overflowX: "auto", pageFitsViewport: true });
 
   await page.getByRole("button", { name: "Show Controls" }).click();
   await page.getByRole("button", { name: "Generate Assignment" }).click();
@@ -55,8 +59,10 @@ test("loads, generates, plays, stops, and switches piano models", async ({ page 
   await expect(livePiano.locator(".piano-key.active")).toHaveCount(0);
 
   await page.locator("#piano-model").selectOption("local-bright");
-  await expect.poll(() => page.evaluate(() => window.__samplerSnapshot?.activeLibraryId), {
-    timeout: 60_000,
-  }).toBe("local-bright");
+  await expect
+    .poll(() => page.evaluate(() => window.__samplerSnapshot?.activeLibraryId), {
+      timeout: 60_000,
+    })
+    .toBe("local-bright");
   await expect(page.locator("#status-line")).toContainText("active");
 });

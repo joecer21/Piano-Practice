@@ -1,9 +1,4 @@
-import {
-  generateScale,
-  generateProgression,
-  createPhrasePlan,
-  generateLeftHandPattern,
-} from "../engine.js";
+import { generateScale, generateProgression, createPhrasePlan, generateLeftHandPattern } from "../engine.js";
 import {
   getProgressionPreset,
   HAND_RANGE_SPECS,
@@ -113,7 +108,9 @@ function describeBar(bar, romanSymbol, preset) {
     const intervalLabel = delta === 0 ? "in tune" : `${delta > 0 ? "+" : ""}${delta}`;
     if (!matches) {
       const reason = Math.abs(delta) === 12 ? "range-guard shift" : "anchor drift";
-      warnings.push(`root mismatch: expected ${expectedRoot.note}, got ${firstNote.note} (${intervalLabel}, ${reason})`);
+      warnings.push(
+        `root mismatch: expected ${expectedRoot.note}, got ${firstNote.note} (${intervalLabel}, ${reason})`,
+      );
     }
   } else if (expectedRoot.note && !firstNote && expectedRoot.strict) {
     warnings.push(`missing LH output (expected root ${expectedRoot.note})`);
@@ -134,10 +131,14 @@ function describeBar(bar, romanSymbol, preset) {
   });
 
   if (statusCounts.above) {
-    warnings.push(`${statusCounts.above} notes above LH comfort (${midiToNote(LH_RANGE.comfort.max)} max comfort)`);
+    warnings.push(
+      `${statusCounts.above} notes above LH comfort (${midiToNote(LH_RANGE.comfort.max)} max comfort)`,
+    );
   }
   if (statusCounts.below) {
-    warnings.push(`${statusCounts.below} notes below LH comfort (${midiToNote(LH_RANGE.comfort.min)} min comfort)`);
+    warnings.push(
+      `${statusCounts.below} notes below LH comfort (${midiToNote(LH_RANGE.comfort.min)} min comfort)`,
+    );
   }
 
   const rangeSummary = minMidi != null ? ` | range ${midiToNote(minMidi)}–${midiToNote(maxMidi)}` : "";
@@ -160,7 +161,7 @@ for (const preset of presets) {
   const lh = generateLeftHandPattern(
     { leftHand: preset.lhId, difficulty: "intermediate", styleId: preset.styleId, phrasePlan },
     progression,
-    preset.mode
+    preset.mode,
   );
   console.log("Preset", preset.id);
   lh.bars.forEach((bar, idx) => {

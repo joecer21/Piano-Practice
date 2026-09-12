@@ -14,12 +14,12 @@ function run() {
           length: 4,
           progressionPresetId: "pop-4",
         },
-        scale
+        scale,
       );
       const qualities = progression.bars.map((bar) => bar.quality);
       expect(
         qualities.join(",") === "maj,maj,min,maj",
-        `Pop preset should stay triadic, got ${qualities.join(",")}`
+        `Pop preset should stay triadic, got ${qualities.join(",")}`,
       );
     });
 
@@ -41,7 +41,7 @@ function run() {
       const qualities = chords.map((chord) => chord.quality);
       expect(
         qualities[0] === "min7" && qualities[1] === "dom7" && qualities[2] === "maj7",
-        `Explicit jazz romans failed: ${qualities.join(", ")}`
+        `Explicit jazz romans failed: ${qualities.join(", ")}`,
       );
     });
   });

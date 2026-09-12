@@ -68,22 +68,26 @@ describe("Application state store", () => {
   it("bounds history and clears redo after a new commit", () => {
     const store = createAppStore({ historyLimit: 2 });
     ["C", "D", "E", "F"].forEach((key, index) => {
-      store.commitAssignment(generateAssignment({
-        ...store.state.inputs,
-        key,
-        presetId: null,
-        seed: `bounded-${index}`,
-      }));
+      store.commitAssignment(
+        generateAssignment({
+          ...store.state.inputs,
+          key,
+          presetId: null,
+          seed: `bounded-${index}`,
+        }),
+      );
     });
     expect(store.state.history.past).toHaveLength(2);
     store.undo();
     expect(store.canRedo()).toBe(true);
-    store.commitAssignment(generateAssignment({
-      ...store.state.inputs,
-      key: "G",
-      presetId: null,
-      seed: "new-branch",
-    }));
+    store.commitAssignment(
+      generateAssignment({
+        ...store.state.inputs,
+        key: "G",
+        presetId: null,
+        seed: "new-branch",
+      }),
+    );
     expect(store.canRedo()).toBe(false);
   });
 });

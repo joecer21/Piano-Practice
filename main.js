@@ -86,7 +86,6 @@ import {
 const MIX_PARTS = ["left", "lead"];
 const SWING_MAX = 0.2;
 
-
 const appStore = createAppStore();
 const state = appStore.state;
 
@@ -284,10 +283,7 @@ function syncInputsFromDom() {
 function handleGenerate(_options = {}) {
   syncInputsFromDom();
 
-  if (
-    state.inputs.progressionPresetId === "custom" &&
-    state.inputs.customProgressionRoman.length === 0
-  ) {
+  if (state.inputs.progressionPresetId === "custom" && state.inputs.customProgressionRoman.length === 0) {
     state.inputs.progressionPresetId = PROGRESSION_PRESETS[0].id;
     if (dom.progressionSelect) dom.progressionSelect.value = state.inputs.progressionPresetId;
     toggleCustomCard(dom, false);
@@ -392,7 +388,12 @@ function handleProgressionChange(id) {
   }
   computeDerived();
   renderAll();
-  renderProgressionPresetInfo(dom, getProgressionPreset(id), getStyleProfile(state.inputs.styleId), state.derived.progression);
+  renderProgressionPresetInfo(
+    dom,
+    getProgressionPreset(id),
+    getStyleProfile(state.inputs.styleId),
+    state.derived.progression,
+  );
 }
 
 function handleChordAdd(chord) {
@@ -524,11 +525,7 @@ async function handlePianoKeyDown(rootNote) {
   if (!(await unlockAudio())) return;
   const priorNotes = activeLivePianoNotes.get(rootNote) || [];
   priorNotes.forEach((note) => playPreviewNoteUp(note, { part: "lead" }));
-  const notes = getLivePianoChordNotes(
-    rootNote,
-    state.ui.livePianoChordMode,
-    state.derived.scale
-  );
+  const notes = getLivePianoChordNotes(rootNote, state.ui.livePianoChordMode, state.derived.scale);
   activeLivePianoNotes.set(rootNote, notes);
   notes.forEach((note) => playPreviewNoteDown(note, { part: "lead" }));
 }
@@ -568,7 +565,7 @@ async function handlePlayAll() {
       leftHand: state.derived.leftHand,
       motif: state.derived.motif,
     },
-    loopEnabled
+    loopEnabled,
   );
   publishTransportState();
   const motifBeats = state.derived?.motif?.totalBeats || 0;
@@ -662,9 +659,10 @@ function schedulePlaybackVisualTick() {
   if (playbackRafId != null) {
     cancelVisualTick(playbackRafId);
   }
-  const raf = typeof window !== "undefined" && typeof window.requestAnimationFrame === "function"
-    ? window.requestAnimationFrame.bind(window)
-    : (cb) => setTimeout(cb, 1000 / 60);
+  const raf =
+    typeof window !== "undefined" && typeof window.requestAnimationFrame === "function"
+      ? window.requestAnimationFrame.bind(window)
+      : (cb) => setTimeout(cb, 1000 / 60);
   playbackRafId = raf(() => updatePlaybackVisuals());
 }
 
@@ -677,24 +675,15 @@ function updatePlaybackVisuals() {
   }
 
   const beatsElapsed = getTransportBeats();
-  const {
-    totalBeats,
-    loopEnabled,
-    showPianoRoll,
-    showProgression,
-    showLeftHand,
-    showMotif,
-    motifBeats,
-  } = playbackSession;
+  const { totalBeats, loopEnabled, showPianoRoll, showProgression, showLeftHand, showMotif, motifBeats } =
+    playbackSession;
   if (!totalBeats || !Number.isFinite(beatsElapsed)) {
     resetPlaybackIndicators(dom);
     schedulePlaybackVisualTick();
     return;
   }
 
-  const normalizedBeats = loopEnabled
-    ? beatsElapsed % totalBeats
-    : Math.min(beatsElapsed, totalBeats);
+  const normalizedBeats = loopEnabled ? beatsElapsed % totalBeats : Math.min(beatsElapsed, totalBeats);
   const ratio = totalBeats ? normalizedBeats / totalBeats : 0;
   if (showPianoRoll) {
     updatePianoRollPlayhead(dom, ratio);
@@ -778,7 +767,7 @@ function renderAll() {
     dom,
     getProgressionPreset(state.inputs.progressionPresetId),
     state.derived.styleProfile || getStyleProfile(state.inputs.styleId),
-    state.derived.progression
+    state.derived.progression,
   );
   updateCustomHeaderCount(dom, state.inputs.customProgressionRoman.length);
   renderMixControls(dom, state.mix);
@@ -1002,16 +991,12 @@ function handleSamplerStatus(status = {}) {
 
   if (status.phase === "error" || status.phase === "timeout") {
     const scope = status.label || (status.isDefault ? "Primary piano" : "Selected piano");
-    const hint = status.isDefault
-      ? "Trying backup piano"
-      : "Select it again to retry";
+    const hint = status.isDefault ? "Trying backup piano" : "Select it again to retry";
     setStatusMessage(dom, `${scope} error: ${status.error || "check connection"} · ${hint}`, {
       tone: "error",
     });
     if (status.isDefault) {
-      requestFallbackPianoLoad("auto-error").catch((err) =>
-        console.warn("Auto fallback load failed", err)
-      );
+      requestFallbackPianoLoad("auto-error").catch((err) => console.warn("Auto fallback load failed", err));
     }
     return;
   }

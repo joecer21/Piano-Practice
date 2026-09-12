@@ -11,7 +11,8 @@ export function createHumanizeContext({
   const clampedAmount = clamp(amount, 0, 1);
   const defaults = styleDefaults || DEFAULT_STYLE;
   return {
-    enabled: Boolean(enabled) && (defaults.timing > 0 || defaults.velocity > 0 || defaults.swing > 0 || swing > 0),
+    enabled:
+      Boolean(enabled) && (defaults.timing > 0 || defaults.velocity > 0 || defaults.swing > 0 || swing > 0),
     timingJitter: clampedAmount * (defaults.timing || 0),
     velocityRange: clampedAmount * (defaults.velocity || 0),
     swingAmount: clamp((defaults.swing || 0) + swing, 0, 0.5),

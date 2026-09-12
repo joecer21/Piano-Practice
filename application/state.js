@@ -76,7 +76,11 @@ export function createAppStore(options = {}) {
     },
     /** @param {PracticeAssignment} assignment @param {{ recordHistory?: boolean }} [commitOptions] */
     commitAssignment(assignment, commitOptions = {}) {
-      if (state.assignment && state.assignment.id !== assignment.id && commitOptions.recordHistory !== false) {
+      if (
+        state.assignment &&
+        state.assignment.id !== assignment.id &&
+        commitOptions.recordHistory !== false
+      ) {
         state.history.past.push(state.assignment);
         if (state.history.past.length > historyLimit) state.history.past.shift();
       }
@@ -135,7 +139,10 @@ export function createAssignmentLocks(overrides = {}) {
 /** @param {ReturnType<typeof createInitialAppState>} state @param {PracticeAssignment} assignment */
 function applyAssignment(state, assignment) {
   state.assignment = assignment;
-  state.inputs = { ...assignment.inputs, customProgressionRoman: [...assignment.inputs.customProgressionRoman] };
+  state.inputs = {
+    ...assignment.inputs,
+    customProgressionRoman: [...assignment.inputs.customProgressionRoman],
+  };
   state.derived = {
     scale: assignment.scale,
     progression: assignment.progression,

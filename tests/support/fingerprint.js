@@ -11,7 +11,11 @@
 // canonical and Tone notation is produced only at schedule time, drop `dur`.
 
 import { createHash } from "node:crypto";
-import { DEFAULT_ASSIGNMENT_INPUTS, generateAssignment, rerollAssignmentInputs } from "../../domain/assignment.js";
+import {
+  DEFAULT_ASSIGNMENT_INPUTS,
+  generateAssignment,
+  rerollAssignmentInputs,
+} from "../../domain/assignment.js";
 
 /** The same 96-seed matrix used by tests/assignment.spec.js. */
 export const PROPERTY_SEED_COUNT = 96;
@@ -89,7 +93,10 @@ export function stableStringify(value) {
 }
 
 export function fingerprint(assignment) {
-  return createHash("sha256").update(stableStringify(musicalFacts(assignment))).digest("hex").slice(0, 16);
+  return createHash("sha256")
+    .update(stableStringify(musicalFacts(assignment)))
+    .digest("hex")
+    .slice(0, 16);
 }
 
 /** { seed: hash } for the whole matrix. */

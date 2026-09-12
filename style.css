@@ -15,7 +15,13 @@
 
 body {
   margin: 0;
-  font-family: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    "Inter",
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   background: #f6f1eb;
   color: #2a1f19;
 }
@@ -296,7 +302,10 @@ button.piano-key {
   box-shadow: none;
   cursor: pointer;
   touch-action: none;
-  transition: background 80ms ease, border-color 80ms ease, box-shadow 80ms ease;
+  transition:
+    background 80ms ease,
+    border-color 80ms ease,
+    box-shadow 80ms ease;
 }
 
 button.piano-key:hover {
@@ -354,7 +363,9 @@ button {
   padding: 0.65rem 1.2rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 120ms ease, box-shadow 120ms ease;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
   background: #43302a;
   color: #fff8f1;
   box-shadow: 0 8px 18px rgba(67, 48, 42, 0.2);
@@ -435,7 +446,9 @@ select {
   color: #5f4b42;
   font-weight: 600;
   min-height: 1.4rem;
-  transition: color 0.25s ease, opacity 0.25s ease;
+  transition:
+    color 0.25s ease,
+    opacity 0.25s ease;
 }
 
 .status-line[data-tone="hint"] {
@@ -463,7 +476,9 @@ select {
   margin: 0 0.15rem;
   font-weight: 500;
   color: #4a352b;
-  transition: color 0.15s ease, font-weight 0.15s ease;
+  transition:
+    color 0.15s ease,
+    font-weight 0.15s ease;
 }
 
 .scale-note-sep {
@@ -618,7 +633,9 @@ button.primary-action {
 }
 
 .lh-row {
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .lh-row.active {
@@ -781,7 +798,9 @@ button.primary-action {
 .progression-bar.borrowed.active {
   background: #ffe3ff;
   border-color: #d06fff;
-  box-shadow: inset 0 0 0 2px rgba(187, 94, 255, 0.65), 0 0 8px rgba(208, 111, 255, 0.35);
+  box-shadow:
+    inset 0 0 0 2px rgba(187, 94, 255, 0.65),
+    0 0 8px rgba(208, 111, 255, 0.35);
 }
 
 #piano-roll .playhead-line {

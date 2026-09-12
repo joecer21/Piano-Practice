@@ -15,12 +15,24 @@ class MockNode {
     live.add(this);
     built.push(this);
   }
-  toDestination() { return this; }
-  connect(node) { return node; }
-  disconnect() { return this; }
-  set() { return this; }
-  start() { return this; }
-  releaseAll() { return this; }
+  toDestination() {
+    return this;
+  }
+  connect(node) {
+    return node;
+  }
+  disconnect() {
+    return this;
+  }
+  set() {
+    return this;
+  }
+  start() {
+    return this;
+  }
+  releaseAll() {
+    return this;
+  }
   dispose() {
     this.disposed = true;
     live.delete(this);
@@ -46,22 +58,49 @@ vi.mock("tone", () => {
     loop: false,
     loopEnd: 0,
     scheduled: new Map(),
-    start() { this.state = "started"; },
-    stop() { this.state = "stopped"; },
-    cancel() { this.scheduled.clear(); },
+    start() {
+      this.state = "started";
+    },
+    stop() {
+      this.state = "stopped";
+    },
+    cancel() {
+      this.scheduled.clear();
+    },
     schedule(callback, when) {
       const id = nextEventId++;
       this.scheduled.set(id, { callback, when });
       return id;
     },
-    scheduleRepeat() { return nextEventId++; },
-    clear(id) { this.scheduled.delete(id); return this; },
+    scheduleRepeat() {
+      return nextEventId++;
+    },
+    clear(id) {
+      this.scheduled.delete(id);
+      return this;
+    },
   };
   return {
-    Limiter: class extends MockNode { constructor() { super("Limiter"); } },
-    Reverb: class extends MockNode { constructor() { super("Reverb"); } },
-    Channel: class extends MockNode { constructor() { super("Channel"); } },
-    Chorus: class extends MockNode { constructor() { super("Chorus"); } },
+    Limiter: class extends MockNode {
+      constructor() {
+        super("Limiter");
+      }
+    },
+    Reverb: class extends MockNode {
+      constructor() {
+        super("Reverb");
+      }
+    },
+    Channel: class extends MockNode {
+      constructor() {
+        super("Channel");
+      }
+    },
+    Chorus: class extends MockNode {
+      constructor() {
+        super("Chorus");
+      }
+    },
     Sampler,
     Transport,
     getTransport: () => Transport,

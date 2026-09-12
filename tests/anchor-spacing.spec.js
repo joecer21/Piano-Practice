@@ -99,12 +99,18 @@ function run() {
     FIXTURES.forEach((fixture) => {
       it(fixture.label, () => {
         const plan = createPhrasePlan(fixture.input);
-        expect(plan.rh.anchorNote === fixture.expected.rh, `Expected RH anchor ${fixture.expected.rh}, got ${plan.rh.anchorNote}`);
-        expect(plan.lh.anchorNote === fixture.expected.lh, `Expected LH anchor ${fixture.expected.lh}, got ${plan.lh.anchorNote}`);
+        expect(
+          plan.rh.anchorNote === fixture.expected.rh,
+          `Expected RH anchor ${fixture.expected.rh}, got ${plan.rh.anchorNote}`,
+        );
+        expect(
+          plan.lh.anchorNote === fixture.expected.lh,
+          `Expected LH anchor ${fixture.expected.lh}, got ${plan.lh.anchorNote}`,
+        );
         const gap = noteStringToMidi(plan.rh.anchorNote) - noteStringToMidi(plan.lh.anchorNote);
         expect(
           gap === fixture.expected.gap,
-          `Expected LH/RH midi gap ${fixture.expected.gap}, observed ${gap}`
+          `Expected LH/RH midi gap ${fixture.expected.gap}, observed ${gap}`,
         );
       });
     });

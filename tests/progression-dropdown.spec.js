@@ -15,7 +15,7 @@ function runDomTest() {
   const options = Array.from(select.options);
   expect(
     options.length === PROGRESSION_PRESETS.length + 1,
-    `Dropdown expected ${PROGRESSION_PRESETS.length + 1} options, rendered ${options.length}`
+    `Dropdown expected ${PROGRESSION_PRESETS.length + 1} options, rendered ${options.length}`,
   );
 
   PROGRESSION_PRESETS.forEach((preset) => {
@@ -23,7 +23,7 @@ function runDomTest() {
     expect(option, `Missing dropdown option for ${preset.id}`);
     expect(
       option.textContent.includes(preset.label) && option.textContent.includes("("),
-      `Dropdown text for ${preset.id} missing label/roman summary`
+      `Dropdown text for ${preset.id} missing label/roman summary`,
     );
   });
 
@@ -59,17 +59,17 @@ function runProgressionRenderTestsForPreset(preset) {
       progressionPresetId: preset.id,
     },
     scale,
-    styleProfile
+    styleProfile,
   );
 
   expect(progression.roman.length === preset.roman.length, `Preset ${preset.id} changed roman length`);
   expect(
     progression.bars.length === preset.roman.length,
-    `Preset ${preset.id} produced ${progression.bars.length} bars`
+    `Preset ${preset.id} produced ${progression.bars.length} bars`,
   );
   expect(
     progression.bars.every((bar) => typeof bar.label === "string" && bar.label.length > 0),
-    `Preset ${preset.id} has unlabeled bars`
+    `Preset ${preset.id} has unlabeled bars`,
   );
 }
 

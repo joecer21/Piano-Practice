@@ -76,7 +76,10 @@ function run() {
       const snapshot = snapshotWith();
       renderSamplerStatus(uiDom, snapshot);
       expect(pianoSelect.options.length === 3, "Expected three piano models");
-      expect(/Piano Lite - Soft/.test(pianoSelect.options[0].textContent), "Bundled soft piano should be first option");
+      expect(
+        /Piano Lite - Soft/.test(pianoSelect.options[0].textContent),
+        "Bundled soft piano should be first option",
+      );
       expect(/Default/.test(pianoSelect.options[0].textContent), "Default label missing");
       expect(pianoSelect.value === "local-soft", "Selector should default to the bundled soft piano");
     });

@@ -65,15 +65,15 @@ const MODE_DEFINITIONS = {
 };
 
 export const SCALE_PATTERNS = Object.fromEntries(
-  Object.entries(MODE_DEFINITIONS).map(([mode, def]) => [mode, { ...def }])
+  Object.entries(MODE_DEFINITIONS).map(([mode, def]) => [mode, { ...def }]),
 );
 
 export const MODE_LABELS = Object.fromEntries(
-  Object.entries(SCALE_PATTERNS).map(([mode, def]) => [mode, def.label])
+  Object.entries(SCALE_PATTERNS).map(([mode, def]) => [mode, def.label]),
 );
 
 export const MODE_CHORD_QUALITIES = Object.fromEntries(
-  Object.entries(SCALE_PATTERNS).map(([mode, def]) => [mode, def.chordQualities])
+  Object.entries(SCALE_PATTERNS).map(([mode, def]) => [mode, def.chordQualities]),
 );
 
 const MODE_ALIASES = {
@@ -151,15 +151,7 @@ export const ROMAN_TO_DEGREE = {
   vii: 6,
 };
 
-const DEGREE_TO_ROMAN = [
-  "I",
-  "II",
-  "III",
-  "IV",
-  "V",
-  "VI",
-  "VII",
-];
+const DEGREE_TO_ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII"];
 
 // One source of truth for duration. Every `beats` value the engine can emit must
 // appear here; the three derived views below are generated from it rather than
@@ -185,7 +177,6 @@ const BEATS_BY_TONE = new Map([
   ...DURATION_TABLE.map((entry) => [entry.tone, entry.beats]),
   ["1n", 4], // common alias for a whole note
 ]);
-
 
 export const PROGRESSION_PRESETS = [
   // POP / ROCK
@@ -759,11 +750,14 @@ function withMotifMetadata(base) {
         ...motif,
       };
       enriched.contour = motif.contour || categoryDefaults.contour || MOTIF_DEFAULT_METADATA.contour;
-      enriched.targetRegister = motif.targetRegister || categoryDefaults.targetRegister || MOTIF_DEFAULT_METADATA.targetRegister;
-      enriched.intervalBias = motif.intervalBias || categoryDefaults.intervalBias || MOTIF_DEFAULT_METADATA.intervalBias;
-      enriched.peaksPerPhrase = motif.peaksPerPhrase || categoryDefaults.peaksPerPhrase || MOTIF_DEFAULT_METADATA.peaksPerPhrase;
+      enriched.targetRegister =
+        motif.targetRegister || categoryDefaults.targetRegister || MOTIF_DEFAULT_METADATA.targetRegister;
+      enriched.intervalBias =
+        motif.intervalBias || categoryDefaults.intervalBias || MOTIF_DEFAULT_METADATA.intervalBias;
+      enriched.peaksPerPhrase =
+        motif.peaksPerPhrase || categoryDefaults.peaksPerPhrase || MOTIF_DEFAULT_METADATA.peaksPerPhrase;
       return [id, enriched];
-    })
+    }),
   );
 }
 
@@ -808,16 +802,112 @@ export function getStyleAnchors(styleId) {
 }
 
 const RAW_LEFT_HAND_PATTERN_METADATA = {
-  block: { defaultAnchor: "C3", maxSpan: 12, motionBias: "close", shape: "close", maxJump: 7, chordOffset: 0, allowedInversions: ["root"], allowedShapes: ["triad"], lockRegister: true },
-  alberti: { defaultAnchor: "C3", maxSpan: 12, motionBias: "stepwise", shape: "broken", maxJump: 5, chordOffset: 10, highOffset: 7, allowedInversions: ["root"], allowedShapes: ["triad"], lockRegister: true },
-  broken: { defaultAnchor: "C3", maxSpan: 14, motionBias: "arpeggio", shape: "arpeggio", maxJump: 9, chordOffset: 0, allowedShapes: ["triad"], lockRegister: true },
-  oompah: { defaultAnchor: "C2", maxSpan: 12, motionBias: "leap-on-barlines", shape: "bass-chord", maxJump: 12, chordOffset: 0, allowedInversions: ["root"], allowedShapes: ["triad"], lockRegister: true },
-  "root-5th-oct": { defaultAnchor: "C2", maxSpan: 14, motionBias: "leap-on-barlines", shape: "fixed", maxJump: 14, highOffset: 12, allowedShapes: ["open5"], lockRegister: true },
-  "pop-8ths": { defaultAnchor: "C2", maxSpan: 12, motionBias: "steady", shape: "fixed", maxJump: 6, highOffset: 12, chordOffset: 0, allowedShapes: ["triad", "open5"], allowedInversions: ["root", "first"], lockRegister: true },
-  "power-8ths": { defaultAnchor: "C2", maxSpan: 14, motionBias: "steady", shape: "dyad", maxJump: 8, highOffset: 7, allowedShapes: ["open5"], lockRegister: true },
-  pedal: { defaultAnchor: "C2", maxSpan: 12, motionBias: "static", shape: "pedal", maxJump: 4, chordOffset: 0, allowedInversions: ["root"], allowedShapes: ["triad", "open5"], lockRegister: true },
-  stride: { defaultAnchor: "C2", maxSpan: 16, motionBias: "leap-on-barlines", shape: "stride", maxJump: 16, chordOffset: 0, allowedShapes: ["triad"], lockRegister: true },
-  walking: { defaultAnchor: "C2", maxSpan: 24, motionBias: "stepwise", shape: "scalar", maxJump: 6, highOffset: 5, allowedShapes: ["triad", "shell"] },
+  block: {
+    defaultAnchor: "C3",
+    maxSpan: 12,
+    motionBias: "close",
+    shape: "close",
+    maxJump: 7,
+    chordOffset: 0,
+    allowedInversions: ["root"],
+    allowedShapes: ["triad"],
+    lockRegister: true,
+  },
+  alberti: {
+    defaultAnchor: "C3",
+    maxSpan: 12,
+    motionBias: "stepwise",
+    shape: "broken",
+    maxJump: 5,
+    chordOffset: 10,
+    highOffset: 7,
+    allowedInversions: ["root"],
+    allowedShapes: ["triad"],
+    lockRegister: true,
+  },
+  broken: {
+    defaultAnchor: "C3",
+    maxSpan: 14,
+    motionBias: "arpeggio",
+    shape: "arpeggio",
+    maxJump: 9,
+    chordOffset: 0,
+    allowedShapes: ["triad"],
+    lockRegister: true,
+  },
+  oompah: {
+    defaultAnchor: "C2",
+    maxSpan: 12,
+    motionBias: "leap-on-barlines",
+    shape: "bass-chord",
+    maxJump: 12,
+    chordOffset: 0,
+    allowedInversions: ["root"],
+    allowedShapes: ["triad"],
+    lockRegister: true,
+  },
+  "root-5th-oct": {
+    defaultAnchor: "C2",
+    maxSpan: 14,
+    motionBias: "leap-on-barlines",
+    shape: "fixed",
+    maxJump: 14,
+    highOffset: 12,
+    allowedShapes: ["open5"],
+    lockRegister: true,
+  },
+  "pop-8ths": {
+    defaultAnchor: "C2",
+    maxSpan: 12,
+    motionBias: "steady",
+    shape: "fixed",
+    maxJump: 6,
+    highOffset: 12,
+    chordOffset: 0,
+    allowedShapes: ["triad", "open5"],
+    allowedInversions: ["root", "first"],
+    lockRegister: true,
+  },
+  "power-8ths": {
+    defaultAnchor: "C2",
+    maxSpan: 14,
+    motionBias: "steady",
+    shape: "dyad",
+    maxJump: 8,
+    highOffset: 7,
+    allowedShapes: ["open5"],
+    lockRegister: true,
+  },
+  pedal: {
+    defaultAnchor: "C2",
+    maxSpan: 12,
+    motionBias: "static",
+    shape: "pedal",
+    maxJump: 4,
+    chordOffset: 0,
+    allowedInversions: ["root"],
+    allowedShapes: ["triad", "open5"],
+    lockRegister: true,
+  },
+  stride: {
+    defaultAnchor: "C2",
+    maxSpan: 16,
+    motionBias: "leap-on-barlines",
+    shape: "stride",
+    maxJump: 16,
+    chordOffset: 0,
+    allowedShapes: ["triad"],
+    lockRegister: true,
+  },
+  walking: {
+    defaultAnchor: "C2",
+    maxSpan: 24,
+    motionBias: "stepwise",
+    shape: "scalar",
+    maxJump: 6,
+    highOffset: 5,
+    allowedShapes: ["triad", "shell"],
+  },
 };
 
 const LEFT_HAND_DEFAULT_METADATA = {
@@ -844,7 +934,7 @@ function withLeftHandDefaults(base) {
         ...LEFT_HAND_DEFAULT_METADATA,
         ...meta,
       },
-    ])
+    ]),
   );
 }
 
@@ -972,7 +1062,7 @@ export function degreeToNote(degreeInput, mode, scale = {}) {
   const normalizedMode = normalizeModeId(mode || scale.mode);
   const intervals = getModeIntervals(normalizedMode);
   const span = intervals.length || 7;
-  const degreeIndex = ((parsed.degree - 1) % span + span) % span;
+  const degreeIndex = (((parsed.degree - 1) % span) + span) % span;
   const octaveOffset = Math.floor((parsed.degree - 1) / span);
   const semitoneOffset = intervals[degreeIndex] + parsed.accidental + octaveOffset * 12;
   const root = scale.key || scale.root || scale.notes?.[0] || "C";
@@ -984,14 +1074,21 @@ export function degreeToNote(degreeInput, mode, scale = {}) {
 
 export function chordTagToIntervals(tag) {
   switch (tag) {
-    case "maj7": return [0, 4, 7, 11];
-    case "min7": return [0, 3, 7, 10];
-    case "dom7": return [0, 4, 7, 10];
-    case "hdim7": return [0, 3, 6, 10];
-    case "dim": return [0, 3, 6];
-    case "min": return [0, 3, 7];
+    case "maj7":
+      return [0, 4, 7, 11];
+    case "min7":
+      return [0, 3, 7, 10];
+    case "dom7":
+      return [0, 4, 7, 10];
+    case "hdim7":
+      return [0, 3, 6, 10];
+    case "dim":
+      return [0, 3, 6];
+    case "min":
+      return [0, 3, 7];
     case "maj":
-    default: return [0, 4, 7];
+    default:
+      return [0, 4, 7];
   }
 }
 
@@ -1009,7 +1106,6 @@ export function findClosestOctave(noteName, targetMidi) {
   }
   return bestOctave;
 }
-
 
 export function durationToNotation(beats) {
   return DURATION_LABELS[beats] || `${beats.toFixed(2)} beat`;
@@ -1029,7 +1125,6 @@ export function beatsToTone(beats) {
   return nearest.tone;
 }
 
-
 export function beatsToTransport(totalBeats) {
   const bar = Math.floor(totalBeats / 4);
   const beat = Math.floor(totalBeats % 4);
@@ -1037,7 +1132,6 @@ export function beatsToTransport(totalBeats) {
   const sixteenth = Math.round(remainder * 4);
   return `${bar}:${beat}:${sixteenth}`;
 }
-
 
 export function toneToBeatsFromDuration(duration) {
   return BEATS_BY_TONE.get(duration) ?? 1;
@@ -1130,8 +1224,7 @@ function resolveTriadQuality(parsed, options = {}) {
   const degree = options.degree ?? parsed.degree;
   const preferModeQuality = options.preferModeQuality !== false;
   const modeQualityTag =
-    options.modeQuality ??
-    (mode && typeof degree === "number" ? MODE_CHORD_QUALITIES[mode]?.[degree] : null);
+    options.modeQuality ?? (mode && typeof degree === "number" ? MODE_CHORD_QUALITIES[mode]?.[degree] : null);
   const modeQuality = triadTagToQualityWord(modeQualityTag);
   const romanQuality = parsed.quality || null;
   const hasExplicitQuality = !!parsed.qualityExplicit;
@@ -1194,13 +1287,19 @@ export function getChordTagForSymbol(symbol, options = {}) {
 
 export function formatChordLabel(rootNote, chordTag) {
   const suffix =
-    chordTag === "maj7" ? "maj7" :
-    chordTag === "min7" ? "m7" :
-    chordTag === "dom7" ? "7" :
-    chordTag === "hdim7" ? "hdim7" :
-    chordTag === "min" ? "m" :
-    chordTag === "dim" ? "dim" :
-    "";
+    chordTag === "maj7"
+      ? "maj7"
+      : chordTag === "min7"
+        ? "m7"
+        : chordTag === "dom7"
+          ? "7"
+          : chordTag === "hdim7"
+            ? "hdim7"
+            : chordTag === "min"
+              ? "m"
+              : chordTag === "dim"
+                ? "dim"
+                : "";
   return `${rootNote}${suffix}`;
 }
 
@@ -1243,8 +1342,8 @@ export function buildChord(symbol, key, scale, options = {}) {
     const preferSecondaryFlat = preferSecondaryFlatExplicit
       ? true
       : preferSecondarySharpExplicit
-      ? false
-      : keyPrefersFlat;
+        ? false
+        : keyPrefersFlat;
     const targetOffset = resolveInterval(parsed.secondaryTargetDegree) + parsed.secondaryAccidental;
     const targetRootIndex = (baseIndex + targetOffset + 120) % 12;
     const secRootIndex = (targetRootIndex + 7) % 12;
@@ -1308,23 +1407,34 @@ export function labelRomanWithTag(roman, tag, parsed) {
   const formattedBase = formatRomanByQuality(parsed, triadQuality) || roman;
 
   const suffix =
-    tag === "maj7" ? "maj7" :
-    tag === "min7" ? "7" :
-    tag === "dom7" ? "7" :
-    tag === "hdim7" ? halfDimLabel :
-    tag === "min" ? "" :
-    tag === "dim" ? "dim" :
-    "";
+    tag === "maj7"
+      ? "maj7"
+      : tag === "min7"
+        ? "7"
+        : tag === "dom7"
+          ? "7"
+          : tag === "hdim7"
+            ? halfDimLabel
+            : tag === "min"
+              ? ""
+              : tag === "dim"
+                ? "dim"
+                : "";
 
   if (parsed.secondaryTargetDegree != null) {
     const formattedTarget = formatSecondaryTargetRoman(parsed) || roman.split("/")[1] || "V";
     const appliedSuffix =
-      tag === "maj7" ? "7" :
-      tag === "min7" ? "7" :
-      tag === "dom7" ? "7" :
-      tag === "hdim7" ? halfDimLabel :
-      tag === "dim" ? "dim" :
-      "";
+      tag === "maj7"
+        ? "7"
+        : tag === "min7"
+          ? "7"
+          : tag === "dom7"
+            ? "7"
+            : tag === "hdim7"
+              ? halfDimLabel
+              : tag === "dim"
+                ? "dim"
+                : "";
     return `${formattedBase}${appliedSuffix}/${formattedTarget}`;
   }
 
@@ -1359,8 +1469,7 @@ export function analyzeRomanAgainstMode(symbol, mode) {
   const parsed = typeof symbol === "string" ? parseRomanSymbol(symbol) : { ...symbol };
   const normalizedMode = normalizeModeId(mode);
   const degreeIdx = typeof parsed.degree === "number" ? parsed.degree : null;
-  const diatonicQualityTag =
-    degreeIdx != null ? MODE_CHORD_QUALITIES[normalizedMode]?.[degreeIdx] : null;
+  const diatonicQualityTag = degreeIdx != null ? MODE_CHORD_QUALITIES[normalizedMode]?.[degreeIdx] : null;
   const diatonicQuality = triadTagToQualityWord(diatonicQualityTag);
   const romanQuality = parsed.quality || null;
   const hasAccidental = (parsed.accStr || "").length > 0;
@@ -1389,7 +1498,7 @@ export function analyzeRomanAgainstMode(symbol, mode) {
     degreeIdx != null
       ? formatRomanByQuality(
           { ...parsed, accStr: "", accidental: 0 },
-          diatonicQuality || romanQuality || "major"
+          diatonicQuality || romanQuality || "major",
         )
       : null;
 

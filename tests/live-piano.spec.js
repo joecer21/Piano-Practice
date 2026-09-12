@@ -1,10 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { JSDOM } from "jsdom";
-import {
-  attachPianoNoteListeners,
-  buildPianoVisual,
-  renderPianoDiatonic,
-} from "../components/piano.js";
+import { attachPianoNoteListeners, buildPianoVisual, renderPianoDiatonic } from "../components/piano.js";
 import { getLivePianoChordNotes } from "../domain/live-piano.js";
 
 let environment;
@@ -41,21 +37,27 @@ describe("Live Piano", () => {
     const detach = attachPianoNoteListeners(dom);
     const key = dom.pianoVisual.querySelector('[data-note="C#4"]');
 
-    window.dispatchEvent(new window.CustomEvent("note-play", {
-      detail: { note: "Db4", part: "left" },
-    }));
+    window.dispatchEvent(
+      new window.CustomEvent("note-play", {
+        detail: { note: "Db4", part: "left" },
+      }),
+    );
     expect(key.classList.contains("active")).toBe(true);
     expect(key.classList.contains("lh")).toBe(true);
 
-    window.dispatchEvent(new window.CustomEvent("note-stop", {
-      detail: { note: "Db4", part: "left" },
-    }));
+    window.dispatchEvent(
+      new window.CustomEvent("note-stop", {
+        detail: { note: "Db4", part: "left" },
+      }),
+    );
     expect(key.classList.contains("active")).toBe(false);
 
     dom.__pianoIndicatorMode = "lh";
-    window.dispatchEvent(new window.CustomEvent("note-play", {
-      detail: { note: "C#4", part: "lead" },
-    }));
+    window.dispatchEvent(
+      new window.CustomEvent("note-play", {
+        detail: { note: "C#4", part: "lead" },
+      }),
+    );
     expect(key.classList.contains("active")).toBe(false);
     detach();
   });

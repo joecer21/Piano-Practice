@@ -2,9 +2,7 @@ import { noteStringToMidi } from "../theory.js";
 
 const NOTE_ORDER = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const SHARP_TO_FLAT = { "C#": "Db", "D#": "Eb", "F#": "Gb", "G#": "Ab", "A#": "Bb" };
-const FLAT_TO_SHARP = Object.fromEntries(
-  Object.entries(SHARP_TO_FLAT).map(([sharp, flat]) => [flat, sharp])
-);
+const FLAT_TO_SHARP = Object.fromEntries(Object.entries(SHARP_TO_FLAT).map(([sharp, flat]) => [flat, sharp]));
 
 function normalizeNoteId(note) {
   const match = String(note || "")
@@ -61,7 +59,9 @@ function registerKey(keyMap, note, element) {
 function resolveKey(dom, note) {
   const normalized = normalizeNoteId(note);
   if (!normalized) return null;
-  return dom.__pianoKeyMap?.get(normalized) || dom.__pianoKeyMidiMap?.get(noteStringToMidi(normalized)) || null;
+  return (
+    dom.__pianoKeyMap?.get(normalized) || dom.__pianoKeyMidiMap?.get(noteStringToMidi(normalized)) || null
+  );
 }
 
 function partClass(part) {
@@ -176,7 +176,10 @@ export function attachPianoNoteListeners(dom) {
     key.classList.add("active", partClass(part));
     key.setAttribute("aria-pressed", "true");
     if (Number.isFinite(duration) && duration > 0) {
-      timers.set(note, setTimeout(() => deactivate(note), duration * 1000));
+      timers.set(
+        note,
+        setTimeout(() => deactivate(note), duration * 1000),
+      );
     }
   };
 
@@ -196,7 +199,7 @@ export function attachPianoNoteListeners(dom) {
 
 export function renderPianoDiatonic(dom, scale) {
   const pitchClasses = new Set(
-    (scale?.notes || []).map((note) => ((noteStringToMidi(`${note}4`) % 12) + 12) % 12)
+    (scale?.notes || []).map((note) => ((noteStringToMidi(`${note}4`) % 12) + 12) % 12),
   );
   dom?.__pianoKeyMap?.forEach((key, note) => {
     const pitchClass = ((noteStringToMidi(note) % 12) + 12) % 12;

@@ -42,7 +42,7 @@ function run() {
       const maxExpected = 0.02 + 0.15;
       expect(
         diff <= maxExpected + 1e-6,
-        `Exceeded jitter+ swing envelope. diff=${diff.toFixed(4)} expected<=${maxExpected}`
+        `Exceeded jitter+ swing envelope. diff=${diff.toFixed(4)} expected<=${maxExpected}`,
       );
     });
 

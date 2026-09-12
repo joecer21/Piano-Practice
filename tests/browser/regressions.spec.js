@@ -36,15 +36,11 @@ test("B1: sample loading reports progress and reaches ready", async ({ page }) =
   await expect(status).toBeAttached();
 
   // The element did not exist, so every row below rendered into null.
-  await expect.poll(
-    async () => status.locator(".sampler-row").count(),
-    { timeout: 60_000 },
-  ).toBeGreaterThan(0);
+  await expect
+    .poll(async () => status.locator(".sampler-row").count(), { timeout: 60_000 })
+    .toBeGreaterThan(0);
 
-  await expect.poll(
-    async () => (await status.textContent()) || "",
-    { timeout: 60_000 },
-  ).toContain("Ready");
+  await expect.poll(async () => (await status.textContent()) || "", { timeout: 60_000 }).toContain("Ready");
 });
 
 test("B11: no debug logging on the console", async ({ page }) => {

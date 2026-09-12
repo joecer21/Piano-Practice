@@ -40,7 +40,13 @@ describe("index.html / cacheDom contract", () => {
     renderSamplerStatus(cached, {
       activeLibraryId: "local-soft",
       libraries: {
-        "local-soft": { libraryId: "local-soft", label: "Piano Lite", phase: "progress", progress: 0.42, isDefault: true },
+        "local-soft": {
+          libraryId: "local-soft",
+          label: "Piano Lite",
+          phase: "progress",
+          progress: 0.42,
+          isDefault: true,
+        },
         "fuhton-piano": { libraryId: "fuhton-piano", label: "Fuhton", phase: "standby", isDefault: false },
       },
     });
@@ -56,7 +62,15 @@ describe("index.html / cacheDom contract", () => {
     const cached = cacheDom();
     renderSamplerStatus(cached, {
       activeLibraryId: "local-soft",
-      libraries: { "local-soft": { libraryId: "local-soft", label: "Piano Lite", phase: "error", error: "network", isDefault: true } },
+      libraries: {
+        "local-soft": {
+          libraryId: "local-soft",
+          label: "Piano Lite",
+          phase: "error",
+          error: "network",
+          isDefault: true,
+        },
+      },
     });
     expect(cached.samplerStatus.textContent).toContain("Error");
     expect(cached.samplerStatus.classList.contains("error")).toBe(true);

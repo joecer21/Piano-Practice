@@ -1,11 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import {
-  LOCAL_SAMPLE_BASE_URL,
-  LOCAL_VH_URL_MAP,
-  LOCAL_VL_URL_MAP,
-} from "../audio/local-samples.js";
+import { LOCAL_SAMPLE_BASE_URL, LOCAL_VH_URL_MAP, LOCAL_VL_URL_MAP } from "../audio/local-samples.js";
 
 const samplesDir = fileURLToPath(new URL("../public/samples/", import.meta.url));
 const manifest = { low: LOCAL_VL_URL_MAP, high: LOCAL_VH_URL_MAP };

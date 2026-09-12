@@ -298,7 +298,7 @@ function wireLivePianoInteractions(dom, handlers) {
       mouseDown = true;
       press(noteAtEvent(event.touches[0] || event));
     },
-    { passive: false }
+    { passive: false },
   );
   dom.pianoVisual.addEventListener(
     "touchmove",
@@ -308,7 +308,7 @@ function wireLivePianoInteractions(dom, handlers) {
       if (!touch) return;
       press(noteAtEvent(touch));
     },
-    { passive: false }
+    { passive: false },
   );
   dom.pianoVisual.addEventListener("touchend", onMouseUp, { passive: true });
   dom.pianoVisual.addEventListener("touchcancel", onMouseUp, { passive: true });
@@ -335,10 +335,7 @@ export function renderScale(state, dom) {
   if (!dom.scaleNotes) return;
   const notes = state.derived.scale.notes || [];
   dom.scaleNotes.innerHTML = notes
-    .map(
-      (note) =>
-        `<span class="scale-note" data-note-label="${note}">${note}</span>`
-    )
+    .map((note) => `<span class="scale-note" data-note-label="${note}">${note}</span>`)
     .join('<span class="scale-note-sep">|</span>');
 }
 
@@ -383,8 +380,7 @@ export function renderCustomProgressionPreview(state, dom) {
   if (!dom.customPreview) return;
   const mode = state.inputs?.mode || state.derived.scale?.mode;
   if (!state.inputs.customProgressionRoman.length) {
-    dom.customPreview.textContent =
-      "No chords yet. Click palette buttons to build your sequence.";
+    dom.customPreview.textContent = "No chords yet. Click palette buttons to build your sequence.";
   } else {
     const labels = state.inputs.customProgressionRoman.map((chord) => {
       const parsed = parseRomanSymbol(chord);
@@ -412,7 +408,7 @@ export function renderLeftHand(state, dom) {
           <span>${bar.title}</span>
           <span>${bar.description}</span>
         </div>
-      `
+      `,
     )
     .join("");
 }
@@ -427,8 +423,7 @@ export function renderMotif(state, dom) {
     return;
   }
 
-  dom.motifRhythm.textContent =
-    `Style: ${motif.description} | Rhythm: ${motif.rhythmLabels.join(", ")}`;
+  dom.motifRhythm.textContent = `Style: ${motif.description} | Rhythm: ${motif.rhythmLabels.join(", ")}`;
   dom.motifPitches.textContent = `Pitches: ${motif.degreeLabels.join(" - ")} -> ${motif.noteLabels.join(" - ")}`;
   drawMotifContour(motif, dom);
 }
@@ -445,7 +440,8 @@ export function drawMotifContour(motif, dom) {
   const width = 200;
   const height = 120;
   const verticalPadding = 12;
-  const totalBeats = motif.totalBeats || noteSteps[noteSteps.length - 1].time + (noteSteps[noteSteps.length - 1].beats || 0);
+  const totalBeats =
+    motif.totalBeats || noteSteps[noteSteps.length - 1].time + (noteSteps[noteSteps.length - 1].beats || 0);
   const degreeValues = noteSteps.map((step) => getDegreeValue(step.degree));
   const maxDegree = Math.max(...degreeValues);
   const minDegree = Math.min(...degreeValues);
@@ -878,17 +874,18 @@ function syncPianoModelSelector(selectEl, libraries, activeId) {
   const hasActive = libraries.some((entry) => entry.libraryId === activeId);
   const hasPrevious = libraries.some((entry) => entry.libraryId === previousValue);
   const previousIsPending = libraries.some(
-    (entry) => entry.libraryId === previousValue && entry.phase !== "ready"
+    (entry) => entry.libraryId === previousValue && entry.phase !== "ready",
   );
-  const nextValue = locked && hasPrevious
-    ? previousValue
-    : previousIsPending
+  const nextValue =
+    locked && hasPrevious
       ? previousValue
-      : hasActive
-        ? activeId
-        : hasPrevious
-          ? previousValue
-          : libraries[0].libraryId;
+      : previousIsPending
+        ? previousValue
+        : hasActive
+          ? activeId
+          : hasPrevious
+            ? previousValue
+            : libraries[0].libraryId;
   selectEl.value = nextValue;
   selectEl.disabled = locked;
 }
@@ -961,13 +958,12 @@ export function toggleCustomCard(dom, isCustom) {
 export function renderProgressionPresetInfo(dom, preset, styleProfile, progression) {
   if (!dom.progressionDescription) return;
   const styleText = styleProfile ? `Style: ${styleProfile.label} - ${styleProfile.description}` : "";
-  const baseText = preset && preset.id !== "custom"
-    ? `${preset.description}${styleText ? ` | ${styleText}` : ""}`
-    : styleText || "Custom progression";
+  const baseText =
+    preset && preset.id !== "custom"
+      ? `${preset.description}${styleText ? ` | ${styleText}` : ""}`
+      : styleText || "Custom progression";
   const borrowedSummary = summarizeBorrowedChords(progression);
-  dom.progressionDescription.textContent = borrowedSummary
-    ? `${baseText} | ${borrowedSummary}`
-    : baseText;
+  dom.progressionDescription.textContent = borrowedSummary ? `${baseText} | ${borrowedSummary}` : baseText;
 }
 
 export function populateProgressionSelector(dom, presets, activeId) {
@@ -1139,11 +1135,7 @@ export function setStatusMessage(dom, text, options = {}) {
 }
 
 export function setPlayButtonsEnabled(dom, enabled) {
-  const toggles = [
-    dom.playAll,
-    dom.stopAll,
-    ...(dom.playButtons ? Array.from(dom.playButtons) : []),
-  ];
+  const toggles = [dom.playAll, dom.stopAll, ...(dom.playButtons ? Array.from(dom.playButtons) : [])];
   toggles.forEach((btn) => {
     if (btn) btn.disabled = !enabled;
   });
@@ -1248,17 +1240,11 @@ export function resetPlaybackIndicators(dom) {
 }
 
 export function runAssignmentPulse(dom, { includeMotif = true } = {}) {
-  const targets = [
-    findCardNode(dom.scaleNotes),
-    findCardNode(dom.progressionVisual),
-    dom.leftHandCard,
-  ];
+  const targets = [findCardNode(dom.scaleNotes), findCardNode(dom.progressionVisual), dom.leftHandCard];
   if (includeMotif) {
     targets.push(dom.motifCard);
   }
-  targets
-    .filter(Boolean)
-    .forEach((node) => pulseElement(node, "card"));
+  targets.filter(Boolean).forEach((node) => pulseElement(node, "card"));
 }
 
 export function pulsePresetCard(dom) {

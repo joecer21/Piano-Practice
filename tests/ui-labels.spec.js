@@ -1,14 +1,6 @@
 import { JSDOM } from "jsdom";
-import {
-  renderProgression,
-  renderCustomProgressionPreview,
-  renderPaletteButtons,
-} from "../ui.js";
-import {
-  getProgressionPreset,
-  STYLE_PALETTE_SETS,
-  getStyleProfile,
-} from "../theory.js";
+import { renderProgression, renderCustomProgressionPreview, renderPaletteButtons } from "../ui.js";
+import { getProgressionPreset, STYLE_PALETTE_SETS, getStyleProfile } from "../theory.js";
 import { it } from "vitest";
 import { expectContract as expect } from "./test-helpers.js";
 
@@ -65,7 +57,7 @@ function run() {
     dom.progressionRoman.textContent.includes("ii7") &&
       dom.progressionRoman.textContent.includes("V7") &&
       dom.progressionRoman.textContent.includes("Imaj7"),
-    `Progression labels missing jazz suffixes: ${dom.progressionRoman.textContent}`
+    `Progression labels missing jazz suffixes: ${dom.progressionRoman.textContent}`,
   );
 
   renderCustomProgressionPreview(state, dom);
@@ -73,7 +65,7 @@ function run() {
     dom.customPreview.textContent.includes("ii7") &&
       dom.customPreview.textContent.includes("V7") &&
       dom.customPreview.textContent.includes("Imaj7"),
-    `Custom preview missing jazz suffixes: ${dom.customPreview.textContent}`
+    `Custom preview missing jazz suffixes: ${dom.customPreview.textContent}`,
   );
 
   renderPaletteButtons("jazz", dom, STYLE_PALETTE_SETS, {
@@ -82,10 +74,7 @@ function run() {
   });
   const firstButton = dom.paletteContainer.querySelector(".chord-button");
   expect(firstButton, "Chord palette did not render");
-  expect(
-    /maj7|7/.test(firstButton.textContent),
-    `Palette labels missing suffix: ${firstButton.textContent}`
-  );
+  expect(/maj7|7/.test(firstButton.textContent), `Palette labels missing suffix: ${firstButton.textContent}`);
 
   domEnv.window.close();
 }

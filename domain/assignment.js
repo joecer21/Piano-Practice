@@ -127,14 +127,18 @@ export function validateAssignmentInputs(value) {
     errors.push(`unknown progression: ${String(input.progressionPresetId)}`);
   }
   if (!(String(input.styleId) in STYLE_PROFILES)) errors.push(`unknown style: ${String(input.styleId)}`);
-  if (!(String(input.lhId) in LEFT_HAND_PATTERN_METADATA)) errors.push(`unknown left-hand pattern: ${String(input.lhId)}`);
+  if (!(String(input.lhId) in LEFT_HAND_PATTERN_METADATA))
+    errors.push(`unknown left-hand pattern: ${String(input.lhId)}`);
   if (input.motifId !== "none" && !(String(input.motifId) in MOTIF_STYLES)) {
     errors.push(`unknown motif: ${String(input.motifId)}`);
   }
   if (!Number.isInteger(input.length) || Number(input.length) < 1 || Number(input.length) > 32) {
     errors.push("length must be an integer from 1 to 32");
   }
-  if (!Array.isArray(input.customProgressionRoman) || input.customProgressionRoman.some((symbol) => typeof symbol !== "string" || !symbol.trim())) {
+  if (
+    !Array.isArray(input.customProgressionRoman) ||
+    input.customProgressionRoman.some((symbol) => typeof symbol !== "string" || !symbol.trim())
+  ) {
     errors.push("customProgressionRoman must contain non-empty strings");
   }
   if (input.progressionPresetId === "custom" && !input.customProgressionRoman?.length) {
@@ -159,14 +163,19 @@ export function generateAssignment(rawInputs) {
   const inputs = normalizeAssignmentInputs(rawInputs);
   const styleProfile = getStyleProfile(inputs.styleId);
   const scale = generateScale({ key: inputs.key, mode: inputs.mode });
-  const progression = inputs.progressionPresetId === "custom"
-    ? generateCustomProgression(inputs.key, inputs.customProgressionRoman, scale, inputs.mode, styleProfile)
-    : generateProgression({
-        key: inputs.key,
-        mode: inputs.mode,
-        length: inputs.length,
-        progressionPresetId: inputs.progressionPresetId,
-      }, scale, styleProfile);
+  const progression =
+    inputs.progressionPresetId === "custom"
+      ? generateCustomProgression(inputs.key, inputs.customProgressionRoman, scale, inputs.mode, styleProfile)
+      : generateProgression(
+          {
+            key: inputs.key,
+            mode: inputs.mode,
+            length: inputs.length,
+            progressionPresetId: inputs.progressionPresetId,
+          },
+          scale,
+          styleProfile,
+        );
   const preset = getPresetConfig(inputs.presetId);
   const phrasePlan = createPhrasePlan({
     key: inputs.key,
@@ -176,15 +185,20 @@ export function generateAssignment(rawInputs) {
     leftHandPatternId: inputs.lhId,
     anchors: preset?.anchors,
   });
-  const leftHand = generateLeftHandPattern({
-    leftHand: inputs.lhId,
-    difficulty: "intermediate",
-    styleId: inputs.styleId,
-    phrasePlan,
-  }, progression, inputs.mode);
-  const motif = inputs.motifId === "none"
-    ? null
-    : generateMotif({ motifPatternId: inputs.motifId, styleId: inputs.styleId, phrasePlan }, scale);
+  const leftHand = generateLeftHandPattern(
+    {
+      leftHand: inputs.lhId,
+      difficulty: "intermediate",
+      styleId: inputs.styleId,
+      phrasePlan,
+    },
+    progression,
+    inputs.mode,
+  );
+  const motif =
+    inputs.motifId === "none"
+      ? null
+      : generateMotif({ motifPatternId: inputs.motifId, styleId: inputs.styleId, phrasePlan }, scale);
   const idPayload = stableStringify(inputs);
   const assignment = {
     schemaVersion: /** @type {1} */ (ASSIGNMENT_SCHEMA_VERSION),
@@ -248,7 +262,8 @@ export function rerollAssignmentInputs(rawInputs, options = {}) {
 export function validateAssignment(value) {
   const assignment = /** @type {Partial<PracticeAssignment>} */ (value || {});
   const errors = [];
-  if (!assignment || typeof assignment !== "object") return { valid: false, errors: ["assignment must be an object"] };
+  if (!assignment || typeof assignment !== "object")
+    return { valid: false, errors: ["assignment must be an object"] };
   if (assignment.schemaVersion !== ASSIGNMENT_SCHEMA_VERSION) errors.push("unsupported schemaVersion");
   const inputResult = validateAssignmentInputs(assignment.inputs);
   errors.push(...inputResult.errors);
@@ -271,7 +286,9 @@ export function validateAssignment(value) {
     errors.push("motif steps and duration must be valid");
   }
   if (assignment.phrasePlan?.lh?.anchorNote && assignment.phrasePlan?.rh?.anchorNote) {
-    const gap = noteStringToMidi(assignment.phrasePlan.rh.anchorNote) - noteStringToMidi(assignment.phrasePlan.lh.anchorNote);
+    const gap =
+      noteStringToMidi(assignment.phrasePlan.rh.anchorNote) -
+      noteStringToMidi(assignment.phrasePlan.lh.anchorNote);
     if (gap < 4 || gap > 30) errors.push(`hand anchor gap ${gap} is outside 4–30 semitones`);
   }
   return { valid: errors.length === 0, errors };
@@ -297,7 +314,10 @@ function pickDifferent(values, current, rng) {
 function stableStringify(value) {
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
   if (value && typeof value === "object") {
-    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
+      .join(",")}}`;
   }
   return JSON.stringify(value);
 }

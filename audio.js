@@ -4,12 +4,7 @@
 import * as Tone from "tone";
 import { LOCAL_SAMPLE_BASE_URL, LOCAL_VH_URL_MAP, LOCAL_VL_URL_MAP } from "./audio/local-samples.js";
 
-import {
-  beatsToTransport,
-  beatsToTone,
-  noteToMidi,
-  NOTE_TO_INDEX,
-} from "./theory.js";
+import { beatsToTransport, beatsToTone, noteToMidi, NOTE_TO_INDEX } from "./theory.js";
 import {
   createHumanizeContext,
   applyHumanizeToBeat,
@@ -491,7 +486,7 @@ export function schedulePatternEvents(events, synth, options = {}) {
       const durationSeconds = Tone.Time(duration).toSeconds();
       if (ev.notes && ev.notes.length) {
         ev.notes.forEach((note) =>
-          dispatchNoteEvent("note-play", { note, part: partId, duration: durationSeconds })
+          dispatchNoteEvent("note-play", { note, part: partId, duration: durationSeconds }),
         );
         synth.triggerAttackRelease(ev.notes, duration, time, velocity);
       } else if (ev.note) {
@@ -521,9 +516,8 @@ export function playPreviewNoteDown(note, options = {}) {
   const part = options.part === "left" ? "left" : "lead";
   const synth = synths[part] || synths.lead || synths.left;
   if (!synth || typeof synth.triggerAttack !== "function") return false;
-  const velocity = typeof options.velocity === "number"
-    ? clamp(options.velocity, 0.05, 1)
-    : BASE_VELOCITIES[part] || 0.85;
+  const velocity =
+    typeof options.velocity === "number" ? clamp(options.velocity, 0.05, 1) : BASE_VELOCITIES[part] || 0.85;
   synth.triggerAttack(note, undefined, velocity);
   dispatchNoteEvent("note-play", { note, part });
   return true;
@@ -770,7 +764,7 @@ function emitSamplerStatus(patch) {
 
 function buildSamplerSnapshot() {
   const libraries = Object.fromEntries(
-    Object.entries(samplerStatusState).map(([id, status]) => [id, { ...status }])
+    Object.entries(samplerStatusState).map(([id, status]) => [id, { ...status }]),
   );
   return {
     activeLibraryId,
@@ -874,7 +868,9 @@ async function prefetchLibrary(library, { signal, onProgress } = {}) {
         return Object.values(layer.urls || {}).map((path) => ({ baseUrl: layerBase, path }));
       })
     : Object.values(library.urls || {}).map((path) => ({ baseUrl: library.baseUrl, path }));
-  const deduped = Array.from(new Map(urlEntries.map((entry) => [`${entry.baseUrl}|${entry.path}`, entry])).values());
+  const deduped = Array.from(
+    new Map(urlEntries.map((entry) => [`${entry.baseUrl}|${entry.path}`, entry])).values(),
+  );
   if (!deduped.length) return;
   let loaded = 0;
   for (const entry of deduped) {
@@ -892,9 +888,7 @@ async function prefetchLibrary(library, { signal, onProgress } = {}) {
 async function swapSamplersForLibrary(library) {
   const freshSamplers = {};
   try {
-    const results = await Promise.all(
-      PART_IDS.map((partId) => createSamplerForPart(partId, library))
-    );
+    const results = await Promise.all(PART_IDS.map((partId) => createSamplerForPart(partId, library)));
     results.forEach(({ partId, sampler }) => {
       freshSamplers[partId] = sampler;
       const targetNode = getPartInputNode(partId);
@@ -987,7 +981,8 @@ function createVelocityLayerSampler(partId, library) {
             resolve({ partId, sampler: new VelocityLayerSampler(loadedLayers) });
           }
         },
-        onerror: (err) => failLoad(err || new Error(`Sampler load failed for ${library.label} (${layerName})`)),
+        onerror: (err) =>
+          failLoad(err || new Error(`Sampler load failed for ${library.label} (${layerName})`)),
       });
       constructed.push(sampler);
     });

@@ -27,7 +27,7 @@ function run() {
       const labeled = renderRomanSequence(FOUR_CHORD_LIFT, "major");
       expect(
         JSON.stringify(labeled) === JSON.stringify(["I", "V", "IV", "V"]),
-        `Unexpected labels in major: ${labeled.join(" ")}`
+        `Unexpected labels in major: ${labeled.join(" ")}`,
       );
     });
 
@@ -35,7 +35,7 @@ function run() {
       const labeled = renderRomanSequence(FOUR_CHORD_LIFT, "minor");
       expect(
         JSON.stringify(labeled) === JSON.stringify(["i", "v", "iv", "v"]),
-        `Unexpected labels in minor: ${labeled.join(" ")}`
+        `Unexpected labels in minor: ${labeled.join(" ")}`,
       );
     });
 
@@ -43,7 +43,7 @@ function run() {
       const labeled = renderRomanSequence(FOUR_CHORD_LIFT, "harmonicMinor");
       expect(
         JSON.stringify(labeled) === JSON.stringify(["i", "V", "iv", "V"]),
-        `Unexpected labels in harmonic minor: ${labeled.join(" ")}`
+        `Unexpected labels in harmonic minor: ${labeled.join(" ")}`,
       );
     });
 

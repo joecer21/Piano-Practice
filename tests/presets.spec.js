@@ -15,11 +15,17 @@ function runPresetAssertions(preset) {
       progressionPresetId: preset.progressionPresetId,
     },
     scale,
-    styleProfile
+    styleProfile,
   );
 
-  expect(progression?.roman?.length === preset.length, `Preset ${preset.id} expected ${preset.length} bars, received ${progression?.roman?.length}`);
-  expect(Array.isArray(progression.bars) && progression.bars.every((bar) => bar?.label), `Preset ${preset.id} progression returned unlabeled bars`);
+  expect(
+    progression?.roman?.length === preset.length,
+    `Preset ${preset.id} expected ${preset.length} bars, received ${progression?.roman?.length}`,
+  );
+  expect(
+    Array.isArray(progression.bars) && progression.bars.every((bar) => bar?.label),
+    `Preset ${preset.id} progression returned unlabeled bars`,
+  );
 
   const plan = createPhrasePlan({
     key: preset.key,
@@ -36,17 +42,26 @@ function runPresetAssertions(preset) {
   if (preset.anchors?.lh) {
     const expectedMidi = noteStringToMidi(preset.anchors.lh);
     const actualMidi = noteStringToMidi(plan.lh.anchorNote);
-    expect(actualMidi === expectedMidi, `Preset ${preset.id} LH anchor drifted (${plan.lh.anchorNote} vs ${preset.anchors.lh})`);
+    expect(
+      actualMidi === expectedMidi,
+      `Preset ${preset.id} LH anchor drifted (${plan.lh.anchorNote} vs ${preset.anchors.lh})`,
+    );
   }
 
   if (preset.anchors?.rh) {
     const expectedMidi = noteStringToMidi(preset.anchors.rh);
     const actualMidi = noteStringToMidi(plan.rh.anchorNote);
-    expect(actualMidi === expectedMidi, `Preset ${preset.id} RH anchor drifted (${plan.rh.anchorNote} vs ${preset.anchors.rh})`);
+    expect(
+      actualMidi === expectedMidi,
+      `Preset ${preset.id} RH anchor drifted (${plan.rh.anchorNote} vs ${preset.anchors.rh})`,
+    );
   }
 
   if (preset.anchors?.chords) {
-    expect(plan.lh.chordAnchors === preset.anchors.chords, `Preset ${preset.id} did not forward chord anchors`);
+    expect(
+      plan.lh.chordAnchors === preset.anchors.chords,
+      `Preset ${preset.id} did not forward chord anchors`,
+    );
   }
 
   const lhMidi = noteStringToMidi(plan.lh.anchorNote);
