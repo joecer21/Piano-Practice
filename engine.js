@@ -19,7 +19,6 @@ import {
   findClosestOctave,
   beatsToTone,
   durationToNotation,
-  chordTagToIntervals,
   buildChord,
   stripOctave,
   toneToBeatsFromDuration,
@@ -86,7 +85,6 @@ export function generateScale({ key, mode = "major" }) {
     key,
     root: key,
     name: `${key} ${definition?.label || MODE_LABELS.major}`,
-      NOTE_NAMES,
     notes,
     mode: normalizedMode,
     intervals: pattern,
@@ -348,10 +346,6 @@ export function generateMotif({ motifPatternId, styleId: playbackStyleId, phrase
   };
 }
 
-export function regenerateMotif(existingMotif, scale) {
-  if (!existingMotif || !existingMotif.styleId) return existingMotif;
-  return generateMotif({ motifPatternId: existingMotif.styleId, styleId: existingMotif.styleId }, scale);
-}
 
 export function generateLeftHandPattern({ leftHand, difficulty, styleId, phrasePlan }, progression, mode) {
   const difficultyLevel = difficulty || "intermediate";
@@ -497,8 +491,6 @@ function buildPatternBar(
     (bar.bassNotes && bar.bassNotes[3]) ||
     null;
 
-  const chordDisplay =
-    voicing.label || (voicing.notes || []).map(stripOctave).join("-");
   const pattern = {
     title: `Bar ${barIndex + 1} (${bar.label})`,
     description: "",
@@ -1090,7 +1082,7 @@ function enforceHandRange(steps = [], state, { part, lockGlobalShift = false } =
   const rangeKey = part || state.part || "rh";
   const ranges = HAND_RANGE_MAP[rangeKey] || HAND_RANGE_MAP.rh;
   let attempt = 0;
-  let working = steps;
+  const working = steps;
   while (attempt < MAX_BAR_SHIFT_ATTEMPTS) {
     const result = adjustStepsWithShift(working, state, ranges, { lockGlobalShift });
     if (result.needShift && result.shiftDelta) {
@@ -1527,20 +1519,6 @@ function extractOctaveNumber(noteStr, defaultOctave = 3) {
   return match ? Number(match[0]) : defaultOctave;
 }
 
-function clampAnchorToSoftRange(note, part) {
-  const ranges = HAND_RANGE_MAP[part] || HAND_RANGE_MAP.rh;
-  const soft = ranges.soft;
-  let midi = noteStringToMidiSafe(note, note);
-  const lhFloor = noteStringToMidiSafe("G#2", "G#2");
-  const minAllowed = part === "lh" ? Math.max(soft.min, lhFloor) : soft.min;
-  while (midi < minAllowed) {
-    midi += 12;
-  }
-  while (midi > soft.max) {
-    midi -= 12;
-  }
-  return midiToNote(midi);
-}
 
 function computeDefaultHandAnchors({
   key,
@@ -1704,17 +1682,6 @@ function createHandRangeSet({ comfort = {}, soft = {} } = {}) {
   };
 }
 
-function deriveAnchorFromRange(key, range, fallback) {
-  if (!key) return fallback || "C3";
-  if (!range) {
-    const fallbackOct = extractOctaveNumber(fallback, 3);
-    return `${key}${fallbackOct}`;
-  }
-  const lowOct = extractOctaveNumber(range.low, 3);
-  const highOct = extractOctaveNumber(range.high, lowOct);
-  const octave = Math.round((lowOct + highOct) / 2);
-  return `${key}${octave}`;
-}
 
 function computeDynamics(beatOffset, hints = {}) {
   const localBeat = ((beatOffset % 4) + 4) % 4;

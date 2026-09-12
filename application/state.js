@@ -19,7 +19,6 @@ export function createInitialAppState(overrides = {}) {
   const inputs = normalizeAssignmentInputs(overrides.inputs || DEFAULT_ASSIGNMENT_INPUTS);
   return {
     tempo: 90,
-    inputs,
     derived: {
       scale: null,
       progression: null,
@@ -53,6 +52,8 @@ export function createInitialAppState(overrides = {}) {
     assignment: null,
     history: { past: [], future: [] },
     ...overrides,
+    // Re-applied after the spread so a raw overrides.inputs cannot bypass
+    // normalizeAssignmentInputs.
     inputs,
   };
 }

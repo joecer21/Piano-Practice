@@ -186,11 +186,6 @@ const BEATS_BY_TONE = new Map([
   ["1n", 4], // common alias for a whole note
 ]);
 
-export const DEGREE_POOLS = {
-  simple: [1, 2, 3, 5],
-  moderate: [1, 2, 3, 4, 5, 6],
-  complex: [1, 2, 3, 4, 5, 6, 7],
-};
 
 export const PROGRESSION_PRESETS = [
   // POP / ROCK
@@ -1015,10 +1010,6 @@ export function findClosestOctave(noteName, targetMidi) {
   return bestOctave;
 }
 
-export function scaleNote(scaleNotes, degree) {
-  const idx = (degree - 1) % scaleNotes.length;
-  return scaleNotes[idx];
-}
 
 export function durationToNotation(beats) {
   return DURATION_LABELS[beats] || `${beats.toFixed(2)} beat`;
@@ -1038,12 +1029,6 @@ export function beatsToTone(beats) {
   return nearest.tone;
 }
 
-export function timeFromBar(bar, beatFraction) {
-  const beats = Math.floor(beatFraction);
-  const remainder = beatFraction - beats;
-  const sixteenths = Math.round(remainder * 4);
-  return `${bar}:${beats}:${sixteenths}`;
-}
 
 export function beatsToTransport(totalBeats) {
   const bar = Math.floor(totalBeats / 4);
@@ -1053,13 +1038,6 @@ export function beatsToTransport(totalBeats) {
   return `${bar}:${beat}:${sixteenth}`;
 }
 
-export function transportToBeats(timeStr) {
-  const parts = timeStr.split(":").map(Number);
-  const bar = parts[0] || 0;
-  const beat = parts[1] || 0;
-  const sixteenth = parts[2] || 0;
-  return bar * 4 + beat + sixteenth / 4;
-}
 
 export function toneToBeatsFromDuration(duration) {
   return BEATS_BY_TONE.get(duration) ?? 1;

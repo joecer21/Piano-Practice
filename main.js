@@ -278,8 +278,10 @@ function syncInputsFromDom() {
   }
 }
 
-function handleGenerate(options = {}) {
-  const { auto = false } = options;
+// Callers pass { auto: true } (see the preset and fallback paths below) but this
+// function has never acted on it. Kept as an explicit, named no-op so the
+// discrepancy stays visible instead of being silently dropped.
+function handleGenerate(_options = {}) {
   syncInputsFromDom();
 
   if (
@@ -433,6 +435,7 @@ async function unlockAudio() {
     window.removeEventListener("click", handleUnlockClick);
     return true;
   } catch (error) {
+    console.warn("Audio unlock failed", error);
     setStatusMessage(dom, "Sound is blocked by the browser. Click anywhere on the page to enable audio.", {
       tone: "error",
     });

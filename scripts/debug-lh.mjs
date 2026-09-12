@@ -8,7 +8,6 @@ import {
   getProgressionPreset,
   HAND_RANGE_SPECS,
   parseRomanSymbol,
-  stripOctave,
   noteStringToMidi,
   midiToNote,
   getStyleProfile,
@@ -149,7 +148,7 @@ function describeBar(bar, romanSymbol, preset) {
 }
 
 for (const preset of presets) {
-  const { progression, scale } = buildProgression(preset);
+  const { progression } = buildProgression(preset);
   const phrasePlan = createPhrasePlan({
     key: preset.key,
     mode: preset.mode,

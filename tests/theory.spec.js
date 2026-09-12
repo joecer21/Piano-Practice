@@ -1,4 +1,4 @@
-import { parseRomanSymbol, buildChord, getStyleProfile, degreeToNote } from "../theory.js";
+import { buildChord, getStyleProfile, degreeToNote } from "../theory.js";
 import { generateProgression, generateScale } from "../engine.js";
 import { describe, it } from "vitest";
 import { expectContract as expect } from "./test-helpers.js";

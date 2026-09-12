@@ -279,7 +279,7 @@ const channels = {
   lead: null,
 };
 
-let reverbState = { wet: FX_DEFAULTS.reverbWet, roomSize: FX_DEFAULTS.roomSize };
+const reverbState = { wet: FX_DEFAULTS.reverbWet, roomSize: FX_DEFAULTS.roomSize };
 let motifWidthState = FX_DEFAULTS.motifWidth;
 let fallbackLoadPromise = null;
 let reverbSendEnabled = false;
@@ -365,6 +365,7 @@ export function getSamplerStatusSnapshot() {
 }
 
 export function requestFallbackPianoLoad(reason = "manual") {
+  emitSamplerStatus({ libraryId: FALLBACK_LIBRARY_ID, phase: "init", progress: 0, error: null, reason });
   if (activeLibraryId === FALLBACK_LIBRARY_ID) {
     return Promise.resolve(true);
   }
@@ -372,7 +373,6 @@ export function requestFallbackPianoLoad(reason = "manual") {
     return fallbackLoadPromise;
   }
 
-  console.log(`Starting lite piano load (${reason})`);
   fallbackLoadPromise = loadLibrary(FALLBACK_LIBRARY_ID, { timeoutMs: FALLBACK_LOAD_TIMEOUT_MS })
     .catch((err) => {
       // loadLibrary already emitted detailed status; surface failure for callers.
