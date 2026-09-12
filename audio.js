@@ -218,6 +218,37 @@ Object.values(SAMPLE_LIBRARY_REGISTRY).forEach((library) => {
 });
 const libraryLoadPromises = {};
 const PART_IDS = ["left", "lead"];
+
+// Tone.Transport.schedule returns an id for the event it created. Every one of
+// those was discarded, so the only way to cancel anything was the global
+// Tone.Transport.cancel() inside stopTransport - a part could not be stopped
+// without stopping everything, and re-playing a part without an intervening stop
+// stacked a duplicate copy of it onto the transport.
+//
+// This is deliberately narrow bookkeeping, not the full playback-session facade;
+// that arrives with the AudioEngine rebuild.
+const scheduledEventIds = { left: [], lead: [] };
+
+function trackScheduledEvent(partId, eventId) {
+  (scheduledEventIds[partId] ||= []).push(eventId);
+}
+
+function clearScheduledEvents(partId) {
+  const ids = scheduledEventIds[partId];
+  if (!ids?.length) return;
+  ids.forEach((eventId) => {
+    try {
+      Tone.Transport.clear(eventId);
+    } catch (err) {
+      console.warn(`Failed to clear scheduled ${partId} event`, err);
+    }
+  });
+  ids.length = 0;
+}
+
+function clearAllScheduledEvents() {
+  Object.keys(scheduledEventIds).forEach(clearScheduledEvents);
+}
 const DEFAULT_MIX = {
   left: { volume: 0, mute: false, pan: 0 },
   lead: { volume: 0, mute: false, pan: 0 },
@@ -367,6 +398,7 @@ export function requestLibraryLoad(libraryId, options = {}) {
 export function stopTransport() {
   Tone.Transport.stop();
   Tone.Transport.cancel();
+  clearAllScheduledEvents();
   Tone.Transport.position = 0;
   Tone.Transport.loop = false;
   dispatchNoteEvent("notes-stop-all");
@@ -452,7 +484,7 @@ export function schedulePatternEvents(events, synth, options = {}) {
   const partId = options.partId || "left";
   events.forEach((ev) => {
     const when = getHumanizedSeconds(ev.startBeats, ev.swingPosition);
-    Tone.Transport.schedule((time) => {
+    const eventId = Tone.Transport.schedule((time) => {
       const baseVelocity = scaleVelocityByDynamics(BASE_VELOCITIES[partId], ev.dynamics);
       const velocity = getHumanizedVelocity(baseVelocity, humanizeContext);
       const duration = ev.duration || "4n";
@@ -471,11 +503,14 @@ export function schedulePatternEvents(events, synth, options = {}) {
         synth.triggerAttackRelease(ev.note, duration, time, velocity);
       }
     }, when);
+    trackScheduledEvent(partId, eventId);
   });
 }
 
 export function playFromEvents(events, synth, loopBeats, loopEnabled, partId) {
   if (!events || !events.length) return;
+  // Self-cancelling: previously this relied on the caller having stopped first.
+  clearScheduledEvents(partId);
   configureLoop(loopBeats, loopEnabled);
   schedulePatternEvents(events, synth, { partId });
   Tone.Transport.start();
@@ -521,10 +556,11 @@ export async function playScale(scale, loopEnabled, options = {}) {
     return `${note}${octave}`;
   });
 
+  clearScheduledEvents("lead");
   let beatCursor = 0;
   notes.forEach((note, index) => {
     const when = beatsToTransport(beatCursor);
-    Tone.Transport.schedule((eventTime) => {
+    const eventId = Tone.Transport.schedule((eventTime) => {
       if (typeof options.onNote === "function") {
         options.onNote(note, index);
       }
@@ -535,13 +571,17 @@ export async function playScale(scale, loopEnabled, options = {}) {
       });
       synths.lead.triggerAttackRelease(note, "8n", eventTime);
     }, when);
+    trackScheduledEvent("lead", eventId);
     beatCursor += 0.5;
   });
   configureLoop(beatCursor, loopEnabled);
   if (!loopEnabled && typeof options.onComplete === "function") {
-    Tone.Transport.schedule(() => {
-      options.onComplete();
-    }, beatsToTransport(beatCursor));
+    trackScheduledEvent(
+      "lead",
+      Tone.Transport.schedule(() => {
+        options.onComplete();
+      }, beatsToTransport(beatCursor)),
+    );
   }
   Tone.Transport.start();
 }

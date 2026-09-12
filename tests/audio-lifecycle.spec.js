@@ -38,12 +38,24 @@ vi.mock("tone", () => {
       queueMicrotask(() => options?.onload?.());
     }
   }
+  let nextEventId = 1;
   const Transport = {
     bpm: { value: 90 },
     state: "stopped",
     position: 0,
     loop: false,
-    start() {}, stop() {}, cancel() {}, schedule() { return 1; }, scheduleRepeat() { return 1; }, clear() {},
+    loopEnd: 0,
+    scheduled: new Map(),
+    start() { this.state = "started"; },
+    stop() { this.state = "stopped"; },
+    cancel() { this.scheduled.clear(); },
+    schedule(callback, when) {
+      const id = nextEventId++;
+      this.scheduled.set(id, { callback, when });
+      return id;
+    },
+    scheduleRepeat() { return nextEventId++; },
+    clear(id) { this.scheduled.delete(id); return this; },
   };
   return {
     Limiter: class extends MockNode { constructor() { super("Limiter"); } },
@@ -110,5 +122,56 @@ describe("audio graph lifecycle", () => {
     }
     expect(live.size).toBe(0);
     expect(built.length).toBeGreaterThan(0);
+  });
+});
+
+describe("scheduled event ownership", () => {
+  const notes = (count, part) =>
+    Array.from({ length: count }, (_, i) => ({
+      startBeats: i,
+      swingPosition: 0,
+      note: part === "left" ? "C3" : "C5",
+      duration: "4n",
+      dynamics: { accent: 0, ghost: 0 },
+    }));
+
+  let Tone;
+  beforeEach(async () => {
+    Tone = await import("tone");
+    await audio.initSynths();
+    Tone.Transport.scheduled.clear();
+  });
+
+  it("re-playing a part replaces its events instead of stacking duplicates", () => {
+    audio.playFromEvents(notes(4, "left"), audio.synths.left, 4, false, "left");
+    expect(Tone.Transport.scheduled.size).toBe(4);
+
+    // Previously this stacked a second copy: playFromEvents scheduled without
+    // cancelling, and only worked because callers stopped the transport first.
+    audio.playFromEvents(notes(4, "left"), audio.synths.left, 4, false, "left");
+    expect(Tone.Transport.scheduled.size).toBe(4);
+  });
+
+  it("replacing one part leaves the other part's events intact", () => {
+    audio.playFromEvents(notes(3, "left"), audio.synths.left, 4, false, "left");
+    audio.playFromEvents(notes(2, "lead"), audio.synths.lead, 4, false, "lead");
+    expect(Tone.Transport.scheduled.size).toBe(5);
+
+    // Re-play only the left hand. The lead's two events must survive; before,
+    // the only cancellation available was a global Transport.cancel().
+    audio.playFromEvents(notes(3, "left"), audio.synths.left, 4, false, "left");
+    expect(Tone.Transport.scheduled.size).toBe(5);
+  });
+
+  it("stopTransport clears everything", () => {
+    audio.playFromEvents(notes(3, "left"), audio.synths.left, 4, false, "left");
+    audio.playFromEvents(notes(2, "lead"), audio.synths.lead, 4, false, "lead");
+
+    audio.stopTransport();
+    expect(Tone.Transport.scheduled.size).toBe(0);
+
+    // And the bookkeeping is empty too, so the next play starts from a clean slate.
+    audio.playFromEvents(notes(2, "lead"), audio.synths.lead, 4, false, "lead");
+    expect(Tone.Transport.scheduled.size).toBe(2);
   });
 });
