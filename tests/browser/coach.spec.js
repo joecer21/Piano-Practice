@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 async function waitForPiano(page) {
   await page.waitForFunction(() => {
-    const snapshot = window.__samplerSnapshot;
+    const snapshot = window.__PIANO_PRACTICE_TEST__?.sampler;
     return snapshot?.libraries?.[snapshot.activeLibraryId]?.phase === "ready";
   });
 }
@@ -23,7 +23,7 @@ test("land, start five minutes, then loop bar 3 with the left hand at half speed
 
   await expect(page.getByRole("timer")).toHaveText(/^[45]:\d\d$/);
   await expect
-    .poll(() => page.evaluate(() => window.__coachPlayback))
+    .poll(() => page.evaluate(() => window.__PIANO_PRACTICE_TEST__?.playback))
     .toMatchObject({
       parts: ["lh", "rh"],
       countIn: true,
@@ -38,7 +38,7 @@ test("land, start five minutes, then loop bar 3 with the left hand at half speed
   await page.getByRole("button", { name: "Half speed" }).click();
 
   await expect
-    .poll(() => page.evaluate(() => window.__coachPlayback))
+    .poll(() => page.evaluate(() => window.__PIANO_PRACTICE_TEST__?.playback))
     .toMatchObject({
       parts: ["lh"],
       barRange: [2, 2],
@@ -162,7 +162,9 @@ test("a guided session walks the breakdown views and ends with a summary", async
 
   await page.getByRole("button", { name: "Next step" }).click();
   await expect(page.getByRole("button", { name: "Hands apart" })).toHaveAttribute("aria-pressed", "true");
-  await expect.poll(() => page.evaluate(() => window.__coachPlayback)).toMatchObject({ parts: ["lh"] });
+  await expect
+    .poll(() => page.evaluate(() => window.__PIANO_PRACTICE_TEST__?.playback))
+    .toMatchObject({ parts: ["lh"] });
 
   await page.getByRole("button", { name: "Next step" }).click();
   await page.getByRole("button", { name: "Next step" }).click();
@@ -173,7 +175,7 @@ test("a guided session walks the breakdown views and ends with a summary", async
   await page.getByRole("button", { name: "Next step" }).click();
   await expect(page.getByRole("list", { name: /Motif degrees/ })).toBeVisible();
   await expect
-    .poll(() => page.evaluate(() => window.__coachPlayback))
+    .poll(() => page.evaluate(() => window.__PIANO_PRACTICE_TEST__?.playback))
     .toMatchObject({ parts: ["rh"], rate: 0.5 });
 
   await page.getByRole("button", { name: "Next step" }).click();

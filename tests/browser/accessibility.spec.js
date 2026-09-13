@@ -20,7 +20,7 @@ test("Live Piano exposes accessible controls and a phone-friendly range", async 
   await expect(cSharp).toBeFocused();
 
   await page.waitForFunction(() => {
-    const snapshot = window.__samplerSnapshot;
+    const snapshot = window.__PIANO_PRACTICE_TEST__?.sampler;
     return snapshot?.libraries?.[snapshot.activeLibraryId]?.phase === "ready";
   });
   // What the player presses is mirrored as a ring (data-played), not painted in a

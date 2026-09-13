@@ -1,68 +1,71 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { JSDOM } from "jsdom";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { cacheDom, setStatusMessage, showHint } from "../ui.js";
+// @vitest-environment jsdom
+import { createElement } from "react";
+import { act, cleanup, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createStatusService } from "../application/status.ts";
+import { StatusLine } from "../coach/StatusLine.tsx";
 
-const html = readFileSync(fileURLToPath(new URL("../index.html", import.meta.url)), "utf8");
 const HINT = "Add at least one chord to use your custom palette.";
 const AMBIENT = "Piano Lite - Soft ready for playback";
-
-// ui.js binds setTimeout into a module-level constant at import time, so fake
-// timers installed afterwards never reach it. Use short real durations instead.
 const SHORT = 40;
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-let dom;
-let cached;
+let status;
+const show = (...args) => act(() => status.show(...args));
+const hint = (...args) => act(() => status.hint(...args));
 beforeEach(() => {
-  dom = new JSDOM(html);
-  global.window = dom.window;
-  global.document = dom.window.document;
-  cached = cacheDom();
+  vi.useFakeTimers();
+  status = createStatusService();
+  render(createElement(StatusLine, { status }));
 });
 afterEach(() => {
-  delete global.window;
-  delete global.document;
+  status.dispose();
+  cleanup();
+  vi.useRealTimers();
 });
 
 describe("status line priority", () => {
+  it("announces application feedback to assistive technology", () => {
+    const line = screen.getByRole("status");
+    expect(line.getAttribute("aria-live")).toBe("polite");
+    expect(line.getAttribute("aria-atomic")).toBe("true");
+  });
+
   it("does not let ambient status overwrite an actionable hint", () => {
-    showHint(cached, HINT);
-    expect(cached.statusLine.textContent).toContain("Add at least one chord");
+    hint(HINT);
+    expect(screen.getByRole("status").textContent).toContain("Add at least one chord");
 
     // Sample loading finishes asynchronously and lands on the same single
     // last-writer-wins channel; it used to wipe the hint mid-read.
-    setStatusMessage(cached, AMBIENT, { tone: "success", ambient: true });
-    expect(cached.statusLine.textContent).toContain("Add at least one chord");
+    show(AMBIENT, { tone: "success", ambient: true });
+    expect(screen.getByRole("status").textContent).toContain("Add at least one chord");
   });
 
-  it("shows the deferred message once the hint expires", async () => {
-    setStatusMessage(cached, HINT, { tone: "hint", transient: true, duration: SHORT });
-    setStatusMessage(cached, AMBIENT, { tone: "success", ambient: true });
-    expect(cached.statusLine.textContent).toBe(HINT);
+  it("shows the deferred message once the hint expires", () => {
+    show(HINT, { tone: "hint", transient: true, duration: SHORT });
+    show(AMBIENT, { tone: "success", ambient: true });
+    expect(screen.getByRole("status").textContent).toBe(HINT);
 
-    await wait(SHORT * 3);
-    expect(cached.statusLine.textContent).toBe(AMBIENT);
+    act(() => vi.advanceTimersByTime(SHORT));
+    expect(screen.getByRole("status").textContent).toBe(AMBIENT);
   });
 
   it("still lets an error take over immediately", () => {
-    showHint(cached, HINT);
-    setStatusMessage(cached, "Sample load failed", { tone: "error" });
-    expect(cached.statusLine.textContent).toBe("Sample load failed");
-    expect(cached.statusLine.dataset.tone).toBe("error");
+    hint(HINT);
+    show("Sample load failed", { tone: "error" });
+    expect(screen.getByRole("status").textContent).toBe("Sample load failed");
+    expect(screen.getByRole("status").dataset.tone).toBe("error");
   });
 
   it("lets a message the user triggered take effect immediately", () => {
-    showHint(cached, HINT);
+    hint(HINT);
     // Clicking Generate is not ambient, so its result must not be deferred.
-    setStatusMessage(cached, "Assignment updated for C major", { tone: "success" });
-    expect(cached.statusLine.textContent).toBe("Assignment updated for C major");
+    show("Assignment updated for C major", { tone: "success" });
+    expect(screen.getByRole("status").textContent).toBe("Assignment updated for C major");
   });
 
   it("replaces a hint with a newer hint", () => {
-    showHint(cached, "First hint");
-    showHint(cached, "Second hint");
-    expect(cached.statusLine.textContent).toBe("Second hint");
+    hint("First hint");
+    hint("Second hint");
+    expect(screen.getByRole("status").textContent).toBe("Second hint");
   });
 });

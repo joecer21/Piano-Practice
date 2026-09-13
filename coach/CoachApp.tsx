@@ -21,6 +21,7 @@ import type { PracticeControls } from "./practice.js";
 import { PracticePanel } from "./PracticePanel.js";
 import { pianoReadiness } from "./sampler.js";
 import { ScaleReference } from "./ScaleReference.js";
+import { StatusLine } from "./StatusLine.js";
 import { SessionHeader } from "./SessionHeader.js";
 import { SoundSettings } from "./SoundSettings.js";
 import {
@@ -94,6 +95,8 @@ export function CoachApp({
   );
 
   const sessionRef = useRef<PlaybackSession | null>(null);
+  const playbackAttemptRef = useRef(0);
+  const wantsPlaybackRef = useRef(false);
   const playheadRef = useRef<HTMLDivElement>(null);
   const assignmentWorkspaceRef = useRef<HTMLDetailsElement>(null);
   const viewRef = useRef(view);
@@ -102,6 +105,8 @@ export function CoachApp({
   // ---- Playback ------------------------------------------------------------
 
   const stopPlayback = useCallback(() => {
+    wantsPlaybackRef.current = false;
+    playbackAttemptRef.current += 1;
     const current = sessionRef.current;
     sessionRef.current = null;
     current?.stop();
@@ -112,9 +117,22 @@ export function CoachApp({
   const startPlayback = useCallback(
     async (nextControls: PracticeControls, options: { countIn: boolean }): Promise<boolean> => {
       if (!score || readiness.state !== "ready") return false;
-      if (!(await bridge.unlockAudio())) return false;
+      wantsPlaybackRef.current = true;
+      const attempt = ++playbackAttemptRef.current;
+      if (!(await bridge.unlockAudio())) {
+        if (attempt === playbackAttemptRef.current) wantsPlaybackRef.current = false;
+        return false;
+      }
+      // A newer control change may have started its own request while audio was
+      // unlocking. Let that request own playback instead of reviving stale music.
+      if (attempt !== playbackAttemptRef.current) return wantsPlaybackRef.current;
+      if (!wantsPlaybackRef.current) return false;
 
-      stopPlayback();
+      const current = sessionRef.current;
+      sessionRef.current = null;
+      current?.stop();
+      setPlayingRequest(null);
+      setCountInBeat(null);
       bridge.stopOtherPlayback();
       const request = buildPracticeRequest(score, nextControls, {
         tempoBpm: bridge.getTempoBpm(),
@@ -123,16 +141,17 @@ export function CoachApp({
       try {
         sessionRef.current = bridge.audioEngine.play(request);
         setPlayingRequest(request);
-        exposeForTests(request);
+        bridge.observePlayback(request);
         return true;
       } catch (error) {
+        if (attempt === playbackAttemptRef.current) wantsPlaybackRef.current = false;
         sessionRef.current = null;
         setPlayingRequest(null);
         bridge.reportError(`Playback could not start: ${error instanceof Error ? error.message : error}`);
         return false;
       }
     },
-    [bridge, readiness.state, score, stopPlayback],
+    [bridge, readiness.state, score],
   );
 
   // A session ending elsewhere (a host stop command, or reaching the end of a
@@ -141,6 +160,8 @@ export function CoachApp({
     () =>
       bridge.audioEngine.on("status", (event) => {
         if (event.status !== "playing" && event.sessionId === sessionRef.current?.id) {
+          wantsPlaybackRef.current = false;
+          playbackAttemptRef.current += 1;
           sessionRef.current = null;
           setPlayingRequest(null);
           setCountInBeat(null);
@@ -157,7 +178,7 @@ export function CoachApp({
   const applyControls = useCallback(
     (next: PracticeControls) => {
       setControls(next);
-      if (playingRequest) void startPlayback(next, { countIn: false });
+      if (playingRequest || wantsPlaybackRef.current) void startPlayback(next, { countIn: false });
     },
     [playingRequest, startPlayback],
   );
@@ -497,6 +518,7 @@ export function CoachApp({
         assignmentActions={libraryControls}
       />
       <ScaleReference scale={assignment?.scale ?? null} audition={bridge.scaleAudition} ready={ready} />
+      <StatusLine status={bridge.status} />
       {settingsContainer
         ? createPortal(
             <SoundSettings settings={bridge.soundSettings} sampler={samplerSnapshot} />,
@@ -505,22 +527,4 @@ export function CoachApp({
         : null}
     </>
   );
-}
-
-declare global {
-  interface Window {
-    __coachPlayback?: Pick<PlayRequest, "parts" | "barRange" | "rate" | "loop" | "countIn">;
-  }
-}
-
-/** Observable hook for browser tests, in the same spirit as window.__transportState. */
-function exposeForTests(request: PlayRequest): void {
-  if (typeof window === "undefined") return;
-  window.__coachPlayback = {
-    parts: request.parts,
-    barRange: request.barRange,
-    rate: request.rate,
-    loop: request.loop,
-    countIn: request.countIn,
-  };
 }

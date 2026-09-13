@@ -74,14 +74,7 @@ export default [
     // Product code generates assignments for learners, so it must go through
     // generateLearnerAssignment, which refuses motifs a mode does not offer. The
     // unrestricted generateAssignment stays available to tests and reports.
-    files: [
-      "main.js",
-      "ui.js",
-      "presets.js",
-      "application/**/*.js",
-      "components/**/*.js",
-      "coach/**/*.{ts,tsx}",
-    ],
+    files: ["main.js", "presets.js", "application/**/*.js", "components/**/*.js", "coach/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -105,7 +98,7 @@ export default [
         {
           patterns: [
             {
-              group: ["./application/**", "../application/**", "./ui.js", "../ui.js"],
+              group: ["./application/**", "../application/**"],
               message:
                 "The audio layer accepts domain data through its public contract; it must not read app state or UI.",
             },
@@ -126,8 +119,8 @@ export default [
               group: [
                 "../application/**",
                 "../coach/**",
-                "../ui.js",
                 "../main.js",
+                "../components/piano-interactions.js",
                 "../audio.js",
                 "../audio/**",
               ],

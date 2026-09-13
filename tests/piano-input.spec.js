@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { JSDOM } from "jsdom";
 import { buildPianoVisual } from "../components/piano.js";
-import { QWERTY_PIANO_NOTES, wireEvents } from "../ui.js";
+import { QWERTY_PIANO_NOTES, wirePianoInteractions } from "../components/piano-interactions.js";
 
 let environment;
 let dom;
 let onPianoKeyDown;
 let onPianoKeyUp;
+let disposeEvents;
 
 function keyboardEvent(type, key, options = {}) {
   return new window.KeyboardEvent(type, { key, bubbles: true, cancelable: true, ...options });
@@ -44,10 +45,11 @@ beforeEach(() => {
   buildPianoVisual(dom, { compact: false });
   onPianoKeyDown = vi.fn();
   onPianoKeyUp = vi.fn();
-  wireEvents(dom, { onPianoKeyDown, onPianoKeyUp });
+  disposeEvents = wirePianoInteractions(dom, { onPianoKeyDown, onPianoKeyUp });
 });
 
 afterEach(() => {
+  disposeEvents?.();
   environment?.window.close();
   delete global.window;
   delete global.document;
@@ -142,5 +144,24 @@ describe("Live Piano input", () => {
     const glissPointer = pointerEvent("pointerdown", { pointerId: 2 });
     middleC.dispatchEvent(glissPointer);
     expect(glissPointer.defaultPrevented).toBe(true);
+  });
+
+  it("removes every listener and releases held notes when disposed", () => {
+    dom.pianoComputerKeyboardToggle.checked = true;
+    dom.pianoComputerKeyboardToggle.dispatchEvent(new window.Event("change", { bubbles: true }));
+    window.dispatchEvent(keyboardEvent("keydown", "a"));
+    expect(onPianoKeyDown).toHaveBeenLastCalledWith("C4", "computerKeyboard");
+
+    onPianoKeyDown.mockClear();
+    onPianoKeyUp.mockClear();
+    disposeEvents();
+    expect(onPianoKeyUp).toHaveBeenCalledOnce();
+    expect(onPianoKeyUp).toHaveBeenLastCalledWith("C4", "computerKeyboard");
+
+    window.dispatchEvent(keyboardEvent("keydown", "s"));
+    dom.pianoVisual
+      .querySelector('[data-note="C4"]')
+      .dispatchEvent(pointerEvent("pointerdown", { pointerId: 7 }));
+    expect(onPianoKeyDown).not.toHaveBeenCalled();
   });
 });

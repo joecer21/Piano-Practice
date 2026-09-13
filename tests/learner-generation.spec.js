@@ -60,8 +60,13 @@ describe("learner-facing generation", () => {
 
   it("is enforced by lint: product code cannot import the unrestricted generator", async () => {
     const eslint = new ESLint();
-    const source = 'import { generateAssignment } from "./domain/assignment.js";\ngenerateAssignment({});\n';
-    for (const filePath of ["main.js", "ui.js"]) {
+    const productSurfaces = [
+      { filePath: "main.js", importPath: "./domain/assignment.js" },
+      { filePath: "application/app-controller.js", importPath: "../domain/assignment.js" },
+      { filePath: "components/piano-interactions.js", importPath: "../domain/assignment.js" },
+    ];
+    for (const { filePath, importPath } of productSurfaces) {
+      const source = `import { generateAssignment } from "${importPath}";\ngenerateAssignment({});\n`;
       const [result] = await eslint.lintText(source, { filePath });
       expect(
         result.messages.map((message) => message.ruleId),

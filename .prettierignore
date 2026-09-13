@@ -3,4 +3,6 @@ node_modules
 playwright-report
 test-results
 tests/fixtures
+audits/musical/corpus.json
+audits/musical/report.md
 package-lock.json

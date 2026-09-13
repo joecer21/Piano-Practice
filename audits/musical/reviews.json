@@ -1,0 +1,303 @@
+{
+  "schemaVersion": 1,
+  "corpusFingerprint": "aba6de4e194aea88",
+  "reviews": [
+    {
+      "caseId": "preset:pop-c",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "110706781ab6679a",
+      "musicalFingerprint": "0e5a756b7442d4af",
+      "scoreFingerprint": "883157b10765f231",
+      "grandfathered": true
+    },
+    {
+      "caseId": "preset:blues-a",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "3852bd5e5ff57ea3",
+      "musicalFingerprint": "907c8391dd3aad20",
+      "scoreFingerprint": "92a61d589dbf9c5c",
+      "grandfathered": true
+    },
+    {
+      "caseId": "preset:classical-f",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "f696afddeed2f64c",
+      "musicalFingerprint": "d0d0430056019734",
+      "scoreFingerprint": "916248426a370433",
+      "grandfathered": true
+    },
+    {
+      "caseId": "preset:lofi-d",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "0522cd859c9cc98d",
+      "musicalFingerprint": "180823aac198e9be",
+      "scoreFingerprint": "d0c4c337d98516a9",
+      "grandfathered": true
+    },
+    {
+      "caseId": "preset:jazz-bb",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "9d4322d25f4e1a84",
+      "musicalFingerprint": "b5ce1410dea13e10",
+      "scoreFingerprint": "32767084baeb38fe",
+      "grandfathered": true
+    },
+    {
+      "caseId": "preset:harmonic-e",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "e6c2f8e3fea292df",
+      "musicalFingerprint": "81111b6bc29d66b4",
+      "scoreFingerprint": "54526f3a8f9a86cf",
+      "grandfathered": true
+    },
+    {
+      "caseId": "preset:modal-g",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "5e891dbacd181ac0",
+      "musicalFingerprint": "17e7339aed4d9633",
+      "scoreFingerprint": "9d67209072ac74f7",
+      "grandfathered": true
+    },
+    {
+      "caseId": "preset:pent-c",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "f981d751b1ec630b",
+      "musicalFingerprint": "aae4ce5723dc9d55",
+      "scoreFingerprint": "05b838a22e5819b2",
+      "grandfathered": true
+    },
+    {
+      "caseId": "preset:ned-shearon",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "fd2d966c6a80bf66",
+      "musicalFingerprint": "1161478cad0268ae",
+      "scoreFingerprint": "b30b3eaaee2af682",
+      "grandfathered": true
+    },
+    {
+      "caseId": "preset:verde-dia",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "a6b49fc257142dc9",
+      "musicalFingerprint": "6bb8d809a994f7a1",
+      "scoreFingerprint": "73f68bb2d4725a08",
+      "grandfathered": true
+    },
+    {
+      "caseId": "preset:coldplayer",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "8a2e008e52157e94",
+      "musicalFingerprint": "5f9e0b8db2eaaedb",
+      "scoreFingerprint": "9ca8818ad0d13dbb",
+      "grandfathered": true
+    },
+    {
+      "caseId": "preset:tayla-swift",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "a97d2c2e50f68519",
+      "musicalFingerprint": "6f1e15e039151220",
+      "scoreFingerprint": "85ff5843d8fa080a",
+      "grandfathered": true
+    },
+    {
+      "caseId": "preset:billie-eyelash",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "37a198c9a5e96cd2",
+      "musicalFingerprint": "bc7d8dcc544e1fda",
+      "scoreFingerprint": "ec052eef35aa78e0",
+      "grandfathered": true
+    },
+    {
+      "caseId": "preset:brunho-bars",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "f8ed98c605da4dbd",
+      "musicalFingerprint": "b271538751e94f3f",
+      "scoreFingerprint": "db8ce562bebc98a7",
+      "grandfathered": true
+    },
+    {
+      "caseId": "preset:daft-ponk",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "ad90e1e1b36e0228",
+      "musicalFingerprint": "5b352705c05656b1",
+      "scoreFingerprint": "7b8af0d3c6a1ed4b",
+      "grandfathered": true
+    },
+    {
+      "caseId": "preset:john-legendairy",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "20896bc947811470",
+      "musicalFingerprint": "102bf1a4b79fd7f0",
+      "scoreFingerprint": "d4246864308cd294",
+      "grandfathered": true
+    },
+    {
+      "caseId": "semantics:parent-degree-minor-pentatonic",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "3fd2bc308a516583",
+      "musicalFingerprint": "b6a48747e77a7ad1",
+      "scoreFingerprint": "f675a99550ca83ce",
+      "grandfathered": true
+    },
+    {
+      "caseId": "semantics:scale-step-minor-pentatonic",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "e14859d9a04ff6ce",
+      "musicalFingerprint": "f2f982dc38ddd6e2",
+      "scoreFingerprint": "1f90dc3d47d8cf16",
+      "grandfathered": true
+    },
+    {
+      "caseId": "collection:major-pentatonic-exemplar",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "6f89dcbc0d5a3852",
+      "musicalFingerprint": "da6f8fbc2909e14c",
+      "scoreFingerprint": "3a28c5d744fd2d93",
+      "grandfathered": true
+    },
+    {
+      "caseId": "collection:major-blues-exemplar",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "e2a4533f49709cd2",
+      "musicalFingerprint": "1af48bc66ed8778a",
+      "scoreFingerprint": "a15ab0785c3d90f3",
+      "grandfathered": true
+    },
+    {
+      "caseId": "semantics:major-blues-major-third",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "cb16fe90683f75a4",
+      "musicalFingerprint": "62150d6f374bb81c",
+      "scoreFingerprint": "0c7325f757140a6f",
+      "grandfathered": true
+    },
+    {
+      "caseId": "color:major-pentatonic-modal-fourth",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "6af39bed13bfa4b5",
+      "musicalFingerprint": "b21e538fc6c8599c",
+      "scoreFingerprint": "ebf4a7ef388d343c",
+      "grandfathered": true
+    },
+    {
+      "caseId": "harmony:custom-borrowed-cadence",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "8ea84c66bc7dce5c",
+      "musicalFingerprint": "ef755a8b1bda9afc",
+      "scoreFingerprint": "df7d02ad91cbdd08",
+      "grandfathered": true
+    },
+    {
+      "caseId": "boundary:narrow-hands-property-60",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "ac5c6bb11ff80c89",
+      "musicalFingerprint": "2e50eac49aa61827",
+      "scoreFingerprint": "a7b033b0395d75e6",
+      "grandfathered": true
+    },
+    {
+      "caseId": "boundary:wide-hands-property-22",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "8c2bc5e02b37e2d1",
+      "musicalFingerprint": "27241292b2c7f504",
+      "scoreFingerprint": "81629802b2bfef05",
+      "grandfathered": true
+    },
+    {
+      "caseId": "historical:three-beat-duration-property-4",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "cb4ee2d69fcd223d",
+      "musicalFingerprint": "3606889f24235780",
+      "scoreFingerprint": "352abc1a15206c03",
+      "grandfathered": true
+    },
+    {
+      "caseId": "historical:four-beat-duration-property-24",
+      "disposition": "pending",
+      "reviewer": null,
+      "reviewedAt": null,
+      "notes": "Grandfathered unchanged content when the listening gate was introduced; a first formal listening pass remains due.",
+      "caseFingerprint": "54f2b8e26550bc20",
+      "musicalFingerprint": "7cb9d7928eb407b5",
+      "scoreFingerprint": "706af21167c954fd",
+      "grandfathered": true
+    }
+  ]
+}

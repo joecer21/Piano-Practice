@@ -176,7 +176,7 @@ export class MotifNotOfferedError extends Error {
 
 /**
  * Generate an assignment for a learner. The only generation entry point for
- * product code (main.js, ui.js, application/, components/, coach/; ESLint
+ * product code (main.js, application/, components/, coach/; ESLint
  * forbids importing generateAssignment there): it refuses a motif that its mode
  * does not offer, rather than generating it or changing its notes.
  * @param {Partial<AssignmentInputs>} rawInputs

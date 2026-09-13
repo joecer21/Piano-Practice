@@ -127,15 +127,6 @@ export function createLibrary(storage: StorageLike | null, now: () => Date = () 
   };
 }
 
-/** Browser localStorage, or null where the browser refuses access to it. */
-export function browserStorage(): StorageLike | null {
-  try {
-    return typeof window === "undefined" ? null : window.localStorage;
-  } catch {
-    return null;
-  }
-}
-
 function emptyLibrary(): StoredLibrary {
   return { version: LIBRARY_VERSION, last: null, tempo: null, starred: [], preferences: DEFAULT_PREFERENCES };
 }

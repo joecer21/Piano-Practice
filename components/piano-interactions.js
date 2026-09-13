@@ -1,25 +1,6 @@
-// ui.js
-// Framework-independent Live Piano events and shared status feedback.
+// Framework-independent Live Piano focus, pointer and computer-key interactions.
 
-import { noteStringToMidi } from "./theory.js";
-
-const hasWindow = typeof window !== "undefined";
-const scheduleTimeout = hasWindow ? window.setTimeout.bind(window) : setTimeout;
-const clearScheduledTimeout = hasWindow ? window.clearTimeout.bind(window) : clearTimeout;
-
-const FEEDBACK_CLASS_MAP = {
-  status: "mf-status",
-  alert: "mf-alert",
-};
-
-const FEEDBACK_DURATION_MAP = {
-  status: 800,
-  alert: 450,
-};
-
-const feedbackTimers = new WeakMap();
-const STATUS_DEFAULT_TONE = "neutral";
-const STATUS_TRANSIENT_MS = 4200;
+import { noteStringToMidi } from "../theory.js";
 export const QWERTY_PIANO_NOTES = Object.freeze({
   a: "C4",
   w: "C#4",
@@ -56,41 +37,47 @@ function renderQwertyHelp(dom, shift) {
   help.textContent = `Computer keys: A W S E D F T G Y H U J K play ${low}–${high}; Z and X change octave. Shortcuts pause while using a form control.`;
 }
 
-let statusResetTimer = null;
-let lastPersistentStatus = "";
-
-export function cacheDom() {
+export function cachePianoDom() {
   return {
     pianoVisual: document.getElementById("piano-visual"),
     pianoIndicatorRadios: document.querySelectorAll('input[name="piano-indicator-mode"]'),
     pianoGlissToggle: document.getElementById("piano-gliss-mode"),
     pianoComputerKeyboardToggle: document.getElementById("piano-computer-keyboard"),
     pianoChordMode: document.getElementById("piano-chord-mode"),
-    statusLine: document.getElementById("status-line"),
   };
 }
 
-export function wireEvents(dom, handlers) {
+function listen(disposers, target, type, listener) {
+  if (!target) return;
+  target.addEventListener(type, listener);
+  disposers.push(() => target.removeEventListener(type, listener));
+}
+
+export function wirePianoInteractions(dom, handlers) {
+  const disposers = [];
   dom.pianoIndicatorRadios?.forEach((radio) => {
-    radio.addEventListener("change", () => {
+    listen(disposers, radio, "change", () => {
       if (!radio.checked) return;
       dom.__pianoIndicatorMode = radio.value;
       handlers.onPianoIndicatorModeChange?.(radio.value);
     });
   });
-  dom.pianoGlissToggle?.addEventListener("change", (event) => {
+  listen(disposers, dom.pianoGlissToggle, "change", (event) => {
     dom.__pianoGlissMode = event.target.checked;
     dom.pianoVisual?.classList.toggle("gliss-mode", event.target.checked);
     handlers.onPianoGlissModeChange?.(event.target.checked);
   });
-  dom.pianoChordMode?.addEventListener("change", (event) => {
+  listen(disposers, dom.pianoChordMode, "change", (event) => {
     handlers.onPianoChordModeChange?.(event.target.value);
   });
 
-  wireLivePianoInteractions(dom, handlers);
+  wireLivePianoInteractions(dom, handlers, disposers);
+  return () => {
+    while (disposers.length) disposers.pop()();
+  };
 }
 
-function wireLivePianoInteractions(dom, handlers) {
+function wireLivePianoInteractions(dom, handlers, disposers) {
   if (!dom.pianoVisual || (!handlers.onPianoKeyDown && !handlers.onPianoKeyUp)) return;
   let activePointerId = null;
   let activePointerNote = null;
@@ -130,7 +117,7 @@ function wireLivePianoInteractions(dom, handlers) {
     activePointerId = null;
   };
 
-  dom.pianoVisual.addEventListener("pointerdown", (event) => {
+  listen(disposers, dom.pianoVisual, "pointerdown", (event) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
     activePointerId = event.pointerId;
     if (dom.__pianoGlissMode) event.preventDefault();
@@ -138,7 +125,7 @@ function wireLivePianoInteractions(dom, handlers) {
     pressPointerNote(noteAtEvent(event));
   });
 
-  dom.pianoVisual.addEventListener("pointermove", (event) => {
+  listen(disposers, dom.pianoVisual, "pointermove", (event) => {
     if (event.pointerId !== activePointerId || !dom.__pianoGlissMode) return;
     event.preventDefault();
     const note = noteAtEvent(event);
@@ -146,9 +133,9 @@ function wireLivePianoInteractions(dom, handlers) {
     else releasePointerNote();
   });
 
-  dom.pianoVisual.addEventListener("pointerup", finishPointer);
-  dom.pianoVisual.addEventListener("pointercancel", finishPointer);
-  dom.pianoVisual.addEventListener("lostpointercapture", finishPointer);
+  listen(disposers, dom.pianoVisual, "pointerup", finishPointer);
+  listen(disposers, dom.pianoVisual, "pointercancel", finishPointer);
+  listen(disposers, dom.pianoVisual, "lostpointercapture", finishPointer);
 
   const pianoKeysInPitchOrder = () =>
     [...dom.pianoVisual.querySelectorAll(".piano-key")].sort(
@@ -163,12 +150,12 @@ function wireLivePianoInteractions(dom, handlers) {
     nextKey.focus();
   };
 
-  dom.pianoVisual.addEventListener("focusin", (event) => {
+  listen(disposers, dom.pianoVisual, "focusin", (event) => {
     const key = event.target.closest?.(".piano-key");
     if (key) setRovingKey(key);
   });
 
-  dom.pianoVisual.addEventListener("keydown", (event) => {
+  listen(disposers, dom.pianoVisual, "keydown", (event) => {
     const key = event.target.closest?.(".piano-key");
     if (!key) return;
 
@@ -196,7 +183,7 @@ function wireLivePianoInteractions(dom, handlers) {
     }
   });
 
-  dom.pianoVisual.addEventListener("keyup", (event) => {
+  listen(disposers, dom.pianoVisual, "keyup", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
     if (keyboardActivationNote) handlers.onPianoKeyUp?.(keyboardActivationNote, "screenKey");
@@ -211,7 +198,7 @@ function wireLivePianoInteractions(dom, handlers) {
     activeComputerKeys.clear();
   };
 
-  window.addEventListener("keydown", (event) => {
+  listen(disposers, window, "keydown", (event) => {
     if (
       !dom.__pianoComputerKeyboardEnabled ||
       event.repeat ||
@@ -242,7 +229,7 @@ function wireLivePianoInteractions(dom, handlers) {
     handlers.onPianoKeyDown?.(note, "computerKeyboard");
   });
 
-  window.addEventListener("keyup", (event) => {
+  listen(disposers, window, "keyup", (event) => {
     const key = event.key.toLowerCase();
     const note = activeComputerKeys.get(key);
     if (!note) return;
@@ -251,92 +238,27 @@ function wireLivePianoInteractions(dom, handlers) {
     handlers.onPianoKeyUp?.(note, "computerKeyboard");
   });
 
-  window.addEventListener("blur", () => {
+  listen(disposers, window, "blur", () => {
     finishPointer();
     if (keyboardActivationNote) handlers.onPianoKeyUp?.(keyboardActivationNote, "screenKey");
     keyboardActivationNote = null;
     releaseComputerKeys();
   });
 
-  dom.pianoGlissToggle?.addEventListener("change", (event) => {
+  listen(disposers, dom.pianoGlissToggle, "change", (event) => {
     if (!event.target.checked) finishPointer();
   });
 
-  dom.pianoComputerKeyboardToggle?.addEventListener("change", (event) => {
+  listen(disposers, dom.pianoComputerKeyboardToggle, "change", (event) => {
     dom.__pianoComputerKeyboardEnabled = event.target.checked;
     if (!event.target.checked) releaseComputerKeys();
     handlers.onPianoComputerKeyboardChange?.(event.target.checked);
   });
-}
 
-export function setStatusMessage(dom, text, options = {}) {
-  if (!dom.statusLine) return;
-  const node = dom.statusLine;
-  const {
-    tone = STATUS_DEFAULT_TONE,
-    transient = false,
-    duration = STATUS_TRANSIENT_MS,
-    pulse = true,
-    ambient = false,
-  } = options;
-  if (!transient) {
-    lastPersistentStatus = text;
-    // This is a single last-writer-wins channel shared by two kinds of message:
-    // responses to something the user just did, and ambient background status
-    // such as sample loading finishing. Ambient status arrives asynchronously and
-    // used to wipe an actionable hint mid-read ("Add at least one chord"), so it
-    // now waits: it is already recorded as the message to restore when the hint
-    // expires. Anything the user actually triggered still takes effect at once.
-    if (ambient && statusResetTimer) return;
-  }
-
-  node.textContent = text;
-  node.dataset.tone = tone;
-  node.dataset.transient = transient ? "true" : "false";
-
-  if (statusResetTimer) {
-    clearScheduledTimeout(statusResetTimer);
-    statusResetTimer = null;
-  }
-
-  if (transient) {
-    const timeoutDuration = Number.isFinite(duration) ? duration : STATUS_TRANSIENT_MS;
-    statusResetTimer = scheduleTimeout(() => {
-      statusResetTimer = null;
-      node.dataset.tone = STATUS_DEFAULT_TONE;
-      node.dataset.transient = "false";
-      node.textContent = lastPersistentStatus || "";
-    }, timeoutDuration);
-  }
-
-  if (pulse) {
-    const variant = tone === "error" ? "alert" : tone === "success" ? "accent" : "status";
-    pulseElement(node, variant);
-  }
-}
-
-export function showHint(dom, message, options = {}) {
-  setStatusMessage(dom, message, {
-    tone: "hint",
-    transient: true,
-    ...options,
+  disposers.push(() => {
+    finishPointer();
+    if (keyboardActivationNote) handlers.onPianoKeyUp?.(keyboardActivationNote, "screenKey");
+    keyboardActivationNote = null;
+    releaseComputerKeys();
   });
-}
-
-function pulseElement(element, variant = "status") {
-  if (!element) return;
-  const className = FEEDBACK_CLASS_MAP[variant] || FEEDBACK_CLASS_MAP.status;
-  const duration = FEEDBACK_DURATION_MAP[variant] || 600;
-  if (feedbackTimers.has(element)) {
-    clearScheduledTimeout(feedbackTimers.get(element));
-    feedbackTimers.delete(element);
-  }
-  element.classList.remove(className);
-  void element.offsetWidth;
-  element.classList.add(className);
-  const timeoutId = scheduleTimeout(() => {
-    element.classList.remove(className);
-    feedbackTimers.delete(element);
-  }, duration);
-  feedbackTimers.set(element, timeoutId);
 }

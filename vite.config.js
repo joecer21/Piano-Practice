@@ -16,6 +16,10 @@ export default defineConfig({
   },
   build: {
     rolldownOptions: {
+      input: {
+        main: "index.html",
+        audition: "audition.html",
+      },
       output: {
         // Audio is core to the first practice session, so keep it eager but give
         // the large, stable runtimes their own cache and parse boundaries.

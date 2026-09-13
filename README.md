@@ -33,6 +33,8 @@ npm test               # Unit and DOM contract specs with Vitest
 npm run test:watch     # Vitest watch mode
 npm run test:browser   # Playwright, against the production bundle
 npm run fingerprint    # Verify generated music and its Score interpretation against frozen baselines
+npm run audit:music    # Verify the focused audition corpus and human review dispositions
+npm run audit:music:write  # Regenerate corpus/report; never grants approval
 npm run report:outside-collection  # Chord-aware motif compatibility review -> test-results/outside-collection-notes.md
 npm run check          # Everything above, in the order CI runs it
 ```
@@ -59,17 +61,21 @@ Sample filenames spell sharps with `s` (`ds3vl.mp3`), because a literal `#` in a
 - `domain/live-piano.js` expands interactive keys into deterministic chord shapes.
 - `coach/` is the React practice surface: the assignment workspace (`AssignmentWorkspace.tsx`), sound and playback settings (`SoundSettings.tsx`), scale reference and audition (`ScaleReference.tsx`), one-sentence summary and five-minute session (`CoachApp.tsx`), Score-drawn timeline (`Timeline.tsx`), degree and note-role overlay on the keyboard (`keyboard-overlay.ts`), and the pure request and playhead logic behind slow, loop and isolate (`practice.ts`). It reaches the rest of the app only through typed services in `bridge.ts`.
 - `input/` is the single stream of notes the player plays, from any source: pointer, on-screen key, computer keys or MIDI (`note-input.ts`), the held and pedal-sustained state derived from it (`held-notes.ts`), and the Web MIDI adapter (`midi.ts`). It imports nothing from the app, UI or audio.
-- `application/state.js` owns assignment commits, bounded undo/redo history, and component locks without imposing a UI framework.
-- `components/piano.js` renders the Live Piano and responds to playback note events.
-- `main.js` composes application services, coordinates the piano, and requests playback without importing Tone.js.
+- `application/state.js` owns assignment commits, bounded undo/redo history, and component locks without imposing a UI framework; `application/app-controller.js` consolidates application startup and orchestration; `application/share-controller.ts` and `application/status.ts` own assignment-link behavior and shared feedback through observable, browser-independent services.
+- `infrastructure/` contains browser-only adapters for localStorage, URL/hash changes, service-worker registration, and the single typed end-to-end diagnostic surface.
+- `components/piano.js` renders the Live Piano and responds to playback note events; `components/piano-interactions.js` owns its framework-neutral focus, pointer and computer-key behavior.
+- `main.js` is the small browser bootstrap. `application/app-controller.js` composes application services, owns their disposer stack, coordinates the piano, and requests playback without importing Tone.js.
 - `audio/playback-engine.ts` owns validated Score playback requests, scheduled-event ownership, count-in, rate conversion, and session lifecycle.
 - `audio.js` adapts that engine to Tone.js instruments, sample loading, transport, mix, and effects.
+- `audition.html`, `audition/`, and `audits/musical/` provide the separate sequential listening tool, canonical audition corpus, review ledger, and readable report.
 - `engine.js`, `theory.js`, and `presets.js` generate the musical material.
-- `ui.js` wires the framework-independent piano interactions and shared status feedback. The practice, assignment, reference, and sound surfaces are React-owned.
+- `coach/StatusLine.tsx` renders the application status service. The practice, assignment, reference, sound and feedback surfaces are React-owned.
 - `audio/local-samples.js` is the local sample manifest, free of Tone.js so it can be validated directly.
 - `tests/*.spec.js` contains the Vitest contract suite.
 - `tests/browser/` covers the practice flow and pins previously-shipped defects as user-visible behaviour.
 - `tests/support/fingerprint.js` and `scripts/fingerprint.mjs` implement the musical fingerprint; `tests/support/score-fingerprint.js`, `tests/score-fingerprint.spec.js` and `scripts/score-fingerprint.mjs` implement the Score fingerprint; `tests/support/outside-collection.js` and `scripts/outside-collection-report.mjs` produce the outside-collection compatibility review.
+
+The ownership and dependency rules are documented in [`docs/architecture.md`](docs/architecture.md). The listening workflow and release policy are documented in [`docs/musical-qa.md`](docs/musical-qa.md).
 
 ## Practising
 
@@ -106,7 +112,7 @@ Each pattern also declares how it fits each pentatonic and blues collection (`co
 
 - **strict**: every note is in the collection.
 - **color**: deliberately uses named borrowed or chromatic tones (`colorTones`), which Note by note identifies.
-- **incompatible**: structurally emphasizes a note that undermines the collection (on the downbeat, held, accented, or on a strong beat without resolving by step). It is not offered in that mode: the pattern menu disables it with the reason, rerolls skip it, and choosing it keeps the previous assignment with an explanation. Product code generates through `generateLearnerAssignment`, which refuses such a combination; the unrestricted `generateAssignment` remains for fingerprints, reports and tests, and ESLint forbids importing it from `main.js`, `ui.js`, `presets.js`, `application/`, `components/` and `coach/`. It is never repaired by changing its notes; `variant` names a pattern written for that collection instead (`funk-sync-6`, `blues-riff-major`).
+- **incompatible**: structurally emphasizes a note that undermines the collection (on the downbeat, held, accented, or on a strong beat without resolving by step). It is not offered in that mode: the pattern menu disables it with the reason, rerolls skip it, and choosing it keeps the previous assignment with an explanation. Product code generates through `generateLearnerAssignment`, which refuses such a combination; the unrestricted `generateAssignment` remains for fingerprints, reports and tests, and ESLint forbids importing it from `main.js`, `presets.js`, `application/`, `components/` and `coach/`. It is never repaired by changing its notes; `variant` names a pattern written for that collection instead (`funk-sync-6`, `blues-riff-major`).
 
 Some patterns exist only for particular collections (`modes`), such as `blues-riff-minor`, which features ♭5. Every collection has an `exemplar` pattern playing its characteristic tone: 6 in major pentatonic, ♭7 in minor pentatonic, ♭3 in major blues, ♭5 in minor blues. The seven-note modes offer the original fifteen patterns, unchanged. `npm run report:outside-collection` writes the review behind these declarations: for every outside-collection note, the chord under it and its role, metric position, duration, accent, the notes before and after, and its melodic function, plus the auditions that chose each variant. `tests/motif-compatibility.spec.js` checks each declaration against what the pattern actually plays, in every key.
 
@@ -143,9 +149,15 @@ They are frozen separately so an intended change to one does not re-freeze the o
 change in its own commit, confirm only the cases and fields you expect have moved, then run
 `npm run fingerprint:write-music` or `npm run fingerprint:write-score`.
 
+### Musical listening gate
+
+Fingerprints decide whether content changed; they do not decide whether it sounds good. The focused 27-case corpus in `audits/musical/corpus.json` retains every preset plus semantic, chromatic, custom-harmony, range and historical boundary cases as full canonical Scores. Open `/audition.html` from the development server or production preview to listen sequentially, isolate either hand, apply the six-question rubric, record approval or rejection, and export `audits/musical/reviews.json`.
+
+The corpus generator never updates human dispositions. `npm run audit:music` fails if a case or its rationale changed after review, if a new case remains pending, or if a reviewer rejected it. Cases predating the gate are marked honestly as grandfathered and pending; they remain mergeable only while their exact content is unchanged. See [`docs/musical-qa.md`](docs/musical-qa.md) for the review procedure.
+
 ## Continuous integration
 
-GitHub Actions runs lint, formatting, unit tests, the fingerprint check, the production build,
+GitHub Actions runs lint, formatting, unit tests, the fingerprint and musical-review gates, the production build,
 and Playwright against that build. Pushes to `main` deploy the bundle to GitHub Pages. The
 build uses a relative base, so the same artifact works at a domain root or under a project path.
 

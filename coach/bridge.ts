@@ -1,5 +1,6 @@
 import type { Preferences, StarredAssignment } from "../application/library.js";
-import type { AudioEngine } from "../audio/playback-engine.js";
+import type { StatusService } from "../application/status.js";
+import type { AudioEngine, PlayRequest } from "../audio/playback-engine.js";
 import type { AssignmentInputs, AssignmentLocks } from "../domain/assignment.js";
 import type { Score } from "../domain/score.js";
 import type { MidiInput } from "../input/midi.js";
@@ -20,6 +21,8 @@ export type CoachAssignment = {
  * audio engine is used only through its public PlayRequest contract.
  */
 export type CoachBridge = {
+  /** Release host subscriptions when the application root is unmounted. */
+  dispose(): void;
   audioEngine: AudioEngine;
   /** Must return the same object until the committed assignment changes. */
   getAssignment(): CoachAssignment | null;
@@ -32,6 +35,9 @@ export type CoachBridge = {
   unlockAudio(): Promise<boolean>;
   /** Stop any playback started by the page controls before the coach plays. */
   stopOtherPlayback(): void;
+  /** Application-level diagnostic observer; production behavior must not depend on it. */
+  observePlayback(request: PlayRequest): void;
+  status: StatusService;
   reportError(message: string): void;
   getKeyboardElement(): HTMLElement | null;
   /** Everything the player plays, from any input. The coach mirrors it. */

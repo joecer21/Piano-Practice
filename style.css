@@ -301,10 +301,6 @@ select {
   color: #3f4f6e;
 }
 
-.status-line[data-transient="true"] {
-  opacity: 0.82;
-}
-
 .muted {
   color: #7c6a5f;
 }

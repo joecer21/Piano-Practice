@@ -39,7 +39,7 @@ test("loads, generates, plays, stops, and switches piano models", async ({ page 
   await openSoundSettings(page);
 
   await page.waitForFunction(() => {
-    const snapshot = window.__samplerSnapshot;
+    const snapshot = window.__PIANO_PRACTICE_TEST__?.sampler;
     return snapshot?.libraries?.[snapshot.activeLibraryId]?.phase === "ready";
   });
 
@@ -78,16 +78,16 @@ test("loads, generates, plays, stops, and switches piano models", async ({ page 
   await expect(middleC).not.toHaveAttribute("data-played");
 
   await page.getByRole("button", { name: "Play All" }).click();
-  await expect.poll(() => page.evaluate(() => window.__transportState)).toBe("started");
+  await expect.poll(() => page.evaluate(() => window.__PIANO_PRACTICE_TEST__?.transport)).toBe("started");
   await expect.poll(() => livePiano.locator(".piano-key.active.lh").count()).toBeGreaterThan(0);
 
   await page.getByRole("button", { name: "Stop All" }).click();
-  await expect.poll(() => page.evaluate(() => window.__transportState)).toBe("stopped");
+  await expect.poll(() => page.evaluate(() => window.__PIANO_PRACTICE_TEST__?.transport)).toBe("stopped");
   await expect(livePiano.locator(".piano-key.active")).toHaveCount(0);
 
   await page.locator("#piano-model").selectOption("local-bright");
   await expect
-    .poll(() => page.evaluate(() => window.__samplerSnapshot?.activeLibraryId), {
+    .poll(() => page.evaluate(() => window.__PIANO_PRACTICE_TEST__?.sampler.activeLibraryId), {
       timeout: 60_000,
     })
     .toBe("local-bright");

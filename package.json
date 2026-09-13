@@ -13,11 +13,13 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "fingerprint": "node scripts/fingerprint.mjs && node scripts/score-fingerprint.mjs",
+    "audit:music": "node scripts/musical-audit.mjs",
+    "audit:music:write": "node scripts/musical-audit.mjs --write",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:browser": "playwright test",
-    "check": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run fingerprint && npm run build && npm run test:browser",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run fingerprint && npm run audit:music && npm run build && npm run test:browser",
     "fingerprint:write-music": "node scripts/fingerprint.mjs --write",
     "fingerprint:write-score": "node scripts/score-fingerprint.mjs --write",
     "report:outside-collection": "node scripts/outside-collection-report.mjs"
@@ -28,6 +30,7 @@
     "tone": "^15.1.22"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.55.0",
     "@testing-library/dom": "^10.4.1",

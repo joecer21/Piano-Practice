@@ -121,6 +121,7 @@ function createFakeBridge({
   midiEnvironment,
   library = createFakeLibrary(),
 } = {}) {
+  const statusSnapshot = { text: "", tone: "neutral", transient: false, revision: 0 };
   const noteInput = createNoteInputHub();
   const fakeMidi = createFakeMidiAccess();
   const midiInput = createMidiInput(
@@ -153,6 +154,13 @@ function createFakeBridge({
   const successfulEdit = { ok: true, message: "Assignment updated" };
   const scaleAuditionSnapshot = { playing: false, activeNote: null };
   const bridge = {
+    status: {
+      getSnapshot: () => statusSnapshot,
+      subscribe: () => () => {},
+      show: vi.fn(),
+      hint: vi.fn(),
+      dispose: vi.fn(),
+    },
     audioEngine: createFakeEngine(),
     getAssignment: () => current,
     subscribeAssignment: (listener) => {
@@ -165,8 +173,9 @@ function createFakeBridge({
       return () => samplerListeners.delete(listener);
     },
     getTempoBpm: () => 90,
-    unlockAudio: vi.fn(async () => unlock),
+    unlockAudio: vi.fn(async () => (typeof unlock === "function" ? unlock() : unlock)),
     stopOtherPlayback: vi.fn(),
+    observePlayback: vi.fn(),
     scaleAudition: {
       getSnapshot: () => scaleAuditionSnapshot,
       subscribe: () => () => {},
@@ -302,6 +311,27 @@ describe("CoachApp", () => {
     expect(bridge.audioEngine.play).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Start 5 minutes" })).toBeTruthy();
     expect(screen.queryByRole("timer")).toBeNull();
+  });
+
+  it("does not revive stale step playback when controls change during audio unlock", async () => {
+    let finishUnlock;
+    const pendingUnlock = new Promise((resolve) => {
+      finishUnlock = resolve;
+    });
+    bridge = createFakeBridge({ assignment: cMajor, unlock: () => pendingUnlock });
+    render(<CoachApp bridge={bridge} summaryContainer={null} />);
+
+    await click(screen.getByRole("button", { name: "Start 5 minutes" }));
+    await click(screen.getByRole("button", { name: "Next step" }));
+    await act(async () => {
+      finishUnlock(true);
+      await pendingUnlock;
+    });
+
+    expect(bridge.audioEngine.requests).toHaveLength(1);
+    expect(bridge.audioEngine.requests[0]).toMatchObject({ parts: ["lh"], countIn: false });
+    expect(screen.getByRole("button", { name: "Hands apart" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("timer")).toBeTruthy();
   });
 
   it("guides a session step by step, changing step only on a bar line", async () => {
@@ -480,7 +510,7 @@ describe("CoachApp", () => {
     vi.stubGlobal("navigator", { ...navigator, share: undefined, clipboard: { writeText } });
     await click(screen.getByRole("button", { name: "Share link" }));
     expect(writeText).toHaveBeenCalledWith("https://example.test/app/#v=1&key=C&mode=major");
-    expect(screen.getByRole("status").textContent).toBe("Link copied.");
+    expect(screen.getByText("Link copied.", { selector: ".coach-library-status" })).toBeTruthy();
 
     vi.stubGlobal("navigator", {
       ...navigator,

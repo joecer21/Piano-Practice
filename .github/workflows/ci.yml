@@ -34,6 +34,8 @@ jobs:
       # than the frozen baselines.
       - name: Verify musical and Score fingerprints
         run: npm run fingerprint
+      - name: Verify musical audition corpus and listening dispositions
+        run: npm run audit:music
       - run: npm run build
       - name: Upload production bundle
         uses: actions/upload-artifact@v4
