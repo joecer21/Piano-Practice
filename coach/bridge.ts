@@ -1,4 +1,10 @@
 import type { Preferences, StarredAssignment } from "../application/library.js";
+import type {
+  LearningLens,
+  PracticeRecommendation,
+  PracticeRecord,
+  PracticeStatus,
+} from "../application/practice-record.js";
 import type { StatusService } from "../application/status.js";
 import type { AudioEngine, PlayRequest } from "../audio/playback-engine.js";
 import type { AssignmentInputs, AssignmentLocks } from "../domain/assignment.js";
@@ -55,6 +61,8 @@ export type CoachBridge = {
   scaleAudition: ScaleAudition;
   /** Starred assignments, share links and practice preferences, kept in this browser. */
   library: CoachLibrary;
+  /** Durable guided-session records and deterministic next-practice suggestions. */
+  practiceHistory: PracticeHistory;
 };
 
 export type ScaleAuditionSnapshot = {
@@ -142,4 +150,36 @@ export type CoachLibrary = {
   unstar(fragment: string): void;
   preferences(): Preferences;
   setPreference<K extends keyof Preferences>(name: K, value: Preferences[K]): void;
+};
+
+export type PracticeHistorySnapshot = {
+  records: readonly PracticeRecord[];
+  recommendation: PracticeRecommendation | null;
+  revisitAfterDays: number;
+};
+
+export type PracticeActivity = {
+  activeDurationMs: number;
+  endingTempo: number;
+  handsPractised: Array<"left" | "right">;
+  barsVisited: number[];
+  learningLenses: LearningLens[];
+};
+
+export type PracticeHistory = {
+  getSnapshot(): PracticeHistorySnapshot;
+  subscribe(listener: () => void): () => void;
+  beginCurrent(resumeId?: string): PracticeRecord | null;
+  update(id: string, activity: PracticeActivity): void;
+  finish(id: string, status: Exclude<PracticeStatus, "incomplete">, activity: PracticeActivity): void;
+  annotate(
+    id: string,
+    fields: { label?: string | null; notes?: string | null; needsWorkBars?: number[] },
+  ): void;
+  open(id: string, options?: { newKey?: boolean }): boolean;
+  delete(id: string): void;
+  clear(): void;
+  exportJson(): string;
+  importJson(source: string): { ok: boolean; imported: number; duplicates: number };
+  setRevisitAfterDays(days: number): void;
 };

@@ -223,3 +223,9 @@ export function crossedBarBoundary(previousBeat: number, nextBeat: number, beats
   if (nextBeat < previousBeat) return true;
   return Math.floor(nextBeat / beatsPerBar) !== Math.floor(previousBeat / beatsPerBar);
 }
+
+/** Active time is monotonic and only accrues while this page is visible. */
+export function visibleTimerDelta(previous: number, next: number, visible: boolean): number {
+  if (!visible || !Number.isFinite(previous) || !Number.isFinite(next) || next <= previous) return 0;
+  return next - previous;
+}

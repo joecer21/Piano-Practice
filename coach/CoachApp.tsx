@@ -8,6 +8,9 @@ import type { CoachBridge } from "./bridge.js";
 import { applyKeyboardOverlay, clearKeyboardOverlay } from "./keyboard-overlay.js";
 import type { LabelMode } from "./keyboard-overlay.js";
 import { LibraryControls } from "./LibraryControls.js";
+import { PracticeHistory } from "./PracticeHistory.js";
+import type { HistoryAction } from "./PracticeHistory.js";
+import type { LearningLens, PracticeRecord } from "../application/practice-record.js";
 import { MidiControl } from "./MidiControl.js";
 import { applyPlayedKeys } from "./played-keys.js";
 import type { OffKeyboard } from "./played-keys.js";
@@ -30,6 +33,7 @@ import {
   crossedBarBoundary,
   sessionReducer,
   sessionSteps,
+  visibleTimerDelta,
 } from "./session.js";
 import type { SessionLength, SessionStep } from "./session.js";
 import {
@@ -99,6 +103,11 @@ export function CoachApp({
   const wantsPlaybackRef = useRef(false);
   const playheadRef = useRef<HTMLDivElement>(null);
   const assignmentWorkspaceRef = useRef<HTMLDetailsElement>(null);
+  const activePracticeRef = useRef<{ id: string; baseDurationMs: number } | null>(null);
+  const practisedHandsRef = useRef(new Set<"left" | "right">());
+  const visitedBarsRef = useRef(new Set<number>());
+  const usedLensesRef = useRef(new Set<LearningLens>());
+  const lastPracticeWriteRef = useRef("");
   const viewRef = useRef(view);
   viewRef.current = view;
 
@@ -349,30 +358,52 @@ export function CoachApp({
 
   const appliedStep = useRef<number | null>(null);
 
-  const startSession = useCallback(async () => {
-    if (!score) return;
-    dispatch({ type: "start", length: sessionLength, hasMotif: hasMotif(score) });
-    appliedStep.current = 0;
-    const [firstStep] = sessionSteps(hasMotif(score));
-    const next = controlsForStep(firstStep, controls);
-    setView(firstStep.view);
-    setControls(next);
-    if (!(await startPlayback(next, { countIn: true }))) {
-      dispatch({ type: "end" });
-      appliedStep.current = null;
-    }
-  }, [controls, controlsForStep, score, sessionLength, startPlayback]);
+  const startSession = useCallback(
+    async (resumeId?: string) => {
+      if (!score) return;
+      dispatch({ type: "start", length: sessionLength, hasMotif: hasMotif(score) });
+      appliedStep.current = 0;
+      const [firstStep] = sessionSteps(hasMotif(score));
+      const next = controlsForStep(firstStep, controls);
+      setView(firstStep.view);
+      setControls(next);
+      if (!(await startPlayback(next, { countIn: true }))) {
+        dispatch({ type: "end" });
+        appliedStep.current = null;
+        return;
+      }
+      const record = bridge.practiceHistory.beginCurrent(resumeId);
+      if (!record) return;
+      activePracticeRef.current = { id: record.id, baseDurationMs: record.activeDurationMs };
+      practisedHandsRef.current = new Set(record.handsPractised);
+      visitedBarsRef.current = new Set(record.barsVisited);
+      usedLensesRef.current = new Set(record.learningLenses);
+      lastPracticeWriteRef.current = "";
+    },
+    [bridge.practiceHistory, controls, controlsForStep, score, sessionLength, startPlayback],
+  );
 
-  // Timer. Wall-clock deltas, so a throttled background tab does not stretch the session.
+  // Monotonic, visible-page deltas: clock corrections and time spent in a
+  // background tab never become claimed active practice time.
   useEffect(() => {
     if (session.status !== "running") return;
-    let last = Date.now();
+    let last = performance.now();
+    let visible = document.visibilityState !== "hidden";
+    const onVisibility = () => {
+      visible = document.visibilityState !== "hidden";
+      last = performance.now();
+    };
     const timer = setInterval(() => {
-      const now = Date.now();
-      dispatch({ type: "tick", elapsedMs: now - last });
+      const now = performance.now();
+      const elapsedMs = visibleTimerDelta(last, now, visible && document.visibilityState !== "hidden");
       last = now;
+      if (elapsedMs) dispatch({ type: "tick", elapsedMs });
     }, TIMER_TICK_MS);
-    return () => clearInterval(timer);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [session.status]);
 
   // A step whose time is up waits for the next bar line - unless nothing is
@@ -396,12 +427,58 @@ export function CoachApp({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeStepIndex]);
 
+  const activityFor = useCallback(
+    (state: typeof session) => {
+      if (controls.lens === "both" || controls.lens === "lh") practisedHandsRef.current.add("left");
+      if (controls.lens === "both" || controls.lens === "rh") practisedHandsRef.current.add("right");
+      if (score) visitedBarsRef.current.add((controls.focusBar ?? playheadBar) + 1);
+      if (state.status === "running" || state.status === "paused")
+        usedLensesRef.current.add(state.steps[state.stepIndex].id);
+      if (state.status !== "idle")
+        Object.keys(state.timeByStep).forEach((lens) => usedLensesRef.current.add(lens as LearningLens));
+      const elapsed = state.status === "idle" ? 0 : state.elapsedMs;
+      return {
+        activeDurationMs: (activePracticeRef.current?.baseDurationMs ?? 0) + elapsed,
+        endingTempo: bridge.getTempoBpm(),
+        handsPractised: [...practisedHandsRef.current],
+        barsVisited: [...visitedBarsRef.current],
+        learningLenses: [...usedLensesRef.current],
+      };
+    },
+    [bridge, controls.focusBar, controls.lens, playheadBar, score],
+  );
+
+  // Persist coarse progress while practising. The record is already incomplete,
+  // so closing the tab between writes still leaves an honest continuation point.
+  useEffect(() => {
+    const active = activePracticeRef.current;
+    if (!active || (session.status !== "running" && session.status !== "paused")) return;
+    const activity = activityFor(session);
+    const signature = JSON.stringify([
+      Math.floor(activity.activeDurationMs / 1000),
+      activity.endingTempo,
+      activity.handsPractised,
+      activity.barsVisited,
+      activity.learningLenses,
+    ]);
+    if (signature === lastPracticeWriteRef.current) return;
+    lastPracticeWriteRef.current = signature;
+    bridge.practiceHistory.update(active.id, activity);
+  }, [activityFor, bridge.practiceHistory, session]);
+
   useEffect(() => {
     if (session.status === "complete" || session.status === "idle") {
       appliedStep.current = null;
-      if (session.status === "complete") stopPlayback();
+      if (session.status === "complete") {
+        stopPlayback();
+        const active = activePracticeRef.current;
+        if (active) {
+          bridge.practiceHistory.finish(active.id, "completed", activityFor(session));
+          activePracticeRef.current = null;
+        }
+      }
     }
-  }, [session.status, stopPlayback]);
+  }, [activityFor, bridge.practiceHistory, session, stopPlayback]);
 
   const pauseSession = useCallback(() => {
     stopPlayback();
@@ -414,8 +491,13 @@ export function CoachApp({
 
   const endSession = useCallback(() => {
     stopPlayback();
+    const active = activePracticeRef.current;
+    if (active) {
+      bridge.practiceHistory.finish(active.id, "abandoned", activityFor(session));
+      activePracticeRef.current = null;
+    }
     dispatch({ type: "end" });
-  }, [stopPlayback]);
+  }, [activityFor, bridge.practiceHistory, session, stopPlayback]);
 
   const againInNewKey = useCallback(() => {
     pendingSessionStart.current = true;
@@ -438,6 +520,31 @@ export function CoachApp({
     // Fires once the new key's assignment has been committed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignmentId]);
+
+  const startSessionRef = useRef(startSession);
+  startSessionRef.current = startSession;
+  const handleHistoryAction = useCallback(
+    (action: HistoryAction, record: PracticeRecord, bar?: number) => {
+      const newKey = action === "newKey";
+      if (!bridge.practiceHistory.open(record.id, { newKey })) {
+        bridge.reportError("That practice assignment could not be opened.");
+        return;
+      }
+      if (action === "faster")
+        bridge.soundSettings.setTempo(Math.min(140, Math.max(60, record.endingTempo + 5)));
+      if (session.status === "complete") dispatch({ type: "end" });
+      requestAnimationFrame(() => {
+        if (action === "focus") {
+          const focusBar = Math.max(0, (bar ?? record.needsWorkBars[0] ?? 1) - 1);
+          setView("hands");
+          setControls((previous) => ({ ...previous, lens: "both", focusBar }));
+          return;
+        }
+        void startSessionRef.current(action === "resume" ? record.id : undefined);
+      });
+    },
+    [bridge, session.status],
+  );
 
   // ---- Render --------------------------------------------------------------
 
@@ -516,6 +623,11 @@ export function CoachApp({
         onStepChord={stepChordBy}
         onChangeAssignment={openAssignmentWorkspace}
         assignmentActions={libraryControls}
+      />
+      <PracticeHistory
+        history={bridge.practiceHistory}
+        canOpen={session.status === "idle" || session.status === "complete"}
+        onAction={handleHistoryAction}
       />
       <ScaleReference scale={assignment?.scale ?? null} audition={bridge.scaleAudition} ready={ready} />
       <StatusLine status={bridge.status} />

@@ -16,13 +16,19 @@ import {
 import { getLivePianoChordNotes } from "../domain/live-piano.js";
 import { createAppStore } from "./state.js";
 import { createLibrary } from "./library.ts";
+import {
+  createPracticeRecord,
+  finishPracticeRecord,
+  recommendPractice,
+  updatePracticeProgress,
+} from "./practice-record.ts";
 import { browserStorage } from "../infrastructure/browser-storage.ts";
 import { createShareLocation } from "../infrastructure/share-location.ts";
 import { registerOfflineSupport } from "../infrastructure/pwa.ts";
 import { createRuntimeTestAdapter } from "../infrastructure/test-adapter.ts";
 import { createShareController } from "./share-controller.ts";
 import { createStatusService } from "./status.ts";
-import { decodeShareFragment } from "../domain/share.ts";
+import { decodeShareFragment, encodeShareFragment } from "../domain/share.ts";
 import { createAudioUnlock } from "./audio-unlock.js";
 import {
   attachPianoNoteListeners,
@@ -257,6 +263,7 @@ function createCoachBridge() {
     soundSettings: createSoundSettings(),
     scaleAudition: createScaleAudition(),
     library: createCoachLibrary(),
+    practiceHistory: createPracticeHistory(),
     dispose() {
       while (disposers.length) disposers.pop()();
       samplerListeners.clear();
@@ -453,6 +460,104 @@ function createCoachLibrary() {
     unstar: (fragment) => practiceLibrary.unstar(fragment),
     preferences: () => practiceLibrary.preferences(),
     setPreference: (name, value) => practiceLibrary.setPreference(name, value),
+  };
+}
+
+/** Durable practice memory. The UI supplies observed session activity; MIDI is never treated as assessment. */
+function createPracticeHistory() {
+  let cachedRecords = null;
+  let cachedRevisit = null;
+  let cachedDay = null;
+  let cachedSnapshot = null;
+  let fallbackId = 0;
+  let storageWarningShown = false;
+  const records = () => practiceLibrary.practiceRecords();
+  const find = (id) => records().find((record) => record.id === id) ?? null;
+  const persist = (record) => {
+    const stored = practiceLibrary.savePracticeRecord(record);
+    if (!stored && !storageWarningShown) {
+      storageWarningShown = true;
+      status.show("Practice is continuing, but this browser could not save the latest history.", {
+        tone: "error",
+        transient: true,
+        duration: 12000,
+      });
+    }
+  };
+  const nextId = () => {
+    const uuid = globalThis.crypto?.randomUUID?.();
+    if (uuid) return `practice-${uuid}`;
+    fallbackId += 1;
+    return `practice-${Date.now().toString(36)}-${fallbackId}`;
+  };
+
+  return {
+    getSnapshot() {
+      const nextRecords = records();
+      const revisit = practiceLibrary.preferences().revisitAfterDays;
+      const day = new Date().toISOString().slice(0, 10);
+      if (
+        !cachedSnapshot ||
+        nextRecords !== cachedRecords ||
+        revisit !== cachedRevisit ||
+        day !== cachedDay
+      ) {
+        cachedRecords = nextRecords;
+        cachedRevisit = revisit;
+        cachedDay = day;
+        cachedSnapshot = {
+          records: nextRecords,
+          recommendation: recommendPractice(nextRecords, new Date(), revisit),
+          revisitAfterDays: revisit,
+        };
+      }
+      return cachedSnapshot;
+    },
+    subscribe: (listener) => practiceLibrary.subscribe(listener),
+    beginCurrent(resumeId) {
+      if (resumeId) {
+        const existing = find(resumeId);
+        if (existing?.status === "incomplete") return existing;
+      }
+      const inputs = state.assignment?.inputs;
+      if (!inputs) return null;
+      const record = createPracticeRecord({
+        id: nextId(),
+        fragment: encodeShareFragment(inputs),
+        title: assignmentTitle(inputs),
+        tempo: Number(state.tempo),
+        startedAt: new Date(),
+      });
+      persist(record);
+      return record;
+    },
+    update(id, activity) {
+      const record = find(id);
+      if (record?.status === "incomplete") persist(updatePracticeProgress(record, activity));
+    },
+    finish(id, practiceStatus, activity) {
+      const record = find(id);
+      if (record?.status === "incomplete")
+        persist(finishPracticeRecord(record, practiceStatus, new Date(), activity));
+    },
+    annotate(id, fields) {
+      const record = find(id);
+      if (record) persist(updatePracticeProgress(record, fields));
+    },
+    open(id, options = {}) {
+      const record = find(id);
+      if (!record) return false;
+      const decoded = decodeShareFragment(record.assignment.fragment);
+      if (!decoded.ok) return false;
+      stopAllPlayback();
+      if (!openInputs(decoded.inputs)) return false;
+      return options.newKey ? rerollIntoNewKey() : true;
+    },
+    delete: (id) => practiceLibrary.deletePracticeRecord(id),
+    clear: () => practiceLibrary.clearPracticeHistory(),
+    exportJson: () => practiceLibrary.exportPracticeHistory(),
+    importJson: (source) => practiceLibrary.importPracticeHistory(source),
+    setRevisitAfterDays: (days) => practiceLibrary.setPreference("revisitAfterDays", days),
   };
 }
 

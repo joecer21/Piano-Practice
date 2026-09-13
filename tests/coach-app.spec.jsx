@@ -84,7 +84,7 @@ const STARRED_ENTRY = {
 
 /** A fake practice library: records calls and keeps a stable snapshot. */
 function createFakeLibrary({
-  preferences = { labelMode: "degrees", sessionLength: 300 },
+  preferences = { labelMode: "degrees", sessionLength: 300, revisitAfterDays: 7 },
   starred = [],
 } = {}) {
   const listeners = new Set();
@@ -114,12 +114,44 @@ function createFakeLibrary({
   };
 }
 
+function createFakePracticeHistory() {
+  const listeners = new Set();
+  let snapshot = { records: [], recommendation: null, revisitAfterDays: 7 };
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    beginCurrent: vi.fn(() => ({
+      id: "practice-test",
+      activeDurationMs: 0,
+      handsPractised: [],
+      barsVisited: [],
+      learningLenses: [],
+    })),
+    update: vi.fn(),
+    finish: vi.fn(),
+    annotate: vi.fn(),
+    open: vi.fn(() => true),
+    delete: vi.fn(),
+    clear: vi.fn(() => {
+      snapshot = { records: [], recommendation: null, revisitAfterDays: 7 };
+      listeners.forEach((listener) => listener());
+    }),
+    exportJson: vi.fn(() => "{}"),
+    importJson: vi.fn(() => ({ ok: true, imported: 0, duplicates: 0 })),
+    setRevisitAfterDays: vi.fn(),
+  };
+}
+
 function createFakeBridge({
   assignment,
   sampler = READY,
   unlock = true,
   midiEnvironment,
   library = createFakeLibrary(),
+  practiceHistory = createFakePracticeHistory(),
 } = {}) {
   const statusSnapshot = { text: "", tone: "neutral", transient: false, revision: 0 };
   const noteInput = createNoteInputHub();
@@ -203,6 +235,7 @@ function createFakeBridge({
       toggleLock: vi.fn(),
     },
     library,
+    practiceHistory,
     setAssignment(nextAssignment) {
       current = nextAssignment;
       assignmentListeners.forEach((listener) => listener());
@@ -367,6 +400,33 @@ describe("CoachApp", () => {
     expect(bridge.audioEngine.requests.at(-1)).toMatchObject({ parts: ["lh"], countIn: true });
   });
 
+  it("records active guided practice and marks an explicitly ended session abandoned", async () => {
+    vi.useFakeTimers();
+    const practiceHistory = createFakePracticeHistory();
+    bridge = createFakeBridge({ assignment: cMajor, practiceHistory });
+    render(<CoachApp bridge={bridge} summaryContainer={null} />);
+
+    await click(screen.getByRole("button", { name: "Start 5 minutes" }));
+    expect(practiceHistory.beginCurrent).toHaveBeenCalledWith(undefined);
+    await act(async () => vi.advanceTimersByTime(1_250));
+    expect(practiceHistory.update).toHaveBeenCalledWith(
+      "practice-test",
+      expect.objectContaining({
+        activeDurationMs: expect.any(Number),
+        endingTempo: 90,
+        handsPractised: ["left", "right"],
+        learningLenses: ["whole"],
+      }),
+    );
+
+    await click(screen.getByRole("button", { name: "End session" }));
+    expect(practiceHistory.finish).toHaveBeenCalledWith(
+      "practice-test",
+      "abandoned",
+      expect.objectContaining({ activeDurationMs: expect.any(Number) }),
+    );
+  });
+
   it("moves on at once when nothing is playing, since there is no bar line to wait for", async () => {
     vi.useFakeTimers();
     bridge = createFakeBridge({ assignment: cMajor });
@@ -405,6 +465,12 @@ describe("CoachApp", () => {
       within(screen.getByRole("list", { name: "What you covered" })).getByText(/The whole thing/),
     ).toBeTruthy();
     expect(bridge.audioEngine.sessions.at(-1).stop).toHaveBeenCalled();
+
+    expect(bridge.practiceHistory.finish).toHaveBeenCalledWith(
+      "practice-test",
+      "completed",
+      expect.objectContaining({ activeDurationMs: expect.any(Number) }),
+    );
 
     const playsBefore = bridge.audioEngine.requests.length;
     await click(screen.getByRole("button", { name: "Again in a new key" }));

@@ -1,5 +1,12 @@
 import type { AssignmentInputs } from "../domain/assignment.js";
 import { decodeShareFragment, encodeShareFragment } from "../domain/share.js";
+import {
+  MAX_PRACTICE_RECORDS,
+  exportPracticeHistory,
+  parsePracticeHistoryExport,
+  parsePracticeRecord,
+} from "./practice-record.js";
+import type { PracticeRecord } from "./practice-record.js";
 
 /**
  * What the app remembers between visits, in localStorage, local to this browser:
@@ -12,9 +19,9 @@ import { decodeShareFragment, encodeShareFragment } from "../domain/share.js";
  * is validated, anything unrecognised is dropped, and every write is best effort.
  */
 export const LIBRARY_STORAGE_KEY = "piano-practice:library";
-export const LIBRARY_VERSION = 1;
+export const LIBRARY_VERSION = 2;
 export const MAX_STARRED = 50;
-const MAX_STORED_BYTES = 64_000;
+const MAX_STORED_BYTES = 1_000_000;
 const MAX_TITLE_LENGTH = 120;
 /** The tempo slider's range (index.html #tempo-slider). */
 export const TEMPO_RANGE = { min: 60, max: 140 } as const;
@@ -24,8 +31,13 @@ export type SessionLengthPreference = 120 | 300 | 600 | "untimed";
 export type Preferences = {
   labelMode: LabelModePreference;
   sessionLength: SessionLengthPreference;
+  revisitAfterDays: number;
 };
-export const DEFAULT_PREFERENCES: Preferences = { labelMode: "degrees", sessionLength: 300 };
+export const DEFAULT_PREFERENCES: Preferences = {
+  labelMode: "degrees",
+  sessionLength: 300,
+  revisitAfterDays: 7,
+};
 
 export type StarredAssignment = {
   fragment: string;
@@ -40,6 +52,7 @@ type StoredLibrary = {
   tempo: number | null;
   starred: Array<{ fragment: string; title: string; starredAt: string }>;
   preferences: Preferences;
+  practiceRecords: PracticeRecord[];
 };
 
 export type Library = ReturnType<typeof createLibrary>;
@@ -49,16 +62,21 @@ type StorageLike = Pick<Storage, "getItem" | "setItem">;
 export function createLibrary(storage: StorageLike | null, now: () => Date = () => new Date()) {
   let data = read(storage);
   let starredView = buildStarredView(data);
+  let practiceView: readonly PracticeRecord[] = Object.freeze([...data.practiceRecords]);
   const listeners = new Set<() => void>();
 
-  const write = () => {
+  const write = (): boolean => {
     starredView = buildStarredView(data);
+    practiceView = Object.freeze([...data.practiceRecords]);
+    let stored = storage !== null;
     try {
       storage?.setItem(LIBRARY_STORAGE_KEY, JSON.stringify(data));
     } catch {
       // Quota or blocked storage: the app keeps working without memory.
+      stored = false;
     }
     listeners.forEach((listener) => listener());
+    return stored;
   };
 
   return {
@@ -124,11 +142,68 @@ export function createLibrary(storage: StorageLike | null, now: () => Date = () 
       data = { ...data, preferences: next };
       write();
     },
+
+    /** Stable until practice history changes, newest first. */
+    practiceRecords(): readonly PracticeRecord[] {
+      return practiceView;
+    },
+    savePracticeRecord(record: PracticeRecord): boolean {
+      const valid = parsePracticeRecord(record);
+      if (!valid) return false;
+      const without = data.practiceRecords.filter((entry) => entry.id !== valid.id);
+      data = {
+        ...data,
+        practiceRecords: [valid, ...without]
+          .sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt))
+          .slice(0, MAX_PRACTICE_RECORDS),
+      };
+      return write();
+    },
+    deletePracticeRecord(id: string): void {
+      const next = data.practiceRecords.filter((entry) => entry.id !== id);
+      if (next.length === data.practiceRecords.length) return;
+      data = { ...data, practiceRecords: next };
+      write();
+    },
+    /** Only history is cleared; stars, tempo and preferences are deliberately preserved. */
+    clearPracticeHistory(): void {
+      if (!data.practiceRecords.length) return;
+      data = { ...data, practiceRecords: [] };
+      write();
+    },
+    exportPracticeHistory(): string {
+      return exportPracticeHistory(data.practiceRecords, now());
+    },
+    importPracticeHistory(source: unknown): { ok: boolean; imported: number; duplicates: number } {
+      const imported = parsePracticeHistoryExport(source);
+      if (!imported) return { ok: false, imported: 0, duplicates: 0 };
+      const existing = new Set(data.practiceRecords.map((record) => record.id));
+      const additions = imported.filter((record) => {
+        if (existing.has(record.id)) return false;
+        existing.add(record.id);
+        return true;
+      });
+      data = {
+        ...data,
+        practiceRecords: [...additions, ...data.practiceRecords]
+          .sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt))
+          .slice(0, MAX_PRACTICE_RECORDS),
+      };
+      const stored = additions.length ? write() : true;
+      return { ok: stored, imported: additions.length, duplicates: imported.length - additions.length };
+    },
   };
 }
 
 function emptyLibrary(): StoredLibrary {
-  return { version: LIBRARY_VERSION, last: null, tempo: null, starred: [], preferences: DEFAULT_PREFERENCES };
+  return {
+    version: LIBRARY_VERSION,
+    last: null,
+    tempo: null,
+    starred: [],
+    preferences: DEFAULT_PREFERENCES,
+    practiceRecords: [],
+  };
 }
 
 function read(storage: StorageLike | null): StoredLibrary {
@@ -145,7 +220,8 @@ function read(storage: StorageLike | null): StoredLibrary {
   } catch {
     return emptyLibrary();
   }
-  if (!isRecord(parsed) || parsed.version !== LIBRARY_VERSION) return emptyLibrary();
+  if (!isRecord(parsed) || (parsed.version !== 1 && parsed.version !== LIBRARY_VERSION))
+    return emptyLibrary();
 
   const starred = Array.isArray(parsed.starred) ? parsed.starred : [];
   const seen = new Set<string>();
@@ -171,7 +247,21 @@ function read(storage: StorageLike | null): StoredLibrary {
         starredAt: entry.starredAt,
       })),
     preferences: validPreferences(isRecord(parsed.preferences) ? parsed.preferences : {}),
+    practiceRecords:
+      parsed.version === LIBRARY_VERSION && Array.isArray(parsed.practiceRecords)
+        ? validatedPracticeRecords(parsed.practiceRecords)
+        : [],
   };
+}
+
+function validatedPracticeRecords(values: unknown[]): PracticeRecord[] {
+  const seen = new Set<string>();
+  return values
+    .map(parsePracticeRecord)
+    .filter((record): record is PracticeRecord => record !== null)
+    .sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt))
+    .filter((record) => !seen.has(record.id) && seen.add(record.id))
+    .slice(0, MAX_PRACTICE_RECORDS);
 }
 
 function buildStarredView(data: StoredLibrary): readonly StarredAssignment[] {
@@ -199,9 +289,17 @@ function validPreferences(value: Record<string, unknown>): Preferences {
     value.sessionLength === "untimed"
       ? value.sessionLength
       : null;
+  const revisitAfterDays =
+    typeof value.revisitAfterDays === "number" &&
+    Number.isInteger(value.revisitAfterDays) &&
+    value.revisitAfterDays >= 1 &&
+    value.revisitAfterDays <= 90
+      ? value.revisitAfterDays
+      : null;
   return {
     labelMode: labelMode ?? DEFAULT_PREFERENCES.labelMode,
     sessionLength: sessionLength ?? DEFAULT_PREFERENCES.sessionLength,
+    revisitAfterDays: revisitAfterDays ?? DEFAULT_PREFERENCES.revisitAfterDays,
   };
 }
 

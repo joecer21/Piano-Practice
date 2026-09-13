@@ -155,6 +155,12 @@ Fingerprints decide whether content changed; they do not decide whether it sound
 
 The corpus generator never updates human dispositions. `npm run audit:music` fails if a case or its rationale changed after review, if a new case remains pending, or if a reviewer rejected it. Cases predating the gate are marked honestly as grandfathered and pending; they remain mergeable only while their exact content is unchanged. See [`docs/musical-qa.md`](docs/musical-qa.md) for the review procedure.
 
+### Durable practice memory
+
+Guided sessions are recorded locally without an account. Recent practice shows the assignment, active (visible-tab) practice time, tempo, hands, visited bars and learning lenses. An interrupted session can be continued; completed work can be repeated, moved to another key, or revisited after a learner-chosen interval. Bar markers, short labels and notes are always manual, and MIDI input is never treated as evidence of note accuracy.
+
+Practice history uses the runtime-validated schema in `application/practice-record.ts` and the versioned local library in `application/library.ts`. It can be exported and imported as JSON. Clearing practice history does not clear starred assignments, tempo or display/session preferences, and the interface states plainly that the records stay on the device.
+
 ## Continuous integration
 
 GitHub Actions runs lint, formatting, unit tests, the fingerprint and musical-review gates, the production build,

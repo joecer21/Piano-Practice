@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { LIBRARY_STORAGE_KEY, MAX_STARRED, createLibrary } from "../application/library.ts";
 import { DEFAULT_ASSIGNMENT_INPUTS, normalizeAssignmentInputs } from "../domain/assignment.js";
 import { encodeShareFragment } from "../domain/share.ts";
+import { createPracticeRecord, exportPracticeHistory } from "../application/practice-record.ts";
 
 function memoryStorage(initial = {}) {
   const items = new Map(Object.entries(initial));
@@ -33,7 +34,11 @@ describe("library", () => {
     const reloaded = createLibrary(storage);
     expect(reloaded.lastInputs()).toEqual(minorBlues);
     expect(reloaded.tempo()).toBe(112);
-    expect(reloaded.preferences()).toEqual({ labelMode: "letters", sessionLength: "untimed" });
+    expect(reloaded.preferences()).toEqual({
+      labelMode: "letters",
+      sessionLength: "untimed",
+      revisitAfterDays: 7,
+    });
   });
 
   it("stars and unstars, newest first, keeping at most the limit", () => {
@@ -90,15 +95,80 @@ describe("library", () => {
     const library = createLibrary(storage);
     expect(library.lastInputs()).toBeNull();
     expect(library.tempo()).toBeNull();
-    expect(library.preferences()).toEqual({ labelMode: "degrees", sessionLength: 300 });
+    expect(library.preferences()).toEqual({ labelMode: "degrees", sessionLength: 300, revisitAfterDays: 7 });
     expect(library.starred().map((entry) => entry.title)).toEqual(["Blues in A"]);
+  });
+
+  it("migrates the current v1 library without losing assignment data or preferences", () => {
+    const storage = memoryStorage({
+      [LIBRARY_STORAGE_KEY]: JSON.stringify({
+        version: 1,
+        last: encodeShareFragment(minorBlues),
+        tempo: 105,
+        starred: [],
+        preferences: { labelMode: "letters", sessionLength: 600 },
+      }),
+    });
+    const library = createLibrary(storage);
+    expect(library.lastInputs()).toEqual(minorBlues);
+    expect(library.tempo()).toBe(105);
+    expect(library.preferences()).toEqual({ labelMode: "letters", sessionLength: 600, revisitAfterDays: 7 });
+    expect(library.practiceRecords()).toEqual([]);
+  });
+
+  it("persists records, drops malformed records, and de-duplicates imports by stable ID", () => {
+    const storage = memoryStorage();
+    const library = createLibrary(storage);
+    const saved = createPracticeRecord({
+      id: "practice-one",
+      fragment: encodeShareFragment(minorBlues),
+      title: "A blues",
+      tempo: 90,
+      startedAt: new Date("2026-01-01T00:00:00Z"),
+    });
+    expect(library.savePracticeRecord(saved)).toBe(true);
+    expect(createLibrary(storage).practiceRecords()).toEqual([saved]);
+
+    const raw = JSON.parse(storage.items.get(LIBRARY_STORAGE_KEY));
+    raw.practiceRecords.push({ ...saved, id: "bad id" });
+    storage.items.set(LIBRARY_STORAGE_KEY, JSON.stringify(raw));
+    expect(createLibrary(storage).practiceRecords()).toEqual([saved]);
+
+    const exported = exportPracticeHistory([saved], new Date("2026-02-01T00:00:00Z"));
+    expect(library.importPracticeHistory(exported)).toEqual({ ok: true, imported: 0, duplicates: 1 });
+
+    const fresh = createLibrary(memoryStorage());
+    const duplicatedFile = exportPracticeHistory([saved, saved], new Date("2026-02-01T00:00:00Z"));
+    expect(fresh.importPracticeHistory(duplicatedFile)).toEqual({ ok: true, imported: 1, duplicates: 1 });
+    expect(fresh.practiceRecords()).toHaveLength(1);
+  });
+
+  it("clears history without clearing unrelated preferences, tempo or stars", () => {
+    const library = createLibrary(memoryStorage());
+    library.rememberTempo(100);
+    library.setPreference("labelMode", "letters");
+    library.toggleStar(minorBlues, "A blues");
+    library.savePracticeRecord(
+      createPracticeRecord({
+        id: "practice-clear",
+        fragment: encodeShareFragment(minorBlues),
+        title: "A blues",
+        tempo: 100,
+        startedAt: new Date("2026-01-01T00:00:00Z"),
+      }),
+    );
+    library.clearPracticeHistory();
+    expect(library.practiceRecords()).toEqual([]);
+    expect(library.tempo()).toBe(100);
+    expect(library.preferences().labelMode).toBe("letters");
+    expect(library.starred()).toHaveLength(1);
   });
 
   it("starts empty from corrupt, oversized or future-version storage", () => {
     for (const raw of [
       "{not json",
-      JSON.stringify({ version: 2, last: "x" }),
-      "x".repeat(70_000),
+      JSON.stringify({ version: 3, last: "x" }),
+      "x".repeat(1_000_001),
       "[]",
       "null",
     ]) {
@@ -121,6 +191,18 @@ describe("library", () => {
     expect(() => library.rememberInputs(minorBlues)).not.toThrow();
     expect(library.toggleStar(minorBlues, "A")).toBe(true);
     expect(library.isStarred(minorBlues)).toBe(true);
+    expect(
+      library.savePracticeRecord(
+        createPracticeRecord({
+          id: "practice-quota",
+          fragment: encodeShareFragment(minorBlues),
+          title: "A",
+          tempo: 90,
+          startedAt: new Date("2026-01-01T00:00:00Z"),
+        }),
+      ),
+    ).toBe(false);
+    expect(library.practiceRecords()).toHaveLength(1);
 
     const none = createLibrary(null);
     none.rememberTempo(100);

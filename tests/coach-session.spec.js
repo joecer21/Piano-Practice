@@ -9,6 +9,7 @@ import {
   sessionSteps,
   startLabel,
   stepProgress,
+  visibleTimerDelta,
 } from "../coach/session.ts";
 
 const run = (state, ...actions) => actions.reduce(sessionReducer, state);
@@ -130,5 +131,14 @@ describe("crossedBarBoundary", () => {
     expect(crossedBarBoundary(1, 3, 4)).toBe(false);
     expect(crossedBarBoundary(11.9, 8.05, 4)).toBe(true);
     expect(crossedBarBoundary(Number.NaN, 4, 4)).toBe(false);
+  });
+});
+
+describe("visibleTimerDelta", () => {
+  it("counts monotonic visible time and ignores background or backwards clocks", () => {
+    expect(visibleTimerDelta(100, 350, true)).toBe(250);
+    expect(visibleTimerDelta(100, 350, false)).toBe(0);
+    expect(visibleTimerDelta(350, 100, true)).toBe(0);
+    expect(visibleTimerDelta(Number.NaN, 100, true)).toBe(0);
   });
 });

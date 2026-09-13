@@ -31,7 +31,7 @@ Shared feedback is an observable application service in `application/status.ts`,
 
 `domain/share.ts` owns the strict, versioned assignment fragment codec. `application/share-controller.ts` decides when a fragment should open or remember an assignment. `infrastructure/share-location.ts` is the only production module that reads or writes the browser address bar.
 
-`application/library.ts` owns the versioned library schema and validation. It receives a storage port; `infrastructure/browser-storage.ts` is the only module that obtains `window.localStorage`.
+`application/library.ts` owns the versioned library schema, its v1-to-v2 migration, and storage failure containment. It receives a storage port; `infrastructure/browser-storage.ts` is the only module that obtains `window.localStorage`. `application/practice-record.ts` owns the separate runtime-validated practice-record and history-export contracts plus deterministic, explainable recommendations. The coach reports only explicit session state and manual annotations to that boundary; note or MIDI input is never interpreted as assessment.
 
 ## End-to-end diagnostics
 
