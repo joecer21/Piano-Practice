@@ -36,7 +36,7 @@ test("focus mode hides app chrome but keeps the instrument, a held note and ever
   // App chrome steps aside.
   await expect(page.locator(".coach-tool-rail")).toBeHidden();
   await expect(page.getByRole("heading", { name: "Recent practice" })).toBeHidden();
-  await expect(page.getByRole("button", { name: "Change the assignment" })).toBeHidden();
+  await expect(page.getByTestId("coach-feel")).toBeHidden();
   await expect(page.getByText("Keyboard options")).toBeHidden();
 
   // The instrument never remounts: the sampler stays loaded and the held key stays lit.
@@ -82,17 +82,17 @@ test("the summary card takes focus, saves a note to Recent practice and returns 
   for (let step = 0; step < 5; step += 1) await page.getByRole("button", { name: "Next step" }).click();
   await page.getByRole("button", { name: "Finish" }).click();
 
-  const title = page.getByRole("heading", { name: "5 minutes done." });
+  const title = page.getByRole("heading", { name: /^Five minutes, / });
   await expect(title).toBeFocused();
   await expect(page.locator(".coach-tool-rail")).toBeVisible();
 
-  await page.getByLabel("A note for next time").fill("Bar 3 wants a lighter left hand.");
-  await page.getByRole("button", { name: "Save note", exact: true }).click();
+  await page.getByLabel("Notes for next time").fill("Bar 3 wants a lighter left hand.");
+  await page.getByRole("button", { name: "Save notes", exact: true }).click();
   await expect(page.locator(".coach-summary-note [role=status]")).toHaveText(
-    "Note saved to Recent practice.",
+    "Notes saved to Recent practice.",
   );
 
-  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await page.getByRole("button", { name: "Back to the stage" }).click();
   await expect(page.getByRole("button", { name: "Start 5 minutes" })).toBeFocused();
 
   // The note is on the completed record, and survives a reload.

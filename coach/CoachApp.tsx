@@ -4,11 +4,11 @@ import type { PlayRequest, PlaybackSession } from "../audio/playback-engine.js";
 import { describeAssignment } from "../domain/describe.js";
 import { EMPTY_HELD_NOTES, playedNotes, reduceHeldNotes } from "../input/held-notes.js";
 import { AssignmentWorkspace } from "./AssignmentWorkspace.js";
-import { describeFeel } from "./feel.js";
+import { PRESET_FEELS, describeFeel } from "./feel.js";
 import type { CoachBridge } from "./bridge.js";
 import { applyKeyboardOverlay, clearKeyboardOverlay } from "./keyboard-overlay.js";
 import type { LabelMode } from "./keyboard-overlay.js";
-import { LibraryControls } from "./LibraryControls.js";
+import { LibraryControls, shareCurrentAssignment } from "./LibraryControls.js";
 import { PracticeHistory } from "./PracticeHistory.js";
 import type { HistoryAction } from "./PracticeHistory.js";
 import type { LearningLens, PracticeRecord } from "../application/practice-record.js";
@@ -27,6 +27,7 @@ import { pianoReadiness } from "./sampler.js";
 import { ScaleReference } from "./ScaleReference.js";
 import { StatusLine } from "./StatusLine.js";
 import { trackBottomSheetHeight, trackStickyHeaderHeight } from "./sticky-offset.js";
+import { PRESET_CONFIGS } from "../presets.js";
 import { ThemeToggle } from "./ThemeToggle.js";
 import { ToolPanel, ToolRail } from "./ToolPanel.js";
 import type { ToolId } from "./ToolPanel.js";
@@ -66,8 +67,12 @@ type CoachAppProps = {
   toolsContainer?: HTMLElement | null;
   /** Responsive side-panel / bottom-sheet host. */
   panelContainer?: HTMLElement | null;
-  /** Static hero slot beside the permanent keyboard. */
+  /** Static hero slots inside the keyboard card. */
   timelineContainer?: HTMLElement | null;
+  heroControlsContainer?: HTMLElement | null;
+  heroDetailContainer?: HTMLElement | null;
+  /** Header slot for the session clock and Next / End while practising. */
+  focusbarContainer?: HTMLElement | null;
   /** Static page shell that exposes session state to responsive CSS. */
   shellContainer?: HTMLElement | null;
   /** Slim sticky header whose height drives focus scroll padding. */
@@ -85,6 +90,9 @@ export function CoachApp({
   toolsContainer = null,
   panelContainer = null,
   timelineContainer = null,
+  heroControlsContainer = null,
+  heroDetailContainer = null,
+  focusbarContainer = null,
   shellContainer = null,
   headerContainer = null,
 }: CoachAppProps) {
@@ -107,7 +115,6 @@ export function CoachApp({
   );
   const [session, dispatch] = useReducer(sessionReducer, IDLE_SESSION);
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
-  const [historyContainer, setHistoryContainer] = useState<HTMLDivElement | null>(null);
   // The record a completed session wrote, so the summary can add a note to it.
   const [finishedRecordId, setFinishedRecordId] = useState<string | null>(null);
 
@@ -132,7 +139,6 @@ export function CoachApp({
   const wantsPlaybackRef = useRef(false);
   const playheadRef = useRef<HTMLDivElement>(null);
   const assignmentWorkspaceRef = useRef<HTMLDetailsElement>(null);
-  const practicePanelRef = useRef<HTMLElement>(null);
   const activePracticeRef = useRef<{ id: string; baseDurationMs: number } | null>(null);
   const practisedHandsRef = useRef(new Set<"left" | "right">());
   const visitedBarsRef = useRef(new Set<number>());
@@ -551,7 +557,7 @@ export function CoachApp({
       setActiveTool(tool);
       requestAnimationFrame(() => {
         const doc = panelContainer?.ownerDocument ?? document;
-        if (doc.defaultView?.matchMedia("(max-width: 899px)").matches) {
+        if (doc.defaultView?.matchMedia?.("(max-width: 899px)").matches) {
           doc.querySelector<HTMLElement>("#piano-visual-card")?.scrollIntoView({
             behavior: "auto",
             block: "start",
@@ -572,27 +578,6 @@ export function CoachApp({
     },
     [panelContainer],
   );
-
-  const openAssignmentWorkspace = useCallback(() => {
-    if (panelContainer) {
-      openTool("assignment", "#assignment-workspace");
-      return;
-    }
-    const workspace = assignmentWorkspaceRef.current;
-    if (!workspace) return;
-    workspace.open = true;
-    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    workspace.scrollIntoView?.({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
-    workspace.querySelector("summary")?.focus();
-  }, [openTool, panelContainer]);
-
-  const explorePractice = useCallback(() => {
-    setActiveTool(null);
-    const section = practicePanelRef.current;
-    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    section?.scrollIntoView?.({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
-    section?.querySelector<HTMLButtonElement>("button")?.focus();
-  }, []);
 
   useEffect(() => {
     if (!activeTool) return;
@@ -660,20 +645,45 @@ export function CoachApp({
         ? readiness.message
         : null;
 
+  const soundSnapshot = useSyncExternalStore(
+    bridge.soundSettings.subscribe,
+    bridge.soundSettings.getSnapshot,
+  );
+  const midiState = useSyncExternalStore(bridge.midiInput.subscribe, bridge.midiInput.getState);
+  const midiDevice =
+    midiState.status === "connected"
+      ? ((midiState.devices.find((device) => device.id === midiState.selectedId) ?? midiState.devices[0])
+          ?.name ?? null)
+      : null;
+  const editorSnapshot = useSyncExternalStore(
+    bridge.assignmentEditor.subscribe,
+    bridge.assignmentEditor.getSnapshot,
+  );
+  // A curated preset, still in its own key and colour, has a hand-written feel and
+  // name; anything moved away from it is described from the Score alone.
+  const inputs = editorSnapshot.inputs;
+  const preset = PRESET_CONFIGS.find(
+    (candidate) =>
+      candidate.id === inputs.presetId && candidate.key === inputs.key && candidate.mode === inputs.mode,
+  );
+  const presetFeel = preset ? (PRESET_FEELS[preset.id] ?? null) : null;
+  const presetName = preset?.name ?? null;
+
   const header = (
     <SessionHeader
-      feel={feel?.headline}
+      feel={feel && presetFeel ? { ...feel, headline: `${presetFeel}.` } : feel}
       sentence={sentence}
+      eyebrow={presetName ? `Today · ${presetName}` : "Today"}
+      assignmentLabel={presetName ?? bridge.library.currentTitle()}
+      tempoBpm={soundSnapshot.tempoBpm}
       readinessNote={readinessNote}
       ready={ready}
+      hasMotif={score ? hasMotif(score) : true}
       session={session}
       length={sessionLength}
       onLengthChange={setSessionLength}
       onStart={() => void startSession()}
-      onPause={pauseSession}
-      onResume={() => void resumeSession()}
       onNext={() => dispatch({ type: "next" })}
-      onPrevious={() => dispatch({ type: "previous" })}
       onEnd={endSession}
       onAgainNewKey={againInNewKey}
       onDone={() => dispatch({ type: "end" })}
@@ -682,11 +692,10 @@ export function CoachApp({
           ? (notes) => bridge.practiceHistory.annotate(finishedRecordId, { notes: notes.trim() || null })
           : undefined
       }
+      focusbarContainer={focusbarContainer}
     />
   );
 
-  // Star, share and reopen sit with the other assignment actions, below the
-  // keyboard, so they never add height to the sticky header on a phone.
   const libraryControls = score ? (
     <LibraryControls
       library={bridge.library}
@@ -719,22 +728,30 @@ export function CoachApp({
     </section>
   );
 
+  const assignmentWorkspace = (
+    <AssignmentWorkspace editor={bridge.assignmentEditor} detailsRef={assignmentWorkspaceRef} />
+  );
+
   const panel = panelContainer ? (
     <ToolPanel
       active={activeTool}
       onClose={closeTools}
-      assignment={
-        <AssignmentWorkspace editor={bridge.assignmentEditor} detailsRef={assignmentWorkspaceRef} />
-      }
+      assignment={assignmentWorkspace}
       reference={
         <ScaleReference scale={assignment?.scale ?? null} audition={bridge.scaleAudition} ready={ready} />
       }
       sound={<SoundSettings settings={bridge.soundSettings} sampler={samplerSnapshot} />}
       input={midiControls}
       library={libraryPanel}
-      onHistoryContainer={setHistoryContainer}
     />
   ) : null;
+
+  const share = async () => {
+    const result = await shareCurrentAssignment(bridge.library);
+    if (result.kind === "copied") bridge.status.show("Link copied.", { tone: "success", transient: true });
+    else if (result.kind === "shared") bridge.status.show("Shared.", { tone: "success", transient: true });
+    else if (result.kind === "manual") openTool("library");
+  };
 
   return (
     <>
@@ -744,6 +761,8 @@ export function CoachApp({
         ? createPortal(
             <ToolRail
               active={activeTool}
+              midiDevice={midiDevice}
+              onShare={() => void share()}
               onSelect={(tool) => {
                 if (tool === activeTool) closeTools();
                 else if (tool === "assignment") openTool(tool, "#assignment-workspace");
@@ -751,7 +770,6 @@ export function CoachApp({
                 else if (tool === "sound") openTool(tool, "#settings-drawer");
                 else openTool(tool);
               }}
-              onExplore={explorePractice}
             />,
             toolsContainer,
           )
@@ -768,47 +786,39 @@ export function CoachApp({
         : null}
 
       <UpdateNotice offline={bridge.offline} />
-      {!panelContainer ? (
-        <AssignmentWorkspace editor={bridge.assignmentEditor} detailsRef={assignmentWorkspaceRef} />
-      ) : null}
+      {!panelContainer ? assignmentWorkspace : null}
 
       <PracticePanel
         score={score}
-        handsFeel={feel?.hands ?? null}
+        handsFeel={feel}
         view={view}
         controls={controls}
         labelMode={labelMode}
         ready={ready}
         playing={!!playingRequest}
         countInBeat={countInBeat}
+        tempoBpm={soundSnapshot.tempoBpm}
+        sessionStatus={session.status}
+        onPause={pauseSession}
+        onResume={() => void resumeSession()}
         chordBar={controls.focusBar ?? playheadBar}
         activeMotifIndex={activeMotifIndex}
         playheadRef={playheadRef}
-        sectionRef={practicePanelRef}
+        controlsContainer={heroControlsContainer}
+        detailContainer={heroDetailContainer}
         timelineContainer={timelineContainer}
         onView={selectView}
         onControls={updateControls}
         onLabelMode={setLabelMode}
         onTogglePlayback={togglePlayback}
         onStepChord={stepChordBy}
-        onChangeAssignment={openAssignmentWorkspace}
-        assignmentActions={!panelContainer ? libraryControls : null}
       />
+      {!panelContainer ? libraryControls : null}
       <PracticeHistory
         history={bridge.practiceHistory}
         canOpen={session.status === "idle" || session.status === "complete"}
-        expanded={panelContainer ? activeTool === "history" : undefined}
-        detailsContainer={panelContainer ? historyContainer : null}
-        onExpandedChange={
-          panelContainer
-            ? (expanded) => {
-                if (expanded) openTool("history");
-                else closeTools();
-              }
-            : undefined
-        }
         onAction={(action, record, bar) => {
-          if (panelContainer) setActiveTool(null);
+          setActiveTool(null);
           handleHistoryAction(action, record, bar);
         }}
       />

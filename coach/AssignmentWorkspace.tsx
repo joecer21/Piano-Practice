@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 import type { AssignmentInputs, AssignmentLocks } from "../domain/assignment.js";
 import { checkMotifOffer, validateAssignmentInputs } from "../domain/assignment.js";
 import { PRESET_CONFIGS } from "../presets.js";
@@ -17,6 +17,8 @@ import {
   parseRomanSymbol,
 } from "../theory.js";
 import type { AssignmentEditor, AssignmentEditorResult } from "./bridge.js";
+import { PRESET_FEELS } from "./feel.js";
+import { Icon } from "./Icon.js";
 
 type AssignmentWorkspaceProps = {
   editor: AssignmentEditor;
@@ -32,14 +34,14 @@ const KEY_LABELS: Record<string, string> = {
 };
 
 const MODE_DESCRIPTIONS: Record<string, string> = {
-  major: "bright, neutral",
-  minor: "natural minor color",
-  pentatonicMajor: "open five-note scale",
-  pentatonicMinor: "bluesy five-note scale",
-  harmonicMinor: "raised seventh pull",
-  melodicMinor: "smooth raised sixth and seventh",
-  majorBlues: "major hexatonic with a blue note",
-  minorBlues: "classic blues hexatonic",
+  major: "open, bright",
+  minor: "moody, reflective",
+  pentatonicMajor: "sunny, nothing clashes",
+  pentatonicMinor: "earthy, soulful",
+  harmonicMinor: "dark, dramatic pull",
+  melodicMinor: "bittersweet, smooth",
+  majorBlues: "relaxed, a little grit",
+  minorBlues: "smoky, gritty",
 };
 
 const LEFT_HAND_LABELS: Record<string, string> = {
@@ -131,92 +133,51 @@ export function AssignmentWorkspace({ editor, detailsRef }: AssignmentWorkspaceP
     setFeedback(result);
   };
 
+  const field = (label: string, id: string, select: ReactNode, lock?: keyof AssignmentLocks) => (
+    <div className="assignment-field">
+      <label htmlFor={id}>{label}</label>
+      {select}
+      {lock ? (
+        <button
+          type="button"
+          className="assignment-lock coach-icon-button"
+          aria-pressed={snapshot.locks[lock]}
+          aria-label={`Lock ${LOCK_LABELS[lock]}`}
+          onClick={() => editor.toggleLock(lock)}
+        >
+          <Icon name="lock" />
+        </button>
+      ) : (
+        <span />
+      )}
+    </div>
+  );
+
   return (
     <details id="assignment-workspace" className="assignment-workspace" ref={detailsRef}>
       <summary>Change the assignment</summary>
+      <p className="assignment-lead">Pick how you want it to feel. Shape the details if you like.</p>
       <div className="assignment-workspace-body">
-        <div className="assignment-workspace-heading">
-          <div>
-            <h2>Build the next assignment</h2>
-            <p>Start with a curated setup, or adjust the musical ingredients yourself.</p>
-          </div>
-          <label className="assignment-preset">
-            <span>Preset</span>
-            <select
-              id="preset-select"
-              value={snapshot.inputs.presetId ?? ""}
-              onChange={(event) => event.target.value && run(() => editor.applyPreset(event.target.value))}
-            >
-              <option value="" disabled>
-                Custom variation
-              </option>
-              {PRESET_CONFIGS.map((preset) => (
-                <option key={preset.id} value={preset.id}>
-                  {preset.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <section className="assignment-tools" aria-labelledby="assignment-tools-title">
-          <div className="assignment-tools-heading">
-            <div>
-              <h3 id="assignment-tools-title">Shape a variation</h3>
-              <p>Lock what should stay fixed, then reroll everything else.</p>
-            </div>
-            <div className="assignment-history" aria-label="Assignment history">
-              <button
-                type="button"
-                className="coach-secondary"
-                disabled={!snapshot.canUndo || dirty}
-                onClick={() => run(editor.undo)}
-              >
-                Undo
-              </button>
-              <button
-                type="button"
-                className="coach-secondary"
-                disabled={!snapshot.canRedo || dirty}
-                onClick={() => run(editor.redo)}
-              >
-                Redo
-              </button>
-            </div>
-          </div>
-          <div className="assignment-locks" role="group" aria-label="Parts to keep during reroll">
-            {(Object.keys(LOCK_LABELS) as (keyof AssignmentLocks)[]).map((component) => {
-              const locked = snapshot.locks[component];
-              return (
+        <section aria-labelledby="assignment-feels-title">
+          <h3 id="assignment-feels-title" className="coach-eyebrow">
+            Start from a feel
+          </h3>
+          <ul className="assignment-presets">
+            {PRESET_CONFIGS.map((preset) => (
+              <li key={preset.id}>
                 <button
-                  key={component}
                   type="button"
-                  className="assignment-lock"
-                  aria-pressed={locked}
-                  onClick={() => editor.toggleLock(component)}
+                  className="assignment-preset"
+                  aria-pressed={snapshot.inputs.presetId === preset.id}
+                  onClick={() => run(() => editor.applyPreset(preset.id))}
                 >
-                  {locked ? "Unlock" : "Lock"} {LOCK_LABELS[component]}
+                  <span className="assignment-preset-feel">{PRESET_FEELS[preset.id] ?? preset.name}</span>
+                  <span className="assignment-preset-name">{preset.name}</span>
+                  <span className="assignment-preset-key">{presetKey(preset.key, preset.mode)}</span>
                 </button>
-              );
-            })}
-          </div>
-          <div className="assignment-variation">
-            <p>
-              <span>Current variation</span> <code id="assignment-seed">{snapshot.seed}</code>{" "}
-              {snapshot.assignmentId ? (
-                <span id="assignment-id">ID {snapshot.assignmentId.replace(/^assignment-/, "")}</span>
-              ) : null}
-            </p>
-            <button
-              id="assignment-reroll"
-              type="button"
-              className="coach-start"
-              disabled={dirty || Object.values(snapshot.locks).every(Boolean)}
-              onClick={() => run(editor.reroll)}
-            >
-              Reroll unlocked
-            </button>
-          </div>
+              </li>
+            ))}
+          </ul>
         </section>
 
         <form
@@ -226,167 +187,214 @@ export function AssignmentWorkspace({ editor, detailsRef }: AssignmentWorkspaceP
             if (canApply) applyDraft();
           }}
         >
-          <div className="assignment-fields">
-            <label>
-              <span>Key</span>
-              <select
-                id="key-select"
-                value={draft.key}
-                onChange={(event) => patchDraft({ key: event.target.value })}
-              >
-                {NOTE_NAMES.map((key) => (
-                  <option key={key} value={key}>
-                    {KEY_LABELS[key] ?? key}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              <span>Scale or mode</span>
-              <select
-                id="mode-select"
-                value={draft.mode}
-                onChange={(event) => patchDraft({ mode: event.target.value })}
-              >
-                {Object.entries(SCALE_PATTERNS).map(([id, mode]) => (
-                  <option key={id} value={id}>
-                    {mode.label} — {MODE_DESCRIPTIONS[id] ?? ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              <span>Chord progression</span>
-              <select
-                id="progression-select"
-                value={draft.progressionPresetId}
-                onChange={(event) => patchDraft({ progressionPresetId: event.target.value })}
-              >
-                {PROGRESSION_PRESETS.map((progression) => (
-                  <option key={progression.id} value={progression.id}>
-                    {progression.label} — {progression.roman.join("–")}
-                  </option>
-                ))}
-                <option value="custom">Custom progression</option>
-              </select>
-            </label>
-
-            <label>
-              <span>Style and voicing</span>
-              <select
-                id="palette-level"
-                value={draft.styleId}
-                onChange={(event) => patchDraft({ styleId: event.target.value })}
-              >
-                {Object.entries(STYLE_PROFILES).map(([id, style]) => (
-                  <option key={id} value={id}>
-                    {style.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              <span>Left-hand pattern</span>
-              <select
-                id="lh-select"
-                value={draft.lhId}
-                onChange={(event) => patchDraft({ lhId: event.target.value })}
-              >
-                {Object.keys(LEFT_HAND_PATTERN_METADATA).map((id) => (
-                  <option key={id} value={id}>
-                    {LEFT_HAND_LABELS[id] ?? id}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              <span>Motif</span>
-              <select
-                id="motif-select"
-                value={draft.motifId}
-                onChange={(event) => patchDraft({ motifId: event.target.value })}
-              >
-                <option value="none">No motif — left hand only</option>
-                {Object.entries(MOTIF_STYLES).map(([id, motif]) => {
-                  const offered = checkMotifOffer({ ...draft, motifId: id });
-                  const fit = motifFitForMode(id, draft.mode);
-                  return (
-                    <option key={id} value={id} disabled={!offered.offered}>
-                      {motif.label}
-                      {!offered.offered ? " — not offered" : fit?.fit === "color" ? " — color tones" : ""}
+          <details className="assignment-shape" open>
+            <summary>Shape it yourself</summary>
+            <div className="assignment-fields">
+              {field(
+                "Key",
+                "key-select",
+                <select
+                  id="key-select"
+                  value={draft.key}
+                  onChange={(event) => patchDraft({ key: event.target.value })}
+                >
+                  {NOTE_NAMES.map((key) => (
+                    <option key={key} value={key}>
+                      {KEY_LABELS[key] ?? key}
                     </option>
-                  );
-                })}
-              </select>
-            </label>
+                  ))}
+                </select>,
+                "key",
+              )}
+              {field(
+                "Colour",
+                "mode-select",
+                <select
+                  id="mode-select"
+                  value={draft.mode}
+                  onChange={(event) => patchDraft({ mode: event.target.value })}
+                >
+                  {Object.entries(SCALE_PATTERNS).map(([id, mode]) => (
+                    <option key={id} value={id}>
+                      {mode.label}: {MODE_DESCRIPTIONS[id] ?? ""}
+                    </option>
+                  ))}
+                </select>,
+              )}
+              {field(
+                "Chords",
+                "progression-select",
+                <select
+                  id="progression-select"
+                  value={draft.progressionPresetId}
+                  onChange={(event) => patchDraft({ progressionPresetId: event.target.value })}
+                >
+                  {PROGRESSION_PRESETS.map((progression) => (
+                    <option key={progression.id} value={progression.id}>
+                      {progression.label} · {progression.roman.join("–")}
+                    </option>
+                  ))}
+                  <option value="custom">Custom progression</option>
+                </select>,
+                "harmony",
+              )}
+              {field(
+                "Left hand",
+                "lh-select",
+                <select
+                  id="lh-select"
+                  value={draft.lhId}
+                  onChange={(event) => patchDraft({ lhId: event.target.value })}
+                >
+                  {Object.keys(LEFT_HAND_PATTERN_METADATA).map((id) => (
+                    <option key={id} value={id}>
+                      {LEFT_HAND_LABELS[id] ?? id}
+                    </option>
+                  ))}
+                </select>,
+                "groove",
+              )}
+              {field(
+                "Tune",
+                "motif-select",
+                <select
+                  id="motif-select"
+                  value={draft.motifId}
+                  onChange={(event) => patchDraft({ motifId: event.target.value })}
+                >
+                  <option value="none">No tune: left hand only</option>
+                  {Object.entries(MOTIF_STYLES).map(([id, motif]) => {
+                    const offered = checkMotifOffer({ ...draft, motifId: id });
+                    const fit = motifFitForMode(id, draft.mode);
+                    return (
+                      <option key={id} value={id} disabled={!offered.offered}>
+                        {motif.label}
+                        {!offered.offered ? " (not offered)" : fit?.fit === "color" ? " (colour tones)" : ""}
+                      </option>
+                    );
+                  })}
+                </select>,
+                "motif",
+              )}
+              {field(
+                "Style",
+                "palette-level",
+                <select
+                  id="palette-level"
+                  value={draft.styleId}
+                  onChange={(event) => patchDraft({ styleId: event.target.value })}
+                >
+                  {Object.entries(STYLE_PROFILES).map(([id, style]) => (
+                    <option key={id} value={id}>
+                      {style.label}
+                    </option>
+                  ))}
+                </select>,
+              )}
+              {field(
+                "Length",
+                "length-select",
+                <select
+                  id="length-select"
+                  value={String(draft.length)}
+                  onChange={(event) => patchDraft({ length: Number(event.target.value) })}
+                >
+                  {[4, 8, 12].map((length) => (
+                    <option key={length} value={length}>
+                      {length} bars
+                    </option>
+                  ))}
+                </select>,
+              )}
+            </div>
 
-            <label>
-              <span>Progression length</span>
-              <select
-                id="length-select"
-                value={String(draft.length)}
-                onChange={(event) => patchDraft({ length: Number(event.target.value) })}
-              >
-                {[4, 8, 12].map((length) => (
-                  <option key={length} value={length}>
-                    {length} bars
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          {draft.progressionPresetId === "custom" ? (
-            <fieldset className="assignment-palette">
-              <legend>Custom progression ({draft.customProgressionRoman.length} bars)</legend>
-              <p>Choose chords from the {STYLES[draft.styleId]?.label ?? draft.styleId} palette.</p>
-              {palette.map((group) => (
-                <div className="assignment-palette-group" key={group.label}>
-                  <span>{group.label}</span>
-                  <div>
-                    {group.chords.map((chord) => (
-                      <button
-                        key={`${group.label}-${chord}`}
-                        type="button"
-                        onClick={() =>
-                          patchDraft({ customProgressionRoman: [...draft.customProgressionRoman, chord] })
-                        }
-                      >
-                        {formatPaletteChord(chord, draft)}
-                      </button>
-                    ))}
+            {draft.progressionPresetId === "custom" ? (
+              <fieldset className="assignment-palette">
+                <legend>Custom progression ({draft.customProgressionRoman.length} bars)</legend>
+                <p>Choose chords from the {STYLES[draft.styleId]?.label ?? draft.styleId} palette.</p>
+                {palette.map((group) => (
+                  <div className="assignment-palette-group" key={group.label}>
+                    <span>{group.label}</span>
+                    <div>
+                      {group.chords.map((chord) => (
+                        <button
+                          key={`${group.label}-${chord}`}
+                          type="button"
+                          onClick={() =>
+                            patchDraft({ customProgressionRoman: [...draft.customProgressionRoman, chord] })
+                          }
+                        >
+                          {formatPaletteChord(chord, draft)}
+                        </button>
+                      ))}
+                    </div>
                   </div>
+                ))}
+                <p id="custom-progression-preview" className="assignment-custom-preview">
+                  {draft.customProgressionRoman.length
+                    ? draft.customProgressionRoman
+                        .map((chord) => formatPaletteChord(chord, draft))
+                        .join(" – ")
+                    : "No chords yet. Add at least one chord to build a custom progression."}
+                </p>
+                <div className="assignment-palette-actions">
+                  <button
+                    type="button"
+                    disabled={!draft.customProgressionRoman.length}
+                    onClick={() =>
+                      patchDraft({ customProgressionRoman: draft.customProgressionRoman.slice(0, -1) })
+                    }
+                  >
+                    Remove last
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!draft.customProgressionRoman.length}
+                    onClick={() => patchDraft({ customProgressionRoman: [] })}
+                  >
+                    Clear
+                  </button>
                 </div>
-              ))}
-              <p id="custom-progression-preview" className="assignment-custom-preview">
-                {draft.customProgressionRoman.length
-                  ? draft.customProgressionRoman.map((chord) => formatPaletteChord(chord, draft)).join(" – ")
-                  : "No chords yet. Add at least one chord to build a custom progression."}
+              </fieldset>
+            ) : null}
+
+            <div className="coach-session assignment-variation">
+              <button
+                id="assignment-reroll"
+                type="button"
+                className="coach-secondary"
+                disabled={dirty || Object.values(snapshot.locks).every(Boolean)}
+                onClick={() => run(editor.reroll)}
+              >
+                <Icon name="dice" />
+                Surprise me
+              </button>
+              <button
+                type="button"
+                className="coach-secondary coach-icon-button"
+                aria-label="Undo"
+                disabled={!snapshot.canUndo || dirty}
+                onClick={() => run(editor.undo)}
+              >
+                <Icon name="undo" />
+              </button>
+              <button
+                type="button"
+                className="coach-secondary coach-icon-button"
+                aria-label="Redo"
+                disabled={!snapshot.canRedo || dirty}
+                onClick={() => run(editor.redo)}
+              >
+                <Icon name="redo" />
+              </button>
+              <p className="assignment-seed">
+                Variation <code id="assignment-seed">{snapshot.seed}</code>
+                {snapshot.assignmentId ? (
+                  <span id="assignment-id"> · ID {snapshot.assignmentId.replace(/^assignment-/, "")}</span>
+                ) : null}
               </p>
-              <div className="assignment-palette-actions">
-                <button
-                  type="button"
-                  disabled={!draft.customProgressionRoman.length}
-                  onClick={() =>
-                    patchDraft({ customProgressionRoman: draft.customProgressionRoman.slice(0, -1) })
-                  }
-                >
-                  Remove last
-                </button>
-                <button
-                  type="button"
-                  disabled={!draft.customProgressionRoman.length}
-                  onClick={() => patchDraft({ customProgressionRoman: [] })}
-                >
-                  Clear
-                </button>
-              </div>
-            </fieldset>
-          ) : null}
+            </div>
+          </details>
 
           {draftProblem ? (
             <p className="assignment-feedback error" role="alert">
@@ -398,28 +406,38 @@ export function AssignmentWorkspace({ editor, detailsRef }: AssignmentWorkspaceP
               {feedback.message}
             </p>
           ) : null}
-          {dirty && !draftProblem ? <p className="assignment-feedback">Changes are ready to apply.</p> : null}
 
           <div className="assignment-form-actions">
-            <button
-              type="button"
-              className="coach-secondary"
-              disabled={!dirty}
-              onClick={() => {
-                setDraft(cloneInputs(snapshot.inputs));
-                setFeedback(null);
-              }}
-            >
-              Reset changes
-            </button>
             <button id="generate" type="submit" className="coach-start" disabled={!canApply}>
               Apply assignment
             </button>
+            <p className="assignment-foot-note">
+              {dirty && !draftProblem
+                ? "Changes are ready to apply."
+                : "The keyboard keeps playing while you choose."}{" "}
+              {dirty ? (
+                <button
+                  type="button"
+                  className="coach-link"
+                  onClick={() => {
+                    setDraft(cloneInputs(snapshot.inputs));
+                    setFeedback(null);
+                  }}
+                >
+                  Reset changes
+                </button>
+              ) : null}
+            </p>
           </div>
         </form>
       </div>
     </details>
   );
+}
+
+function presetKey(key: string, mode: string): string {
+  const name = KEY_LABELS[key]?.split(" / ")[1] ?? key;
+  return /minor/i.test(mode) ? `${name}m` : name;
 }
 
 function cloneInputs(inputs: AssignmentInputs): AssignmentInputs {

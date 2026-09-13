@@ -1,0 +1,899 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Improv Coach Redesign</title>
+<meta name="description" content="Phase 1 mockups for the 5-Minute Improv Coach redesign: stage, focus session, summary, assignment panel and history in studio and paper themes." />
+<style>
+  /* ---------- Viewer shell: follows the host theme ---------- */
+  :root {
+    --v-bg: #ebe9e5;
+    --v-raised: #f7f6f3;
+    --v-ink: #1f1d1b;
+    --v-muted: #67625c;
+    --v-line: #d3cec7;
+    --v-bezel: #1a1817;
+    --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --serif: "Iowan Old Style", Charter, "Sitka Text", Georgia, serif;
+    --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --v-bg: #121110;
+      --v-raised: #1b1a18;
+      --v-ink: #ebe7e2;
+      --v-muted: #9c968f;
+      --v-line: #2f2c29;
+      --v-bezel: #000;
+    }
+  }
+  :root[data-theme="dark"] {
+    --v-bg: #121110;
+    --v-raised: #1b1a18;
+    --v-ink: #ebe7e2;
+    --v-muted: #9c968f;
+    --v-line: #2f2c29;
+    --v-bezel: #000;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--v-bg); color: var(--v-ink); font: 15px/1.5 var(--sans); }
+  button { font: inherit; }
+  :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+  .viewer { max-width: 1680px; margin: 0 auto; padding: 28px 28px 56px; display: grid; gap: 22px; }
+  .v-head { display: flex; flex-wrap: wrap; gap: 16px 40px; align-items: end; justify-content: space-between; }
+  .v-head h1 { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 34px; line-height: 1.1; margin: 0; }
+  .v-head p { margin: 4px 0 0; color: var(--v-muted); max-width: 62ch; }
+  .v-controls { display: flex; flex-wrap: wrap; gap: 14px 22px; }
+  .v-group { display: grid; gap: 6px; }
+  .v-label { font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--v-muted); font-weight: 600; }
+  .v-seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid var(--v-line); border-radius: 10px; background: var(--v-raised); }
+  .v-seg button { border: 0; background: transparent; color: var(--v-muted); min-height: 36px; padding: 0 12px; border-radius: 7px; cursor: pointer; }
+  .v-seg button[aria-pressed="true"] { background: var(--v-ink); color: var(--v-bg); }
+
+  .v-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; align-items: start; }
+  @media (min-width: 1180px) { .v-main { grid-template-columns: minmax(0, 1fr) 320px; } }
+  .v-stage { min-width: 0; display: flex; justify-content: center; }
+  .v-wrap { position: relative; }
+  .device { position: absolute; top: 0; left: 0; transform-origin: top left; overflow: hidden; background: var(--v-bezel); border: 1px solid var(--v-line); border-radius: 12px; box-shadow: 0 30px 80px -30px rgba(0,0,0,.45); }
+  .device[data-device="tablet"] { border: 12px solid var(--v-bezel); border-radius: 30px; }
+  .device[data-device="phone"] { border: 10px solid var(--v-bezel); border-radius: 44px; }
+  .screen { width: 100%; height: 100%; overflow: hidden; border-radius: inherit; }
+  .device[data-device="tablet"] .screen { border-radius: 18px; }
+  .device[data-device="phone"] .screen { border-radius: 34px; }
+
+  .notes { display: grid; gap: 18px; font-size: 14px; }
+  .notes h2 { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 26px; margin: 0; line-height: 1.15; }
+  .notes h3 { font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--v-muted); margin: 0 0 8px; }
+  .notes p { margin: 0; color: var(--v-muted); }
+  .notes ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+  .notes code { font-family: var(--mono); font-size: 12.5px; padding: 1px 5px; border-radius: 5px; background: var(--v-raised); border: 1px solid var(--v-line); }
+  .notes .fine { font-size: 13px; border-top: 1px solid var(--v-line); padding-top: 14px; }
+
+  /* ---------- The app: explicit skins, independent of the host ---------- */
+  .app {
+    container: app / inline-size;
+    position: relative; height: 100%;
+    display: grid; grid-template-rows: auto minmax(0, 1fr);
+    background: var(--a-bg); color: var(--a-ink);
+    font: 16px/1.5 var(--sans);
+  }
+  .app[data-skin="studio"] {
+    color-scheme: dark;
+    --a-bg: #181513; --a-raised: #221d19; --a-sunk: #110e0c;
+    --a-ink: #f5ede4; --a-muted: #b8a89c; --a-faint: #85766b;
+    --a-line: #3b322c; --a-line-strong: #5a4d44;
+    --lh: #6fb1ec; --rh: #f0a060;
+    --ivory: #e4dacb; --ivory-edge: #a99c8c; --ebony: #0b0908;
+    --on-ivory-lh: #1f6aa6; --on-ivory-rh: #ad5518;
+    --on-ebony-lh: #7cbaf0; --on-ebony-rh: #f2a868;
+    --key-label-ivory: #33271f; --key-label-ebony: #eadfd3;
+    --scrim: rgba(6, 5, 4, .62); --shadow: 0 24px 60px rgba(0, 0, 0, .5);
+  }
+  .app[data-skin="paper"] {
+    color-scheme: light;
+    --a-bg: #f6f1eb; --a-raised: #fffdfa; --a-sunk: #ece4da;
+    --a-ink: #2a1f19; --a-muted: #6c5a4f; --a-faint: #97877b;
+    --a-line: #e2d5ca; --a-line-strong: #c7b6a7;
+    --lh: #2878b8; --rh: #c56a26;
+    --ivory: #fffdfa; --ivory-edge: #cdbdaf; --ebony: #2a1f19;
+    --on-ivory-lh: #2878b8; --on-ivory-rh: #c56a26;
+    --on-ebony-lh: #8cc2f0; --on-ebony-rh: #f3ae72;
+    --key-label-ivory: #4a3b32; --key-label-ebony: #f6f1eb;
+    --scrim: rgba(42, 31, 25, .32); --shadow: 0 24px 60px rgba(42, 31, 25, .2);
+  }
+  .app button { cursor: pointer; color: inherit; }
+  .app :focus-visible { outline: 2px solid var(--a-ink); outline-offset: 2px; }
+  .i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  .btn {
+    min-height: 44px; padding: 0 16px; border-radius: 10px;
+    border: 1px solid var(--a-line-strong); background: transparent; color: var(--a-ink);
+    font-size: 15px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap;
+  }
+  .btn:hover { background: var(--a-raised); }
+  .btn[aria-pressed="true"] { background: var(--a-ink); color: var(--a-bg); border-color: var(--a-ink); }
+  .btn.ghost { border-color: transparent; }
+  .btn.primary { background: var(--a-ink); color: var(--a-bg); border-color: var(--a-ink); font-weight: 600; }
+  .btn.primary:hover { opacity: .92; }
+  .btn.icon { padding: 0; width: 44px; }
+  .eyebrow { font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--a-muted); font-weight: 600; margin: 0; }
+
+  .seg { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--a-line); border-radius: 11px; background: var(--a-sunk); max-width: 100%; overflow-x: auto; }
+  .seg button { min-height: 40px; padding: 0 13px; border: 0; border-radius: 8px; background: transparent; color: var(--a-muted); font-size: 14px; white-space: nowrap; }
+  .seg button[aria-pressed="true"] { background: var(--a-raised); color: var(--a-ink); box-shadow: 0 0 0 1px var(--a-line-strong); font-weight: 600; }
+
+  /* Top bar */
+  .topbar { display: flex; align-items: center; gap: 16px; padding: 10px 24px; border-bottom: 1px solid var(--a-line); background: var(--a-bg); min-height: 64px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; white-space: nowrap; }
+  .brand .i { width: 26px; height: 26px; }
+  .tools { margin-left: auto; display: flex; gap: 2px; align-items: center; }
+  .tool { min-height: 44px; min-width: 44px; padding: 0 12px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; border-radius: 10px; background: transparent; font-size: 14px; white-space: nowrap; }
+  .tool:hover, .tool[aria-expanded="true"] { background: var(--a-raised); border-color: var(--a-line); }
+  .tool .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--a-ink); box-shadow: 0 0 0 3px var(--a-line); }
+  .tool .sub { color: var(--a-muted); }
+  .sep { width: 1px; height: 24px; background: var(--a-line); margin: 0 6px; }
+  .focusbar { display: none; margin-left: auto; align-items: center; gap: 20px; }
+  .clock { display: flex; align-items: baseline; gap: 10px; }
+  .clock-total { font-family: var(--serif); font-size: 36px; line-height: 1; font-variant-numeric: tabular-nums lining-nums; }
+  .clock-label { color: var(--a-muted); font-size: 14px; }
+  .focus-actions { display: flex; gap: 8px; }
+
+  /* Body, stage, panel */
+  .body { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .app[data-panel="assignment"] .body { grid-template-columns: minmax(0, 1fr) 400px; }
+  .stage { overflow-y: auto; min-height: 0; padding: 36px 40px 64px; display: grid; gap: 32px; align-content: start; }
+  .stage > section { width: 100%; max-width: 1120px; margin-inline: auto; }
+
+  .brief { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px 48px; align-items: end; }
+  .feel { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 52px; line-height: 1.02; letter-spacing: -.012em; margin: 10px 0 14px; text-wrap: balance; }
+  .feel-sub { font-size: 20px; line-height: 1.45; max-width: 46ch; margin: 0; text-wrap: pretty; }
+  .theory { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; margin-top: 18px; font-size: 13px; color: var(--a-muted); }
+  .theory-tag { font-size: 11px; letter-spacing: .09em; text-transform: uppercase; font-weight: 600; color: var(--a-faint); }
+  .theory [data-testid="coach-sentence"] { font-family: var(--mono); font-size: 13px; color: var(--a-muted); }
+  .why summary { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--a-line-strong); color: var(--a-ink); list-style: none; }
+  .why summary::-webkit-details-marker { display: none; }
+  .why p { margin: 8px 0 0; max-width: 60ch; color: var(--a-ink); font-size: 14px; }
+  .start-block { display: grid; gap: 10px; min-width: 280px; }
+  .btn.big { min-height: 60px; font-size: 18px; border-radius: 14px; padding: 0 30px; }
+  .hint { margin: 0; font-size: 13px; color: var(--a-muted); max-width: 30ch; }
+
+  .focus-head { display: none; gap: 20px; }
+  .rail { list-style: none; margin: 0; padding: 0; display: flex; gap: 5px; }
+  .rail li { flex: var(--w) 1 0; display: grid; gap: 7px; font-size: 12.5px; color: var(--a-faint); min-width: 0; }
+  .rail .track { height: 6px; border-radius: 3px; background: var(--a-line); overflow: hidden; }
+  .rail .fill { display: block; height: 100%; width: var(--p); background: var(--a-ink); }
+  .rail li.done { color: var(--a-muted); }
+  .rail li[aria-current="step"] { color: var(--a-ink); font-weight: 600; }
+  .rail .lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .step-row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+  .step-title { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 52px; line-height: 1; margin: 0; }
+  .step-left { color: var(--a-muted); font-variant-numeric: tabular-nums; font-size: 15px; }
+  .instruction { font-size: 27px; line-height: 1.32; max-width: 38ch; margin: 0; text-wrap: balance; }
+
+  .summary { display: none; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 36px; padding: 34px; border: 1px solid var(--a-line); border-radius: 18px; background: var(--a-raised); box-shadow: var(--shadow); }
+  .summary h1 { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 46px; line-height: 1.05; margin: 10px 0 12px; text-wrap: balance; }
+  .summary .meta { color: var(--a-muted); margin: 0 0 24px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .done-steps { list-style: none; margin: 0 0 20px; padding: 0; display: grid; gap: 2px; }
+  .done-steps li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 7px 0; border-bottom: 1px solid var(--a-line); font-size: 15px; }
+  .done-steps time { color: var(--a-muted); font-variant-numeric: tabular-nums; }
+  .field-label { display: block; font-size: 13px; color: var(--a-muted); margin-bottom: 6px; }
+  textarea { width: 100%; min-height: 84px; resize: vertical; border: 1px solid var(--a-line-strong); border-radius: 10px; background: var(--a-bg); color: var(--a-ink); font: 15px/1.45 var(--sans); padding: 10px 12px; }
+
+  .hero { background: var(--a-sunk); border: 1px solid var(--a-line); border-radius: 18px; padding: 18px 20px 16px; display: grid; gap: 14px; }
+  .hero-controls { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; justify-content: space-between; }
+  .transport { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .tempo { color: var(--a-muted); font-size: 14px; font-variant-numeric: tabular-nums; padding: 0 6px; }
+  .lenses { display: flex; flex-wrap: wrap; gap: 10px; }
+  .roll { overflow-x: auto; }
+  .roll-inner { min-width: 560px; }
+  .roll svg { display: block; width: 100%; height: 150px; background: var(--a-bg); border: 1px solid var(--a-line); border-radius: 10px; }
+  .bars { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
+  .bars button { min-height: 44px; border: 1px solid var(--a-line); border-radius: 8px; background: transparent; display: grid; place-items: center; line-height: 1.1; padding: 4px; font-size: 13px; }
+  .bars button span { font-size: 12px; color: var(--a-muted); }
+  .bars button[aria-pressed="true"] { border-color: var(--a-ink); box-shadow: inset 0 0 0 1px var(--a-ink); background: var(--a-raised); }
+  .keys { overflow-x: auto; border-radius: 10px; }
+  .keys svg { display: block; width: 100%; min-width: 760px; height: auto; }
+  .kw { fill: var(--ivory); stroke: var(--ivory-edge); stroke-width: 1; }
+  .kb { fill: var(--ebony); }
+  .lbl-i, .lbl-e, .kname { font-family: var(--sans); font-weight: 650; text-anchor: middle; }
+  .lbl-i { fill: var(--key-label-ivory); font-size: 14px; }
+  .lbl-e { fill: var(--key-label-ebony); font-size: 13px; }
+  .kname { fill: var(--key-label-ivory); opacity: .55; font-size: 11px; font-weight: 500; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; font-size: 13px; color: var(--a-muted); align-items: center; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .legend svg { width: 16px; height: 16px; }
+  .sw-lh { fill: var(--lh); } .sw-rh { fill: var(--rh); }
+  .sw-o { fill: none; stroke: var(--a-muted); stroke-width: 2; } .sw-f { fill: var(--a-muted); }
+  .sw-r { fill: none; stroke: var(--a-muted); stroke-width: 2.5; }
+
+  .note { fill: var(--c); stroke: var(--c); stroke-width: 0; vector-effect: non-scaling-stroke; }
+  .note.lh { --c: var(--lh); } .note.rh { --c: var(--rh); }
+  .note.root { stroke-width: 2.5; }
+  .note.scale { fill: var(--a-bg); stroke-width: 1.5; }
+  .gl-bar { stroke: var(--a-line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .gl-beat { stroke: var(--a-line); stroke-opacity: .4; stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .loop { fill: var(--a-ink); fill-opacity: .07; stroke: var(--a-ink); stroke-opacity: .7; stroke-dasharray: 5 4; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+  .ph { stroke: var(--a-ink); stroke-width: 2; vector-effect: non-scaling-stroke; }
+  .mk, .note { transition: opacity .2s; }
+  .app[data-lens="lh"] .rh, .app[data-lens="rh"] .lh { opacity: .16; }
+
+  .history-head { position: relative; display: flex; align-items: center; gap: 8px; }
+  .history-head h2 { font-size: 21px; font-weight: 600; margin: 0 auto 0 0; }
+  .menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 3; min-width: 220px; display: grid; padding: 6px; border: 1px solid var(--a-line); border-radius: 12px; background: var(--a-raised); box-shadow: var(--shadow); }
+  .menu button { min-height: 44px; border: 0; background: transparent; text-align: left; padding: 0 12px; border-radius: 8px; font-size: 15px; }
+  .menu button:hover { background: var(--a-sunk); }
+  .menu hr { border: 0; border-top: 1px solid var(--a-line); margin: 4px 0; width: 100%; }
+  .pickup { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+  .pick { border: 1px solid var(--a-line); border-radius: 14px; padding: 18px 20px; display: grid; gap: 4px; align-content: start; }
+  .pick .name { font-family: var(--serif); font-style: italic; font-size: 24px; line-height: 1.2; margin: 2px 0; }
+  .pick p { margin: 0; color: var(--a-muted); font-size: 14px; }
+  .pick .btn { justify-self: start; margin-top: 10px; }
+  .records { display: none; list-style: none; margin: 22px 0 0; padding: 0; border-top: 1px solid var(--a-line); }
+  .app[data-history="expanded"] .records { display: block; }
+  .record { display: grid; grid-template-columns: 130px minmax(0, 1fr) auto; gap: 6px 20px; padding: 16px 0; border-bottom: 1px solid var(--a-line); align-items: start; }
+  .record time { color: var(--a-muted); font-size: 14px; font-variant-numeric: tabular-nums; padding-top: 2px; }
+  .record .name { font-weight: 600; }
+  .record .status { color: var(--a-muted); font-size: 14px; }
+  .mini-rail { display: flex; gap: 2px; margin-top: 8px; max-width: 260px; }
+  .mini-rail i { flex: var(--w) 1 0; height: 4px; border-radius: 2px; background: var(--a-line); }
+  .mini-rail i.on { background: var(--a-muted); }
+  .record .note-text { margin: 10px 0 0; padding-left: 12px; border-left: 2px solid var(--a-line-strong); font-size: 14px; font-style: italic; font-family: var(--serif); }
+
+  .panel { display: none; position: relative; overflow-y: auto; background: var(--a-raised); border-left: 1px solid var(--a-line); }
+  .app[data-panel="assignment"] .panel { display: block; }
+  .panel > .close { position: absolute; top: 14px; right: 14px; z-index: 1; }
+  .panel summary.panel-title { list-style: none; font-family: var(--serif); font-style: italic; font-size: 30px; line-height: 1.1; padding: 22px 70px 4px 24px; cursor: default; }
+  .panel summary.panel-title::-webkit-details-marker { display: none; }
+  .panel-lead { margin: 0; padding: 0 24px; color: var(--a-muted); font-size: 14px; }
+  .panel-body { padding: 18px 24px 24px; display: grid; gap: 22px; }
+  .presets { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+  .preset { width: 100%; text-align: left; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 12px; padding: 11px 14px; border: 1px solid var(--a-line); border-radius: 12px; background: var(--a-bg); min-height: 58px; }
+  .preset .f { font-family: var(--serif); font-style: italic; font-size: 19px; line-height: 1.25; }
+  .preset .n { font-size: 13px; color: var(--a-muted); }
+  .preset .t { grid-column: 2; grid-row: 1 / 3; align-self: center; font-family: var(--mono); font-size: 12px; color: var(--a-faint); }
+  .preset[aria-pressed="true"] { border-color: var(--a-ink); box-shadow: inset 0 0 0 1px var(--a-ink); }
+  .shape > summary { min-height: 44px; display: flex; align-items: center; font-weight: 600; cursor: pointer; }
+  .field { display: grid; grid-template-columns: 96px minmax(0, 1fr) 44px; gap: 8px; align-items: center; padding: 4px 0; }
+  .field label { font-size: 14px; color: var(--a-muted); }
+  .field select { min-height: 44px; min-width: 0; border: 1px solid var(--a-line-strong); border-radius: 10px; background: var(--a-bg); color: var(--a-ink); padding: 0 10px; font: 15px var(--sans); }
+  .lock[aria-pressed="true"] { background: var(--a-sunk); border-color: var(--a-line-strong); }
+  .lock[aria-pressed="true"] .i { stroke-width: 2.4; }
+  .panel-foot { position: sticky; bottom: 0; display: grid; gap: 8px; padding: 14px 24px 18px; background: var(--a-raised); border-top: 1px solid var(--a-line); }
+  .panel-foot .btn { min-height: 54px; font-size: 16px; }
+  .panel-foot small { color: var(--a-muted); font-size: 13px; }
+  .scrim { display: none; position: absolute; inset: 0; background: var(--scrim); border: 0; padding: 0; cursor: default; }
+
+  /* ---------- Session state drives the layout (nothing unmounts) ---------- */
+  .app:is([data-session-status="running"], [data-session-status="paused"]) .tools { display: none; }
+  .app:is([data-session-status="running"], [data-session-status="paused"]) .focusbar { display: flex; }
+  .app:is([data-session-status="running"], [data-session-status="paused"]) :is(.brief, .history) { display: none; }
+  .app:is([data-session-status="running"], [data-session-status="paused"]) .focus-head { display: grid; }
+  .app:is([data-session-status="running"], [data-session-status="paused"]) .hero .btn { min-height: 52px; font-size: 16px; padding: 0 18px; }
+  .app:is([data-session-status="running"], [data-session-status="paused"]) .hero .seg button { min-height: 46px; font-size: 15px; }
+  .app:is([data-session-status="running"], [data-session-status="paused"]) .stage { gap: 26px; padding-top: 30px; }
+  .app[data-session-status="complete"] .brief { display: none; }
+  .app[data-session-status="complete"] .summary { display: grid; }
+
+  /* ---------- Tablet: panel becomes an overlay ---------- */
+  @container app (max-width: 1180px) {
+    .app[data-panel="assignment"] .body { grid-template-columns: minmax(0, 1fr); }
+    .panel { position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 92%); z-index: 2; box-shadow: var(--shadow); }
+    .app[data-panel="assignment"] .scrim { display: block; z-index: 1; }
+    .stage { padding: 30px 28px 56px; }
+    .feel { font-size: 44px; }
+    .tool .sub { display: none; }
+  }
+  /* ---------- Phone: stacked, scrolls naturally, bottom sheet ---------- */
+  @container app (max-width: 720px) {
+    .topbar { padding: 6px 10px; gap: 4px; min-height: 58px; }
+    .brand span, .tool span, .sep { display: none; }
+    .tool { padding: 0; }
+    .app:is([data-session-status="running"], [data-session-status="paused"]) .brand { display: none; }
+    .focusbar { width: 100%; justify-content: space-between; gap: 8px; }
+    .clock { flex-direction: column; gap: 2px; }
+    .clock-total { font-size: 30px; }
+    .clock-label { font-size: 12px; }
+    .focus-actions .btn { padding: 0 12px; }
+    .stage { padding: 22px 16px 44px; gap: 26px; }
+    .brief { grid-template-columns: minmax(0, 1fr); }
+    .feel { font-size: 36px; }
+    .feel-sub { font-size: 17px; }
+    .start-block { min-width: 0; }
+    .hint { max-width: none; }
+    .hero { padding: 12px; border-radius: 14px; }
+    .hero-controls { display: grid; justify-content: stretch; }
+    .keys svg { min-width: 1080px; }
+    .rail .lbl { display: none; }
+    .step-title { font-size: 38px; }
+    .instruction { font-size: 21px; }
+    .summary { grid-template-columns: minmax(0, 1fr); padding: 22px; gap: 22px; }
+    .summary h1 { font-size: 34px; }
+    .pickup { grid-template-columns: minmax(0, 1fr); }
+    .record { grid-template-columns: minmax(0, 1fr) auto; }
+    .record time { grid-column: 1 / -1; }
+    .panel { top: auto; left: 0; right: 0; width: auto; max-height: 72%; border-left: 0; border-top: 1px solid var(--a-line); border-radius: 22px 22px 0 0; }
+    .panel::before { content: ""; position: sticky; top: 0; display: block; width: 40px; height: 4px; margin: 8px auto 0; border-radius: 2px; background: var(--a-line-strong); }
+    .panel summary.panel-title { font-size: 26px; padding-top: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .mk, .note { transition: none; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-brand" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M8 5v14M13 5v14M18 5v14"/><path d="M8 5v8M13 5v8" stroke-width="4"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+  <symbol id="i-shapes" viewBox="0 0 24 24"><circle cx="6.5" cy="16" r="3"/><circle cx="12" cy="7.5" r="3"/><circle cx="17.5" cy="16" r="3"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5v5h4l5 4v-13l-5 4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+  <symbol id="i-midi" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M7.8 12.2h.01M9.4 8.9h.01M12 7.6h.01M14.6 8.9h.01M16.2 12.2h.01M10 16.5h4" stroke-width="2.4"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 12v7.5h14V12"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.5A8 8 0 1 1 9.5 4.5a6.3 6.3 0 0 0 10 10z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5l11 6.5-11 6.5z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8.5 5.5v13M15.5 5.5v13" stroke-width="3"/></symbol>
+  <symbol id="i-loop" viewBox="0 0 24 24"><path d="M17 3l3 3-3 3"/><path d="M4 12V9.5A3.5 3.5 0 0 1 7.5 6H20"/><path d="M7 21l-3-3 3-3"/><path d="M20 12v2.5a3.5 3.5 0 0 1-3.5 3.5H4"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M6 5.5l9 6.5-9 6.5z"/><path d="M18.5 5.5v13"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><path d="M5.5 12h.01M12 12h.01M18.5 12h.01" stroke-width="3"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9.5" rx="2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/></symbol>
+  <symbol id="i-dice" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3.5"/><path d="M9 9h.01M15 15h.01M12 12h.01M15 9h.01M9 15h.01" stroke-width="2.6"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M10 7V4.5h4V7M6.5 7l1 13h9l1-13"/></symbol>
+</svg>
+
+<div class="viewer">
+  <header class="v-head">
+    <div>
+      <h1>Improv Coach Redesign</h1>
+      <p>Phase 1 mockups for approval. The app works: tap Start, Next step, End session, Change assignment, the hand and bar buttons.</p>
+    </div>
+    <div class="v-controls">
+      <div class="v-group">
+        <span class="v-label" id="lbl-screen">Screen</span>
+        <div class="v-seg" role="group" aria-labelledby="lbl-screen" id="v-screen">
+          <button data-screen="stage">Stage</button>
+          <button data-screen="focus">Focus session</button>
+          <button data-screen="summary">Summary</button>
+          <button data-screen="assignment">Assignment</button>
+          <button data-screen="history">History</button>
+        </div>
+      </div>
+      <div class="v-group">
+        <span class="v-label" id="lbl-device">Device</span>
+        <div class="v-seg" role="group" aria-labelledby="lbl-device" id="v-device">
+          <button data-device="desktop">Laptop</button>
+          <button data-device="tablet">Tablet</button>
+          <button data-device="phone">Phone</button>
+        </div>
+      </div>
+      <div class="v-group">
+        <span class="v-label" id="lbl-skin">Theme</span>
+        <div class="v-seg" role="group" aria-labelledby="lbl-skin" id="v-skin">
+          <button data-skin="studio">Studio</button>
+          <button data-skin="paper">Paper</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="v-main">
+    <div class="v-stage" id="v-stage">
+      <div class="v-wrap" id="v-wrap">
+        <div class="device" id="device" data-device="desktop">
+          <div class="screen">
+
+<!-- ================= THE APP ================= -->
+<div class="app coach-shell" id="app" data-skin="studio" data-session-status="idle" data-panel="none" data-history="collapsed" data-lens="both">
+  <header class="topbar">
+    <div class="brand"><svg class="i"><use href="#i-brand"/></svg><span>5-Minute Improv Coach</span></div>
+    <nav class="tools" aria-label="Tools">
+      <button class="tool" data-open="assignment" aria-expanded="false"><svg class="i"><use href="#i-sliders"/></svg><span>Change assignment</span></button>
+      <button class="tool"><svg class="i"><use href="#i-shapes"/></svg><span>Shapes &amp; scale</span></button>
+      <button class="tool"><svg class="i"><use href="#i-sound"/></svg><span>Sound</span></button>
+      <button class="tool" aria-label="MIDI keyboard: PSR-E473 connected"><svg class="i"><use href="#i-midi"/></svg><span>PSR-E473 <span class="sub">connected</span></span></button>
+      <i class="sep"></i>
+      <button class="tool" aria-label="Star"><svg class="i"><use href="#i-star"/></svg></button>
+      <button class="tool" aria-label="Share"><svg class="i"><use href="#i-share"/></svg></button>
+      <button class="tool" id="skin-toggle" aria-label="Switch to paper theme"><svg class="i"><use href="#i-sun"/></svg></button>
+    </nav>
+    <div class="focusbar">
+      <div class="clock"><span class="clock-total" role="timer" id="clock">3:41</span><span class="clock-label" id="clock-label">left of 5:00</span></div>
+      <div class="focus-actions">
+        <button class="btn" id="next-step"><svg class="i"><use href="#i-next"/></svg>Next step</button>
+        <button class="btn ghost" data-go="summary">End session</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="body">
+    <main class="stage" id="stage">
+      <section class="brief" aria-labelledby="feel">
+        <div>
+          <p class="eyebrow">Today · First Pop Improv in C</p>
+          <h1 class="feel" id="feel" data-testid="coach-feel">Bright and hopeful.</h1>
+          <p class="feel-sub">Your left hand keeps a steady octave pulse. Your right hand climbs four notes and lands back home.</p>
+          <div class="theory">
+            <span class="theory-tag">In theory</span>
+            <span data-testid="coach-sentence">C major. I–V–vi–IV. Pop 8ths (Root/Octave) underneath, 1 → 3 → 5 → 1, rising on top.</span>
+            <details class="why"><summary>Why it works</summary><p>Four chords that keep leaning forward and never quite settle. The tune is built from home-key notes, so it sits comfortably over every bar, and it sounds most at rest where it lands on a filled key.</p></details>
+          </div>
+        </div>
+        <div class="start-block">
+          <button class="btn primary big" data-go="focus"><svg class="i"><use href="#i-play"/></svg>Start 5 minutes</button>
+          <div class="seg" role="group" aria-label="Session length">
+            <button aria-pressed="false">2 min</button><button aria-pressed="true">5 min</button><button aria-pressed="false">10 min</button><button aria-pressed="false">Untimed</button>
+          </div>
+          <p class="hint">Six short steps: the whole thing, each hand, the chords, the tune, then your turn.</p>
+        </div>
+      </section>
+
+      <section class="summary" aria-labelledby="sum-title">
+        <div>
+          <p class="eyebrow">Session complete</p>
+          <h1 id="sum-title">Five minutes, played all the way through.</h1>
+          <p class="meta">First Pop Improv in C · 90 bpm · today at 8:19</p>
+          <div class="row">
+            <button class="btn primary big" data-go="focus">Again</button>
+            <button class="btn big">Same shapes, new key</button>
+            <button class="btn ghost big" data-go="stage">Back to the stage</button>
+          </div>
+        </div>
+        <div>
+          <ol class="done-steps">
+            <li>The whole thing <time>1:00</time></li>
+            <li>Left hand · looped bar 3 <time>0:45</time></li>
+            <li>Right hand <time>0:45</time></li>
+            <li>Chord by chord <time>1:00</time></li>
+            <li>Note by note · half speed <time>0:45</time></li>
+            <li>Your turn <time>0:45</time></li>
+          </ol>
+          <label class="field-label" for="sum-notes">Notes for next time</label>
+          <textarea id="sum-notes">Bar 3: the left-hand drop down to A still feels clunky. Try it slower tomorrow.</textarea>
+          <div class="row" style="margin-top:10px"><button class="btn">Save notes</button></div>
+        </div>
+      </section>
+
+      <section class="focus-head" aria-label="Session">
+        <ol class="rail" id="rail" aria-label="Session steps"></ol>
+        <div class="step-row">
+          <h2 class="step-title" id="step-title">Left hand</h2>
+          <span class="step-left" id="step-left">0:26 left in this step · 2 of 6</span>
+        </div>
+        <p class="instruction coach-instruction" id="instruction">Left hand alone. Select any bar that trips you up and loop it.</p>
+      </section>
+
+      <section class="hero" id="piano-visual-card" aria-label="Timeline and keyboard">
+        <div class="hero-controls">
+          <div class="transport">
+            <button class="btn" id="play"><svg class="i"><use href="#i-play"/></svg><span>Play</span></button>
+            <button class="btn" id="half" aria-pressed="false">Half speed</button>
+            <button class="btn" id="loop" aria-pressed="false"><svg class="i"><use href="#i-loop"/></svg><span>Loop</span></button>
+            <span class="tempo">90 bpm</span>
+          </div>
+          <div class="lenses">
+            <div class="seg" role="group" aria-label="Hands" id="lens">
+              <button data-lens="both">Both</button><button data-lens="lh">Left hand</button><button data-lens="rh">Right hand</button>
+            </div>
+            <div class="seg" role="group" aria-label="Breakdown" id="views">
+              <button data-view="whole">The whole thing</button><button data-view="hands">Hands apart</button><button data-view="chords">Chord by chord</button><button data-view="notes">Note by note</button>
+            </div>
+          </div>
+        </div>
+        <div class="roll"><div class="roll-inner" id="coach-timeline-slot"><div id="roll-svg"></div><div class="bars" role="group" aria-label="Bars" id="bars"></div></div></div>
+        <div class="keys piano-visual-wrapper" id="piano-visual"></div>
+        <p class="legend">
+          <span><svg viewBox="0 0 16 16"><circle class="sw-lh" cx="8" cy="8" r="6"/></svg>Left hand</span>
+          <span><svg viewBox="0 0 16 16"><circle class="sw-rh" cx="8" cy="8" r="6"/></svg>Right hand</span>
+          <span><svg viewBox="0 0 16 16"><circle class="sw-f" cx="8" cy="8" r="3.5"/><circle class="sw-r" cx="8" cy="8" r="6.2"/></svg>Home note of the chord</span>
+          <span><svg viewBox="0 0 16 16"><circle class="sw-f" cx="8" cy="8" r="5.5"/></svg>In the chord</span>
+          <span><svg viewBox="0 0 16 16"><circle class="sw-o" cx="8" cy="8" r="5"/></svg>In the key, safe to pass through</span>
+        </p>
+      </section>
+
+      <section class="history" id="history" aria-labelledby="practice-history-title">
+        <div class="history-head">
+          <h2 id="practice-history-title" tabindex="-1">Recent practice</h2>
+          <button class="btn ghost" id="history-toggle" aria-expanded="false">Full history</button>
+          <button class="btn icon ghost" id="history-more" aria-label="History options" aria-expanded="false"><svg class="i"><use href="#i-more"/></svg></button>
+          <div class="menu" id="history-menu" hidden>
+            <button>Export practice history</button>
+            <button>Import from a file</button>
+            <hr />
+            <button>Clear all history…</button>
+          </div>
+        </div>
+        <div class="pickup">
+          <div class="pick">
+            <p class="eyebrow">Pick up where you left off</p>
+            <p class="name">Hazy, late-night.</p>
+            <p>Lo-Fi Minor Loop in D · yesterday, stopped at Chord by chord</p>
+            <button class="btn">Carry on from chords</button>
+          </div>
+          <div class="pick">
+            <p class="eyebrow">Try next</p>
+            <p class="name">The same brightness, one key up.</p>
+            <p>You've played this in C three times this week. Same shapes, now in G.</p>
+            <button class="btn">Play it in G</button>
+          </div>
+        </div>
+        <ol class="records practice-history-list">
+          <li class="record practice-history-item">
+            <time>Today 8:14</time>
+            <div>
+              <div class="name">First Pop Improv in C</div>
+              <div class="status">Played all six steps · 5:00</div>
+              <div class="mini-rail" aria-hidden="true"><i class="on" style="--w:60"></i><i class="on" style="--w:45"></i><i class="on" style="--w:45"></i><i class="on" style="--w:60"></i><i class="on" style="--w:45"></i><i class="on" style="--w:45"></i></div>
+              <p class="note-text">Bar 3: the left-hand drop down to A still feels clunky.</p>
+            </div>
+            <button class="btn icon ghost" aria-label="Delete this record"><svg class="i"><use href="#i-trash"/></svg></button>
+          </li>
+          <li class="record practice-history-item">
+            <time>Yesterday 21:40</time>
+            <div>
+              <div class="name">Lo-Fi Minor Loop in D</div>
+              <div class="status practice-history-status-incomplete">Stopped at Chord by chord · 2:40</div>
+              <div class="mini-rail" aria-hidden="true"><i class="on" style="--w:60"></i><i class="on" style="--w:45"></i><i class="on" style="--w:45"></i><i style="--w:60"></i><i style="--w:45"></i><i style="--w:45"></i></div>
+            </div>
+            <button class="btn icon ghost" aria-label="Delete this record"><svg class="i"><use href="#i-trash"/></svg></button>
+          </li>
+          <li class="record practice-history-item">
+            <time>Thu 11 Sep</time>
+            <div>
+              <div class="name">12-Bar Minor Blues in A</div>
+              <div class="status">Played all six steps · 10:00</div>
+              <div class="mini-rail" aria-hidden="true"><i class="on" style="--w:60"></i><i class="on" style="--w:45"></i><i class="on" style="--w:45"></i><i class="on" style="--w:60"></i><i class="on" style="--w:45"></i><i class="on" style="--w:45"></i></div>
+              <p class="note-text">Let the right hand rest more. The gaps sounded better than the notes.</p>
+            </div>
+            <button class="btn icon ghost" aria-label="Delete this record"><svg class="i"><use href="#i-trash"/></svg></button>
+          </li>
+        </ol>
+      </section>
+    </main>
+
+    <button class="scrim" data-go="stage" aria-label="Close panel" tabindex="-1"></button>
+    <aside class="panel" aria-label="Assignment">
+      <button class="btn icon ghost close" data-go="stage" aria-label="Close"><svg class="i"><use href="#i-close"/></svg></button>
+      <details id="assignment-workspace" open>
+        <summary class="panel-title">Change the assignment</summary>
+        <p class="panel-lead">Pick how you want it to feel. Shape the details if you like.</p>
+        <div class="panel-body">
+          <div>
+            <p class="eyebrow">Start from a feel</p>
+            <ul class="presets">
+              <li><button class="preset" aria-pressed="true"><span class="f">Bright and hopeful</span><span class="n">First Pop Improv in C</span><span class="t">C · 90</span></button></li>
+              <li><button class="preset" aria-pressed="false"><span class="f">Hazy, late-night</span><span class="n">Lo-Fi Minor Loop in D</span><span class="t">Dm · 72</span></button></li>
+              <li><button class="preset" aria-pressed="false"><span class="f">Gritty and leaning</span><span class="n">12-Bar Minor Blues in A</span><span class="t">Am · 84</span></button></li>
+              <li><button class="preset" aria-pressed="false"><span class="f">Hushed and dreamy</span><span class="n">Billie Eyelash Mode</span><span class="t">Em · 68</span></button></li>
+              <li><button class="preset" aria-pressed="false"><span class="f">Smoky, always resolving</span><span class="n">Jazz ii–V–I in B♭</span><span class="t">B♭ · 96</span></button></li>
+              <li><button class="preset" aria-pressed="false"><span class="f">Bouncy, head-nodding</span><span class="n">Daft Ponk Loop</span><span class="t">F♯m · 116</span></button></li>
+            </ul>
+          </div>
+          <details class="shape" open>
+            <summary>Shape it yourself</summary>
+            <div class="field"><label for="f-key">Key</label><select id="f-key"><option>C</option><option>G</option><option>D</option></select><button class="btn icon lock" aria-pressed="true" aria-label="Lock key"><svg class="i"><use href="#i-lock"/></svg></button></div>
+            <div class="field"><label for="f-mode">Colour</label><select id="f-mode"><option>Major: open, bright</option><option>Dorian: cool, hopeful</option></select><button class="btn icon lock" aria-pressed="false" aria-label="Lock mode"><svg class="i"><use href="#i-lock"/></svg></button></div>
+            <div class="field"><label for="f-prog">Chords</label><select id="f-prog"><option>Pop 4 · I–V–vi–IV</option></select><button class="btn icon lock" aria-pressed="false" aria-label="Lock progression"><svg class="i"><use href="#i-lock"/></svg></button></div>
+            <div class="field"><label for="f-lh">Left hand</label><select id="f-lh"><option>Pop 8ths: root and octave</option></select><button class="btn icon lock" aria-pressed="false" aria-label="Lock left-hand pattern"><svg class="i"><use href="#i-lock"/></svg></button></div>
+            <div class="field"><label for="f-motif">Tune</label><select id="f-motif"><option>Pop hook · 1 3 5 1</option></select><button class="btn icon lock" aria-pressed="false" aria-label="Lock motif"><svg class="i"><use href="#i-lock"/></svg></button></div>
+            <div class="row" style="margin-top:8px">
+              <button class="btn" id="assignment-reroll"><svg class="i"><use href="#i-dice"/></svg>Surprise me</button>
+              <button class="btn icon" aria-label="Undo"><svg class="i"><use href="#i-undo"/></svg></button>
+              <button class="btn icon" aria-label="Redo"><svg class="i"><use href="#i-redo"/></svg></button>
+            </div>
+          </details>
+        </div>
+        <div class="panel-foot">
+          <button class="btn primary" data-go="stage">Apply assignment</button>
+          <small>The keyboard keeps playing while you choose. Nothing changes until you apply.</small>
+        </div>
+      </details>
+    </aside>
+  </div>
+</div>
+<!-- ================= /THE APP ================= -->
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="notes" id="notes" aria-live="polite"></aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const STEPS = [
+    { title: "The whole thing", instruction: "Listen once through, then play along with both hands.", w: 60, lens: "both", view: "whole" },
+    { title: "Left hand", instruction: "Left hand alone. Select any bar that trips you up and loop it.", w: 45, lens: "lh", view: "hands" },
+    { title: "Right hand", instruction: "Right hand alone, same idea: loop the hard bar until it is easy.", w: 45, lens: "rh", view: "hands" },
+    { title: "Chord by chord", instruction: "Copy each chord's shape as it comes round. The marked keys are the voicing.", w: 60, lens: "both", view: "chords" },
+    { title: "Note by note", instruction: "The motif at half speed. Follow the degrees, then play it from memory.", w: 45, lens: "rh", view: "notes" },
+    { title: "Your turn", instruction: "Improvise over the loop. Lean on the filled keys: they are this bar's chord.", w: 45, lens: "both", view: "whole" },
+  ];
+  const CHORDS = [
+    { name: "C", root: 0, pcs: [0, 4, 7], lh: 48 },
+    { name: "G", root: 7, pcs: [7, 11, 2], lh: 43 },
+    { name: "Am", root: 9, pcs: [9, 0, 4], lh: 45 },
+    { name: "F", root: 5, pcs: [5, 9, 0], lh: 41 },
+  ];
+  const SCALE = [0, 2, 4, 5, 7, 9, 11];
+  const BLACK = [1, 3, 6, 8, 10];
+  const DEG = { 0: "1", 1: "♭2", 2: "2", 3: "♭3", 4: "3", 5: "4", 6: "♯4", 7: "5", 8: "♭6", 9: "6", 10: "♭7", 11: "7" };
+  const DEVICES = { desktop: [1280, 800], tablet: [1024, 768], phone: [390, 844] };
+
+  const SCREENS = {
+    stage: { status: "idle", panel: "none", history: "collapsed", step: 1, lens: "both", view: "whole", loop: null, half: false, menu: false },
+    focus: { status: "running", panel: "none", history: "collapsed", step: 1, lens: "lh", view: "hands", loop: 2, half: true, menu: false },
+    summary: { status: "complete", panel: "none", history: "collapsed", step: 5, lens: "both", view: "whole", loop: null, half: false, menu: false },
+    assignment: { status: "idle", panel: "assignment", history: "collapsed", step: 1, lens: "both", view: "whole", loop: null, half: false, menu: false },
+    history: { status: "idle", panel: "none", history: "expanded", step: 1, lens: "both", view: "whole", loop: null, half: false, menu: true },
+  };
+
+  const NOTES = {
+    stage: {
+      title: "Stage",
+      purpose: "One job: hands on keys within ten seconds. How it should feel comes first, then what to do, and the theory stays one line below.",
+      decisions: [
+        "Feel headline set like an expression marking; theory kept visible in a quieter monospace line with “Why it works” on request.",
+        "Timeline and keyboard sit in one sunken keybed, the only lifted object. Controls around it are neutral ink.",
+        "Tools live in the top bar and open a side panel or bottom sheet. Nothing is pinned to the bottom edge; the page scrolls naturally.",
+        "Recent practice opens as a pick-up strip, gentle continuity with no streaks and no scores.",
+      ],
+      contracts: ["data-testid=\"coach-feel\" (new)", "data-testid=\"coach-sentence\" keeps the theory text", "#coach-timeline-slot inside #piano-visual-card", "one “Recent practice” heading"],
+    },
+    focus: {
+      title: "Focus session",
+      purpose: "App chrome disappears while the practice tools stay. Readable from the music stand.",
+      decisions: [
+        "Everything is driven by data-session-status on the shell; switching state never remounts audio, portals or the piano.",
+        "Step rail segment widths are the real step lengths: 60 / 45 / 45 / 60 / 45 / 45 seconds.",
+        "Kept: Pause/Resume, Half speed, Loop, Left hand / Right hand, bar buttons for looping, views, Next step, End session.",
+        "Hidden: tools, assignment editor, history, sound and star/share.",
+        "The hand lens dims the other hand's marks and notes instead of changing any control's colour.",
+      ],
+      contracts: ["role=\"timer\"", "“Pause” / “Resume” / “Half speed” / “Left hand”", "group “Bars” with “Bar 3, Am”", "“Next step” / “End session”"],
+    },
+    summary: {
+      title: "Summary",
+      purpose: "A calm close. It records what you did, not how well.",
+      decisions: [
+        "No score, no percentages: the steps played, what was looped, and your own note.",
+        "“Again” is the primary action; “Same shapes, new key” is the gentle push forward.",
+        "The keyboard stays live under the card, so free play can carry on (status complete).",
+      ],
+      contracts: ["“Save notes”", "record saved to Recent practice as today"],
+    },
+    assignment: {
+      title: "Assignment panel",
+      purpose: "Change what to play without leaving the instrument.",
+      decisions: [
+        "Presets are listed by feel first; the preset name and key sit underneath.",
+        "“Shape it yourself” keeps key, colour (mode), chords, left hand and tune, with locks, Surprise me (reroll) and undo/redo.",
+        "Laptop: a column beside the stage. Tablet: an overlay. Phone: a bottom sheet capped at 72% so the keys stay in sight.",
+      ],
+      contracts: ["<details id=\"assignment-workspace\"> + <summary>", "“Apply assignment”", "#assignment-reroll", "“Undo” / “Redo”"],
+    },
+    history: {
+      title: "History, expanded",
+      purpose: "The same Recent practice section, opened in place.",
+      decisions: [
+        "Expands in place rather than being copied into a panel, so there is only one heading, and a delete returns focus to a visible target.",
+        "Mini rails repeat the session rail: how far you got, never how well.",
+        "Export, import and clear live in the overflow menu, behind the existing confirmations.",
+      ],
+      contracts: ["heading “Recent practice” (single)", ".practice-history-item", "“Delete this record”", ".practice-history-status-incomplete"],
+    },
+  };
+
+  const S = { screen: "stage", device: "desktop", skin: "studio", status: "idle", panel: "none", history: "collapsed", step: 1, lens: "both", view: "whole", loop: null, half: false, menu: false };
+  const app = document.getElementById("app");
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const fmt = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+
+  function role(m, ch) {
+    const pc = m % 12;
+    if (pc === ch.root) return "root";
+    if (ch.pcs.includes(pc)) return "chord";
+    if (SCALE.includes(pc)) return "scale";
+    return null;
+  }
+
+  function keyboard(bar, played) {
+    const ch = CHORDS[bar % 4];
+    const W = 48, BW = 28;
+    const whites = [], blacks = [];
+    let wi = 0;
+    for (let m = 48; m <= 84; m++) {
+      if (BLACK.includes(m % 12)) blacks.push({ m, x: wi * W - BW / 2 });
+      else { whites.push({ m, x: wi * W }); wi++; }
+    }
+    const mark = (k, black) => {
+      const hand = k.m <= 60 ? "lh" : k.m >= 72 ? "rh" : null;
+      let out = "";
+      const cx = black ? k.x + BW / 2 : k.x + W / 2;
+      const c = `var(--on-${black ? "ebony" : "ivory"}-${hand})`;
+      if (played === k.m && hand) {
+        out += black
+          ? `<rect x="${k.x + 2.5}" y="2.5" width="${BW - 5}" height="109" rx="3" fill="none" stroke="${c}" stroke-width="4"/>`
+          : `<rect x="${k.x + 3.5}" y="3" width="${W - 7}" height="175" rx="4" fill="none" stroke="${c}" stroke-width="4"/>`;
+      }
+      const r = hand && role(k.m, ch);
+      if (!r) return out ? `<g class="mk ${hand}">${out}</g>` : "";
+      const cy = black ? 90 : 146, ly = black ? 66 : 118;
+      if (r === "root") out += `<circle cx="${cx}" cy="${cy}" r="8" fill="${c}"/><circle cx="${cx}" cy="${cy}" r="13.5" fill="none" stroke="${c}" stroke-width="3"/>`;
+      else if (r === "chord") out += `<circle cx="${cx}" cy="${cy}" r="10.5" fill="${c}"/>`;
+      else out += `<circle cx="${cx}" cy="${cy}" r="8.5" fill="none" stroke="${c}" stroke-width="2.5"/>`;
+      out += `<text class="${black ? "lbl-e" : "lbl-i"}" x="${cx}" y="${ly}">${DEG[(k.m % 12 - ch.root + 12) % 12]}</text>`;
+      return `<g class="mk ${hand}">${out}</g>`;
+    };
+    let s = `<svg viewBox="0 0 ${wi * W} 184" role="img" aria-label="Keyboard C3 to C6, showing bar ${bar + 1}, ${ch.name}">`;
+    whites.forEach((k) => {
+      s += `<rect class="kw piano-key white" x="${k.x + 0.5}" y="0.5" width="${W - 1}" height="182" rx="5"/>`;
+      if (k.m % 12 === 0) s += `<text class="kname" x="${k.x + W / 2}" y="176">C${k.m / 12 - 1}</text>`;
+      s += mark(k, false);
+    });
+    blacks.forEach((k) => { s += `<rect class="kb piano-key black" x="${k.x}" y="0" width="${BW}" height="114" rx="4"/>` + mark(k, true); });
+    return s + "</svg>";
+  }
+
+  function roll(loop, playBeat) {
+    const X = 20, y = (m) => (88 - m) * 3;
+    let s = `<svg viewBox="0 0 640 150" preserveAspectRatio="none" aria-hidden="true">`;
+    for (let b = 0; b < 32; b++) s += `<line class="${b % 4 ? "gl-beat" : "gl-bar"}" x1="${b * X}" x2="${b * X}" y1="0" y2="150"/>`;
+    if (loop !== null) s += `<rect class="loop" x="${loop * 80 + 1}" y="1" width="78" height="148"/>`;
+    for (let bar = 0; bar < 8; bar++) {
+      const ch = CHORDS[bar % 4];
+      for (let i = 0; i < 8; i++) {
+        const m = ch.lh + (i % 2 ? 12 : 0);
+        s += `<rect class="note lh ${role(m, ch)}" x="${(bar * 4 + i * 0.5) * X + 1.5}" y="${y(m) - 2.5}" width="7" height="5" rx="1"/>`;
+      }
+      [72, 76, 79, 84].forEach((m, j) => {
+        s += `<rect class="note rh ${role(m, ch)}" x="${(bar * 4 + j) * X + 2}" y="${y(m) - 3}" width="16" height="6" rx="1.5"/>`;
+      });
+    }
+    s += `<line class="ph coach-timeline-playhead" x1="${playBeat * X}" x2="${playBeat * X}" y1="0" y2="150"/>`;
+    return s + "</svg>";
+  }
+
+  function renderRail() {
+    $("rail").innerHTML = STEPS.map((st, i) => {
+      const p = i < S.step ? 100 : i === S.step ? Math.round((19 / st.w) * 100) : 0;
+      const cls = i < S.step ? "done" : "";
+      const cur = i === S.step ? ' aria-current="step"' : "";
+      return `<li class="${cls}" style="--w:${st.w};--p:${p}%"${cur}><span class="track"><span class="fill"></span></span><span class="lbl">${esc(st.title)}</span></li>`;
+    }).join("");
+  }
+
+  function render(scroll) {
+    Object.assign(app.dataset, { skin: S.skin, sessionStatus: S.status, panel: S.panel, history: S.history, lens: S.lens });
+
+    const dev = $("device");
+    dev.dataset.device = S.device;
+    fit();
+
+    for (const [grp, key] of [["v-screen", "screen"], ["v-device", "device"], ["v-skin", "skin"]]) {
+      $(grp).querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset[key] === S[key])));
+    }
+
+    const st = STEPS[S.step];
+    const start = STEPS.slice(0, S.step).reduce((a, x) => a + x.w, 0);
+    $("clock").textContent = fmt(300 - (start + 19));
+    $("clock-label").textContent = S.status === "paused" ? "Paused" : "left of 5:00";
+    $("step-title").textContent = st.title;
+    $("step-left").textContent = `${fmt(st.w - 19)} left in this step · ${S.step + 1} of 6`;
+    $("instruction").textContent = st.instruction;
+    renderRail();
+
+    const play = $("play");
+    const playLabel = S.status === "running" ? "Pause" : S.status === "paused" ? "Resume" : "Play";
+    play.querySelector("span").textContent = playLabel;
+    play.querySelector("use").setAttribute("href", S.status === "running" ? "#i-pause" : "#i-play");
+    $("half").setAttribute("aria-pressed", String(S.half));
+    $("loop").setAttribute("aria-pressed", String(S.loop !== null));
+    $("loop").querySelector("span").textContent = S.loop !== null ? `Loop bar ${S.loop + 1}` : "Loop";
+    $("lens").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lens === S.lens)));
+    $("views").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === S.view)));
+
+    const bar = S.loop ?? 0;
+    $("bars").innerHTML = Array.from({ length: 8 }, (_, i) => {
+      const name = CHORDS[i % 4].name;
+      return `<button class="coach-timeline-bar" data-bar="${i}" aria-label="Bar ${i + 1}, ${name}" aria-pressed="${S.loop === i}">${i + 1}<span>${name}</span></button>`;
+    }).join("");
+    const inSession = S.status === "running" || S.status === "paused";
+    $("roll-svg").innerHTML = roll(S.loop, inSession ? bar * 4 + 1.6 : 1.2);
+    $("piano-visual").innerHTML = keyboard(bar, inSession ? 57 : 48);
+
+    const toggle = $("history-toggle");
+    toggle.textContent = S.history === "expanded" ? "Show less" : "Full history";
+    toggle.setAttribute("aria-expanded", String(S.history === "expanded"));
+    $("history-menu").hidden = !S.menu;
+    $("history-more").setAttribute("aria-expanded", String(S.menu));
+    document.querySelector('[data-open="assignment"]').setAttribute("aria-expanded", String(S.panel === "assignment"));
+
+    const sk = $("skin-toggle");
+    sk.setAttribute("aria-label", S.skin === "studio" ? "Switch to paper theme" : "Switch to studio theme");
+    sk.querySelector("use").setAttribute("href", S.skin === "studio" ? "#i-sun" : "#i-moon");
+
+    const n = NOTES[S.screen];
+    $("notes").innerHTML = `
+      <div><h2>${n.title}</h2><p style="margin-top:6px">${esc(n.purpose)}</p></div>
+      <div><h3>Design decisions</h3><ul>${n.decisions.map((d) => `<li>${esc(d)}</li>`).join("")}</ul></div>
+      <div><h3>Contracts kept</h3><ul>${n.contracts.map((c) => `<li><code>${esc(c)}</code></li>`).join("")}</ul></div>
+      <p class="fine">Music in the timeline and on the keys is illustrative (bar chords C · G · Am · F). History rows and the connected keyboard are example data. Fonts are system stacks only, matching the production CSS budget.</p>`;
+
+    if (scroll) {
+      const stage = $("stage");
+      requestAnimationFrame(() => {
+        stage.scrollTop = S.screen === "history" ? $("history").offsetTop - 20 : 0;
+      });
+    }
+  }
+
+  function fit() {
+    const [w, h] = DEVICES[S.device];
+    const dev = $("device"), wrap = $("v-wrap"), host = $("v-stage");
+    const bezel = S.device === "tablet" ? 24 : S.device === "phone" ? 20 : 2;
+    dev.style.width = w + bezel + "px";
+    dev.style.height = h + bezel + "px";
+    const scale = Math.min(1, host.clientWidth / (w + bezel));
+    dev.style.transform = `scale(${scale})`;
+    wrap.style.width = (w + bezel) * scale + "px";
+    wrap.style.height = (h + bezel) * scale + "px";
+  }
+
+  function go(screen) {
+    Object.assign(S, SCREENS[screen], { screen });
+    render(true);
+  }
+
+  document.querySelector(".v-controls").addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.dataset.screen) go(b.dataset.screen);
+    if (b.dataset.device) { S.device = b.dataset.device; render(false); }
+    if (b.dataset.skin) { S.skin = b.dataset.skin; render(false); }
+  });
+
+  app.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.dataset.go) return go(b.dataset.go);
+    if (b.dataset.open === "assignment") return go(S.panel === "assignment" ? "stage" : "assignment");
+    if (b.id === "skin-toggle") { S.skin = S.skin === "studio" ? "paper" : "studio"; return render(false); }
+    if (b.id === "next-step") {
+      if (S.step >= 5) return go("summary");
+      S.step++;
+      S.lens = STEPS[S.step].lens; S.view = STEPS[S.step].view;
+      S.half = S.step === 4;
+      return render(false);
+    }
+    if (b.id === "play") {
+      if (S.status === "running") S.status = "paused";
+      else if (S.status === "paused") S.status = "running";
+      return render(false);
+    }
+    if (b.id === "half") { S.half = !S.half; return render(false); }
+    if (b.id === "loop") { S.loop = S.loop === null ? 0 : null; return render(false); }
+    if (b.dataset.lens) { S.lens = b.dataset.lens; return render(false); }
+    if (b.dataset.view) { S.view = b.dataset.view; return render(false); }
+    if (b.dataset.bar) { const i = Number(b.dataset.bar); S.loop = S.loop === i ? null : i; return render(false); }
+    if (b.id === "history-toggle") {
+      S.history = S.history === "expanded" ? "collapsed" : "expanded";
+      S.screen = S.history === "expanded" ? "history" : "stage";
+      S.menu = false;
+      return render(false);
+    }
+    if (b.id === "history-more") { S.menu = !S.menu; return render(false); }
+    if (b.classList.contains("preset")) {
+      b.closest(".presets").querySelectorAll(".preset").forEach((p) => p.setAttribute("aria-pressed", String(p === b)));
+    }
+    if (b.classList.contains("lock")) b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true"));
+  });
+
+  new ResizeObserver(fit).observe($("v-stage"));
+  render(false);
+})();
+</script>
+
+</body></html>

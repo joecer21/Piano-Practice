@@ -1,8 +1,9 @@
-import type { ReactNode, Ref } from "react";
+import type { Ref } from "react";
 import { createPortal } from "react-dom";
 import { describeChordFunction, describeMotifParts } from "../domain/describe.js";
 import type { Score } from "../domain/score.js";
 import type { Feel } from "./feel.js";
+import { Icon } from "./Icon.js";
 import type { LabelMode } from "./keyboard-overlay.js";
 import type { Lens, PracticeControls } from "./practice.js";
 import { Timeline } from "./Timeline.js";
@@ -12,89 +13,95 @@ import { BREAKDOWN_VIEWS, hasMotif } from "./views.js";
 type PracticePanelProps = {
   score: Score | null;
   /** What each hand does, in feel-first words, for the hands-apart view. */
-  handsFeel?: Feel["hands"] | null;
+  handsFeel?: Pick<Feel, "lh" | "rh"> | null;
   view: BreakdownView;
   controls: PracticeControls;
   labelMode: LabelMode;
   ready: boolean;
   playing: boolean;
   countInBeat: number | null;
+  tempoBpm?: number;
+  /** While a session runs the transport's main button pauses and resumes the session. */
+  sessionStatus?: "idle" | "running" | "paused" | "complete";
+  onPause?: () => void;
+  onResume?: () => void;
   /** The bar whose chord the chord-by-chord view is showing. */
   chordBar: number;
   activeMotifIndex: number;
   playheadRef: Ref<HTMLDivElement>;
-  sectionRef?: Ref<HTMLElement>;
-  /** Static hero slot that keeps the timeline beside the permanent keyboard. */
+  /** Static hero slots inside the keyboard card: controls above, detail below the keys. */
+  controlsContainer?: HTMLElement | null;
+  detailContainer?: HTMLElement | null;
   timelineContainer?: HTMLElement | null;
   onView: (view: BreakdownView) => void;
   onControls: (patch: Partial<PracticeControls>) => void;
   onLabelMode: (mode: LabelMode) => void;
   onTogglePlayback: () => void;
   onStepChord: (direction: 1 | -1) => void;
-  onChangeAssignment: () => void;
-  /** Star, share and reopen, shown with the other assignment actions. */
-  assignmentActions?: ReactNode;
 };
 
 const HAND_OPTIONS: ReadonlyArray<{ lens: Lens; label: string }> = [
+  { lens: "both", label: "Both" },
   { lens: "lh", label: "Left hand" },
   { lens: "rh", label: "Right hand" },
-  { lens: "both", label: "Together" },
 ];
 
+/**
+ * The practice controls of the hero: transport, hands, views and key labels above
+ * the timeline, and the current view's detail below the keys. They are portalled
+ * into the keyboard card so the instrument and its controls read as one object.
+ */
 export function PracticePanel(props: PracticePanelProps) {
   const { score, view, controls, labelMode, ready, playing, countInBeat, playheadRef } = props;
   const motifMissing = !!score && view === "notes" && !hasMotif(score);
+  const status = props.sessionStatus ?? "idle";
+  const inSession = status === "running" || status === "paused";
 
-  return (
-    <section
-      id="coach-practice"
-      ref={props.sectionRef}
-      className="coach-practice-panel"
-      aria-label="Practice"
-    >
-      <div className="coach-segmented coach-views" role="group" aria-label="Breakdown">
-        {BREAKDOWN_VIEWS.map((option) => (
-          <button
-            key={option.view}
-            type="button"
-            aria-pressed={view === option.view}
-            onClick={() => props.onView(option.view)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="coach-transport">
+  const segmented = <T extends string>(
+    label: string,
+    options: ReadonlyArray<{ value: T; label: string }>,
+    current: T,
+    select: (value: T) => void,
+    className = "",
+  ) => (
+    <div className={`coach-segmented ${className}`} role="group" aria-label={label}>
+      {options.map((option) => (
         <button
+          key={option.value}
           type="button"
-          className="coach-play"
-          disabled={!ready || motifMissing}
-          aria-pressed={playing}
-          onClick={props.onTogglePlayback}
+          aria-pressed={current === option.value}
+          onClick={() => select(option.value)}
         >
-          {playing ? "Stop" : "Play"}
+          {option.label}
         </button>
-        <span className="coach-count-in" aria-hidden="true">
-          {countInBeat != null ? `Count-in ${countInBeat}` : ""}
-        </span>
+      ))}
+    </div>
+  );
 
-        {view === "hands" ? (
-          <div className="coach-segmented" role="group" aria-label="Hands">
-            {HAND_OPTIONS.map((option) => (
-              <button
-                key={option.lens}
-                type="button"
-                aria-pressed={controls.lens === option.lens}
-                onClick={() => props.onControls({ lens: option.lens })}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        ) : null}
-
+  const heroControls = (
+    <div className="coach-hero-bar">
+      <div className="coach-transport">
+        {inSession ? (
+          <button
+            type="button"
+            className="coach-play"
+            onClick={status === "running" ? props.onPause : props.onResume}
+          >
+            <Icon name={status === "running" ? "pause" : "play"} />
+            {status === "running" ? "Pause" : "Resume"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="coach-play"
+            disabled={!ready || motifMissing}
+            aria-pressed={playing}
+            onClick={props.onTogglePlayback}
+          >
+            <Icon name={playing ? "pause" : "play"} />
+            {playing ? "Stop" : "Play"}
+          </button>
+        )}
         <button
           type="button"
           className="coach-toggle"
@@ -109,49 +116,66 @@ export function PracticePanel(props: PracticePanelProps) {
           aria-pressed={controls.loop}
           onClick={() => props.onControls({ loop: !controls.loop })}
         >
+          <Icon name="loop" />
           Loop
         </button>
-
-        <div className="coach-segmented" role="group" aria-label="Key labels">
-          <button
-            type="button"
-            aria-pressed={labelMode === "degrees"}
-            onClick={() => props.onLabelMode("degrees")}
-          >
-            Degrees
-          </button>
-          <button
-            type="button"
-            aria-pressed={labelMode === "letters"}
-            onClick={() => props.onLabelMode("letters")}
-          >
-            Letters
-          </button>
-        </div>
+        {props.tempoBpm ? <span className="coach-tempo">{props.tempoBpm} bpm</span> : null}
+        <span className="coach-count-in" aria-hidden="true">
+          {countInBeat != null ? `Count-in ${countInBeat}` : ""}
+        </span>
       </div>
+      <div className="coach-lenses">
+        {segmented(
+          "Hands",
+          HAND_OPTIONS.map((option) => ({ value: option.lens, label: option.label })),
+          controls.lens,
+          (lens) => props.onControls({ lens }),
+        )}
+        {segmented(
+          "Breakdown",
+          BREAKDOWN_VIEWS.map((option) => ({ value: option.view, label: option.label })),
+          view,
+          props.onView,
+          "coach-views",
+        )}
+        {segmented(
+          "Key labels",
+          [
+            { value: "degrees" as LabelMode, label: "Degrees" },
+            { value: "letters" as LabelMode, label: "Letters" },
+          ],
+          labelMode,
+          props.onLabelMode,
+        )}
+      </div>
+    </div>
+  );
 
-      {score ? <ViewDetail {...props} score={score} /> : null}
+  const detail = score ? <ViewDetail {...props} score={score} /> : null;
+  const timeline = score ? (
+    <Timeline
+      score={score}
+      lens={controls.lens}
+      focusBar={controls.focusBar}
+      onSelectBar={(focusBar) => props.onControls({ focusBar })}
+      playheadRef={playheadRef}
+    />
+  ) : null;
 
-      {score
-        ? (() => {
-            const timeline = (
-              <Timeline
-                score={score}
-                lens={controls.lens}
-                focusBar={controls.focusBar}
-                onSelectBar={(focusBar) => props.onControls({ focusBar })}
-                playheadRef={playheadRef}
-              />
-            );
-            return props.timelineContainer ? createPortal(timeline, props.timelineContainer) : timeline;
-          })()
-        : null}
-
-      {props.assignmentActions}
-
-      <button type="button" className="coach-link coach-change" onClick={props.onChangeAssignment}>
-        Change the assignment
-      </button>
+  if (props.controlsContainer && props.detailContainer && props.timelineContainer) {
+    return (
+      <>
+        {createPortal(heroControls, props.controlsContainer)}
+        {timeline ? createPortal(timeline, props.timelineContainer) : null}
+        {detail ? createPortal(detail, props.detailContainer) : null}
+      </>
+    );
+  }
+  return (
+    <section id="coach-practice" className="coach-practice-panel" aria-label="Practice">
+      {heroControls}
+      {timeline}
+      {detail}
     </section>
   );
 }
@@ -192,7 +216,7 @@ function ViewDetail(props: PracticePanelProps & { score: Score }) {
     if (!motif) {
       return (
         <p className="coach-detail coach-hint">
-          This assignment has no motif. Change the assignment to add one.
+          This assignment has no tune. Change the assignment to add one.
         </p>
       );
     }

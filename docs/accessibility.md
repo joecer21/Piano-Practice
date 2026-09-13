@@ -42,7 +42,7 @@ Found and fixed:
 - **Focus obscured by the bottom sheet.** On phones the modeless tool sheet covers up to 70% of the viewport. Shift-tabbing through the Stage behind it left nine controls (Play, Loop, the key-label toggle, Full history…) underneath it. The sheet's live height now sets `scroll-padding-bottom` and matching page padding (`trackBottomSheetHeight` in `coach/sticky-offset.ts`).
 - **Focus lost when the session changes state.** _Start_, _Finish_ and _End session_ disappear when pressed. When focus falls back to the page, it now moves to _Pause_, the summary heading or _Start_. Focus the player has put elsewhere, such as on a timeline bar, is never moved.
 
-Focus mode hides chrome with `display: none`, so hidden controls leave the tab order and the accessibility tree together. The feel headline is a paragraph, not a heading, because its wording changes with every assignment. The theory sentence stays visible and is still read straight after it.
+Focus mode hides chrome with `display: none`, so hidden controls leave the tab order and the accessibility tree together. The feel headline is the Stage's heading, followed by the hands line and the theory sentence. While practising, the step name is the heading, and the clock is a timer in the header. Recent practice expands in place, so focus returned after a delete or clear lands on its visible heading.
 
 ## Manual screen-reader checklist
 

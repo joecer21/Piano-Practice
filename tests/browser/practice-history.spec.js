@@ -80,7 +80,7 @@ test("history can be annotated, deleted and cleared by keyboard without losing f
   await page.keyboard.press("Enter");
   await expect(page.locator(".practice-history-item")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Recent practice" })).toBeFocused();
-  await expect(page.locator(".practice-history-tools [role=status]")).toHaveText("Practice record deleted.");
+  await expect(page.locator(".practice-history-message")).toHaveText("Practice record deleted.");
 
   // Clearing behaves the same way.
   await page.getByRole("button", { name: "Start 5 minutes" }).click();

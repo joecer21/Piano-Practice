@@ -24,7 +24,7 @@ test("loads, generates, plays, stops, and switches piano models", async ({ page 
   const initialKey = await page.locator("#key-select").inputValue();
   const initialSeed = await page.locator("#assignment-seed").textContent();
   await page.getByRole("button", { name: "Lock key" }).click();
-  await page.getByRole("button", { name: "Reroll unlocked" }).click();
+  await page.getByRole("button", { name: "Surprise me" }).click();
   await expect(page.locator("#key-select")).toHaveValue(initialKey);
   await expect(page.locator("#assignment-seed")).not.toHaveText(initialSeed || "");
   await expect(page.getByRole("button", { name: "Undo" })).toBeEnabled();
@@ -63,7 +63,7 @@ test("loads, generates, plays, stops, and switches piano models", async ({ page 
   );
 
   const livePiano = page.locator("#piano-visual");
-  await expect(page.getByRole("heading", { name: "Keyboard", exact: true })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Keyboard", exact: true })).toBeVisible();
   await expect(livePiano.locator(".piano-key")).toHaveCount(testInfo.project.name === "mobile" ? 25 : 53);
   const middleC = livePiano.locator('[data-note="C4"]');
   await middleC.scrollIntoViewIfNeeded();

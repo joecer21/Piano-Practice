@@ -10,7 +10,9 @@ test("the Stage keeps one history section and portals the timeline into the keyb
   await expect(page.getByRole("heading", { name: "Recent practice" })).toHaveCount(1);
   await expect(page.locator("#practice-history-details")).toBeHidden();
   await expandPracticeHistory(page);
-  await expect(page.locator("#coach-tool-panel #practice-history-details")).toBeVisible();
+  // Opened in place on the Stage, never copied into the tool panel.
+  await expect(page.locator(".coach-stage #practice-history-details")).toBeVisible();
+  await expect(page.locator("#coach-tool-panel")).toBeHidden();
 });
 
 test("the modeless tool surface opens its requested disclosure and returns focus on Escape", async ({
@@ -30,7 +32,7 @@ test("the modeless tool surface opens its requested disclosure and returns focus
   await expect(trigger).toBeFocused();
 });
 
-test("the narrow tool surface is a bottom sheet capped at 70vh that leaves the piano visible", async ({
+test("the narrow tool surface is a bottom sheet capped at 72vh that leaves the piano visible", async ({
   page,
 }) => {
   for (const viewport of [
@@ -53,7 +55,7 @@ test("the narrow tool surface is a bottom sheet capped at 70vh that leaves the p
       };
     });
     expect(Math.abs(geometry.bottomGap)).toBeLessThanOrEqual(1);
-    expect(geometry.height).toBeLessThanOrEqual(geometry.viewportHeight * 0.7 + 1);
+    expect(geometry.height).toBeLessThanOrEqual(geometry.viewportHeight * 0.72 + 1);
     expect(geometry.pageOverflow).toBeLessThanOrEqual(0);
     expect(geometry.visiblePianoHeight).toBeGreaterThan(44);
   }

@@ -8,3 +8,5 @@ audits/musical/report.md
 package-lock.json
 playwright-pwa-builds
 playwright-smoke-report
+
+docs/design-reference

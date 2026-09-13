@@ -2,45 +2,79 @@ import type { ReactNode } from "react";
 import { Icon } from "./Icon.js";
 import type { IconName } from "./Icon.js";
 
-export type ToolId = "assignment" | "reference" | "sound" | "input" | "library" | "history";
+export type ToolId = "assignment" | "reference" | "sound" | "input" | "library";
 
-const TOOLS: ReadonlyArray<{ id: ToolId | "explore"; label: string; icon: IconName }> = [
+const TOOLS: ReadonlyArray<{ id: Exclude<ToolId, "library">; label: string; icon: IconName }> = [
   { id: "assignment", label: "Change assignment", icon: "sliders" },
-  { id: "explore", label: "Explore", icon: "explore" },
-  { id: "reference", label: "Scale & shape", icon: "scale" },
+  { id: "reference", label: "Shapes & scale", icon: "shapes" },
   { id: "sound", label: "Sound", icon: "sound" },
-  { id: "input", label: "MIDI & input", icon: "midi" },
-  { id: "library", label: "Star & share", icon: "star" },
+  { id: "input", label: "MIDI", icon: "midi" },
 ];
+
+const PANEL_TITLES: Record<ToolId, string> = {
+  assignment: "Change assignment",
+  reference: "Shapes & scale",
+  sound: "Sound",
+  input: "MIDI keyboard",
+  library: "Star & share",
+};
 
 export function ToolRail({
   active,
   onSelect,
-  onExplore,
+  onShare,
+  midiDevice,
 }: {
   active: ToolId | null;
   onSelect(tool: ToolId): void;
-  onExplore(): void;
+  onShare(): void;
+  /** The connected MIDI keyboard's name, shown in place of "MIDI". */
+  midiDevice: string | null;
 }) {
+  const trigger = (id: ToolId) => ({
+    type: "button" as const,
+    "data-tool-trigger": id,
+    "aria-controls": "coach-tool-panel",
+    "aria-expanded": active === id,
+    onClick: () => onSelect(id),
+  });
   return (
     <nav className="coach-tool-rail" aria-label="Coach tools">
-      {TOOLS.map((tool) => {
-        const selected = tool.id !== "explore" && active === tool.id;
-        return (
-          <button
-            key={tool.id}
-            type="button"
-            className="coach-tool-trigger"
-            data-tool-trigger={tool.id}
-            aria-controls={tool.id === "explore" ? "coach-practice" : "coach-tool-panel"}
-            aria-expanded={tool.id === "explore" ? undefined : selected}
-            onClick={() => (tool.id === "explore" ? onExplore() : onSelect(tool.id))}
-          >
-            <Icon name={tool.icon} />
+      {TOOLS.map((tool) => (
+        <button
+          key={tool.id}
+          className="coach-tool-trigger"
+          {...trigger(tool.id)}
+          aria-label={
+            tool.id === "input" && midiDevice ? `MIDI keyboard: ${midiDevice} connected` : undefined
+          }
+        >
+          <Icon name={tool.icon} />
+          {tool.id === "input" && midiDevice ? (
+            <span>
+              {midiDevice} <span className="coach-tool-sub">connected</span>
+            </span>
+          ) : (
             <span>{tool.label}</span>
-          </button>
-        );
-      })}
+          )}
+        </button>
+      ))}
+      <i className="coach-tool-sep" aria-hidden="true" />
+      <button
+        className="coach-tool-trigger coach-tool-icon"
+        {...trigger("library")}
+        aria-label="Star & share"
+      >
+        <Icon name="star" />
+      </button>
+      <button
+        type="button"
+        className="coach-tool-trigger coach-tool-icon"
+        aria-label="Share link"
+        onClick={onShare}
+      >
+        <Icon name="share" />
+      </button>
     </nav>
   );
 }
@@ -53,7 +87,6 @@ export function ToolPanel({
   sound,
   input,
   library,
-  onHistoryContainer,
 }: {
   active: ToolId | null;
   onClose(): void;
@@ -62,28 +95,19 @@ export function ToolPanel({
   sound: ReactNode;
   input: ReactNode;
   library: ReactNode;
-  onHistoryContainer(container: HTMLDivElement | null): void;
 }) {
-  const content: Record<ToolId, ReactNode> = {
-    assignment,
-    reference,
-    sound,
-    input,
-    library,
-    history: <div ref={onHistoryContainer} />,
-  };
-  const label =
-    active === "history" ? "Practice history" : (TOOLS.find((tool) => tool.id === active)?.label ?? "Tools");
+  const content: Record<ToolId, ReactNode> = { assignment, reference, sound, input, library };
 
   return (
     <aside
       id="coach-tool-panel"
       className="coach-tool-panel"
       aria-labelledby="coach-tool-panel-title"
+      data-active-tool={active ?? undefined}
       hidden={active === null}
     >
       <div className="coach-tool-panel-head">
-        <h2 id="coach-tool-panel-title">{label}</h2>
+        <h2 id="coach-tool-panel-title">{active ? PANEL_TITLES[active] : "Tools"}</h2>
         <button type="button" className="coach-tool-close" aria-label="Close tools" onClick={onClose}>
           <Icon name="close" />
         </button>

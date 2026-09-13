@@ -39,7 +39,7 @@ test("Live Piano exposes accessible controls and a phone-friendly range", async 
   await expect(middleC).not.toHaveAttribute("data-played");
 
   await openAssignmentDrawer(page);
-  await page.locator("#preset-select").focus();
+  await page.locator("#key-select").focus();
   await page.keyboard.down("s");
   await expect(piano.locator('[data-note="D4"]')).not.toHaveAttribute("data-played");
   await page.keyboard.up("s");

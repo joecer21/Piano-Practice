@@ -34,7 +34,7 @@ export function ThemeToggle({ doc = document }: { doc?: Document }) {
   return (
     <button
       type="button"
-      className="coach-theme-toggle"
+      className="coach-theme-toggle coach-tool-trigger coach-tool-icon"
       aria-label={`Switch to ${THEME_LABELS[next].toLowerCase()} theme`}
       onClick={() => {
         applyTheme(next, doc);
@@ -43,7 +43,6 @@ export function ThemeToggle({ doc = document }: { doc?: Document }) {
       }}
     >
       <Icon name={next === "paper" ? "sun" : "moon"} />
-      <span>{THEME_LABELS[next]}</span>
     </button>
   );
 }

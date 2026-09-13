@@ -70,17 +70,20 @@
 
   .coach-stage {
     min-width: 0;
+    width: min(100%, 70rem);
+    margin-inline: auto;
+    padding-top: clamp(1.4rem, 3vw, 2.25rem);
   }
 
-  .coach-stage-intro {
-    padding-top: clamp(var(--space-6), 4vw, 3rem);
-  }
-
-  /* Sections below the keyboard share one vertical rhythm. */
-  /* Margins rather than grid gap: the always-present, usually empty update live
-     region comes first and must stay rendered without adding a gap of its own. */
+  /* Brief, hero and Recent practice share one generous rhythm. Margins rather than
+     grid gap: the usually empty update live region must not add a gap of its own. */
+  .coach-stage > * + *,
   .coach-root > * + * {
-    margin-top: var(--space-4);
+    margin-top: 2rem;
+  }
+
+  .coach-root > :empty {
+    margin: 0;
   }
 
   .coach-panel-host {
@@ -138,7 +141,7 @@
       right: 0;
       bottom: 0;
       left: 0;
-      max-height: 70vh;
+      max-height: 72vh;
     }
 
     /* The sheet is modeless: focus can stay on the Stage behind it, so scrolling

@@ -7,35 +7,41 @@ import { SCALE_PATTERNS } from "../theory.js";
 
 const feelFor = (inputs) =>
   describeFeel(buildScore(generateAssignment({ ...DEFAULT_ASSIGNMENT_INPUTS, ...inputs })));
-const presets = Array.isArray(PRESET_CONFIGS) ? PRESET_CONFIGS : Object.values(PRESET_CONFIGS);
 
 describe("feel-first wording", () => {
   it("leads the first assignment with how it feels, not what it is called", () => {
     const feel = feelFor({});
-    expect(feel.headline).toBe("Bright and open, a loop that circles back to the start.");
-    expect(feel.hands.lh).toBe("Left hand moves in quick, even notes, low and out of the way.");
-    expect(feel.hands.rh).toBe("Right hand sings a two-bar phrase that climbs and lands.");
-  });
-
-  it("tells the harmony's journey from where each chord sits relative to home", () => {
-    expect(feelFor({ progressionPresetId: "basic-cadence" }).headline).toMatch(/always comes home\.$/);
-    expect(feelFor({ progressionPresetId: "doo-wop" }).headline).toMatch(/pulls you round again\.$/);
-    expect(feelFor({ progressionPresetId: "jazz-251" }).headline).toMatch(/starting away from home/);
-    expect(feelFor({ progressionPresetId: "modal-vamp" }).headline).toMatch(/two-chord groove\.$/);
-    expect(feelFor(presets.find((preset) => preset.id === "blues-a")).headline).toBe(
-      "Smoky and gritty, a twelve-bar walk away from home and back.",
+    expect(feel.headline).toBe("Bright and hopeful.");
+    expect(feel.lh).toBe("Your left hand moves in quick, even notes.");
+    expect(feel.rh).toBe("Your right hand sings a two-bar phrase that climbs and lands.");
+    expect(feel.why).toBe(
+      "The chords make a loop that circles back to the start. The tune uses only notes from the key, so it sits comfortably over every bar, and it sounds most at rest where it lands on a filled key.",
     );
   });
 
+  it("tells the harmony's journey from where each chord sits relative to home", () => {
+    expect(feelFor({ progressionPresetId: "basic-cadence" }).why).toMatch(
+      /^The chords make a loop that always comes home\./,
+    );
+    expect(feelFor({ progressionPresetId: "doo-wop" }).why).toMatch(/pulls you round again\./);
+    expect(feelFor({ progressionPresetId: "jazz-251" }).why).toMatch(/start away from home/);
+    expect(feelFor({ progressionPresetId: "modal-vamp" }).why).toMatch(/two-chord groove\./);
+    const blues = feelFor(PRESET_CONFIGS.find((preset) => preset.id === "blues-a"));
+    expect(blues.headline).toBe("Smoky and gritty.");
+    expect(blues.why).toMatch(/^The chords take a twelve-bar walk away from home and back\./);
+  });
+
   it("gives every mode its own mood", () => {
-    const moods = Object.keys(SCALE_PATTERNS).map((mode) => feelFor({ mode }).headline.split(",")[0]);
+    const moods = Object.keys(SCALE_PATTERNS).map((mode) => feelFor({ mode }).headline);
     expect(new Set(moods).size).toBe(moods.length);
   });
 
   it("hears how busy the left hand is and whether the tune leans off the beat", () => {
-    expect(feelFor({ lhId: "block" }).hands.lh).toMatch(/^Left hand holds long chords/);
-    expect(feelFor({ motifId: "funk-sync" }).hands.rh).toMatch(/leaning off the beat\.$/);
-    expect(feelFor({ motifId: "scalar-run-8ths" }).hands.rh).not.toMatch(/off the beat/);
+    expect(feelFor({ lhId: "block" }).lh).toMatch(/^Your left hand holds long chords/);
+    expect(feelFor({ motifId: "funk-sync" }).rh).toMatch(/leaning off the beat\.$/);
+    expect(feelFor({ motifId: "scalar-run-8ths" }).rh).not.toMatch(/off the beat/);
+    expect(feelFor({ motifId: "none" }).rh).toBeNull();
+    expect(feelFor({ motifId: "none" }).why).toMatch(/Your right hand is free/);
   });
 
   it("scores syncopation per beat, so straight eighths are not mistaken for offbeats", () => {
@@ -45,9 +51,9 @@ describe("feel-first wording", () => {
   });
 
   it("never falls back on theory vocabulary for any preset", () => {
-    for (const preset of presets) {
+    for (const preset of PRESET_CONFIGS) {
       const feel = feelFor(preset);
-      for (const line of [feel.headline, feel.hands.lh, feel.hands.rh ?? ""]) {
+      for (const line of [feel.headline, feel.lh, feel.rh ?? "", feel.why]) {
         expect(line).not.toMatch(/major|minor|pentatonic|blues|dominant|tonic|\b[iv]+\b/i);
       }
       expect(feel.headline).toMatch(/^[A-Z][^.]+\.$/);

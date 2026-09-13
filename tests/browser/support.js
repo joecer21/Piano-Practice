@@ -3,26 +3,26 @@
  * Open it by its visible summary so tests exercise the real path.
  */
 export async function openAssignmentDrawer(page) {
-  await openTool(page, "Change assignment", "assignment");
+  await openTool(page, "assignment");
   await waitForOpenDetails(page, "#assignment-workspace");
 }
 
 export async function openSoundSettings(page) {
-  await openTool(page, "Sound", "sound");
+  await openTool(page, "sound");
   await waitForOpenDetails(page, "#settings-drawer");
 }
 
 export async function openScaleReference(page) {
-  await openTool(page, "Scale & shape", "reference");
+  await openTool(page, "reference");
   await waitForOpenDetails(page, "#scale-reference");
 }
 
 export async function openMidiInput(page) {
-  await openTool(page, "MIDI & input", "input");
+  await openTool(page, "input");
 }
 
 export async function openLibraryTools(page) {
-  await openTool(page, "Star & share", "library");
+  await openTool(page, "library");
 }
 
 export async function expandPracticeHistory(page) {
@@ -36,10 +36,12 @@ export async function openHistoryOptions(page) {
   if (!(await options.evaluate((element) => element.open))) await options.locator("summary").click();
 }
 
-async function openTool(page, name, tool) {
+async function openTool(page, tool) {
   const panel = page.locator("#coach-tool-panel");
   if (!(await panel.isVisible()) || (await panel.locator(`[data-tool="${tool}"]`).isHidden())) {
-    await page.locator(".coach-tool-rail").getByRole("button", { name, exact: true }).click();
+    // By trigger, not visible label: the MIDI tool names the connected keyboard, and
+    // narrow screens show icons only.
+    await page.locator(`.coach-tool-rail [data-tool-trigger="${tool}"]`).click();
   }
   await panel.locator(`[data-tool="${tool}"]`).waitFor({ state: "visible" });
 }

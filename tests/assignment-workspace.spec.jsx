@@ -48,7 +48,7 @@ function renderWorkspace(editor = createEditor()) {
 describe("AssignmentWorkspace", () => {
   it("renders the complete catalog and explains motif availability", () => {
     const { editor } = renderWorkspace();
-    const progression = screen.getByLabelText("Chord progression");
+    const progression = screen.getByLabelText("Chords");
     expect(progression.options).toHaveLength(PROGRESSION_PRESETS.length + 1);
     PROGRESSION_PRESETS.forEach((preset) => {
       const option = [...progression.options].find((candidate) => candidate.value === preset.id);
@@ -56,10 +56,10 @@ describe("AssignmentWorkspace", () => {
     });
     expect([...progression.options].at(-1).textContent).toMatch(/Custom progression/);
     expect(screen.getByText("variation-7")).toBeTruthy();
-    expect(screen.getByText("ID 00abc123")).toBeTruthy();
+    expect(screen.getByText(/ID 00abc123/)).toBeTruthy();
 
-    fireEvent.change(screen.getByLabelText("Scale or mode"), { target: { value: "majorBlues" } });
-    const motif = screen.getByLabelText("Motif");
+    fireEvent.change(screen.getByLabelText("Colour"), { target: { value: "majorBlues" } });
+    const motif = screen.getByLabelText("Tune");
     expect([...motif.options].find((option) => option.value === "funk-sync").disabled).toBe(true);
     expect([...motif.options].find((option) => option.value === "funk-sync-6").disabled).toBe(false);
     expect(editor.apply).not.toHaveBeenCalled();
@@ -88,7 +88,7 @@ describe("AssignmentWorkspace", () => {
 
   it("treats an empty custom progression as a recoverable draft", () => {
     const { editor } = renderWorkspace();
-    fireEvent.change(screen.getByLabelText("Chord progression"), { target: { value: "custom" } });
+    fireEvent.change(screen.getByLabelText("Chords"), { target: { value: "custom" } });
     expect(screen.getByRole("alert").textContent).toContain("Add at least one chord");
     expect(screen.getByRole("button", { name: "Apply assignment" }).disabled).toBe(true);
 
@@ -103,8 +103,8 @@ describe("AssignmentWorkspace", () => {
 
   it("shows the style-aware chord quality in a custom palette and preview", () => {
     renderWorkspace();
-    fireEvent.change(screen.getByLabelText("Style and voicing"), { target: { value: "jazz" } });
-    fireEvent.change(screen.getByLabelText("Chord progression"), { target: { value: "custom" } });
+    fireEvent.change(screen.getByLabelText("Style"), { target: { value: "jazz" } });
+    fireEvent.change(screen.getByLabelText("Chords"), { target: { value: "custom" } });
 
     const palette = screen.getByRole("group", { name: "Custom progression (0 bars)" });
     fireEvent.click(within(palette).getByRole("button", { name: "ii7" }));
@@ -115,12 +115,12 @@ describe("AssignmentWorkspace", () => {
     const editor = createEditor({ canRedo: true });
     renderWorkspace(editor);
 
-    fireEvent.change(screen.getByLabelText("Preset"), { target: { value: "blues-a" } });
+    fireEvent.click(screen.getByRole("button", { name: /Gritty and leaning/ }));
     expect(editor.applyPreset).toHaveBeenCalledWith("blues-a");
 
     fireEvent.click(screen.getByRole("button", { name: "Lock key" }));
     expect(editor.toggleLock).toHaveBeenCalledWith("key");
-    fireEvent.click(screen.getByRole("button", { name: "Reroll unlocked" }));
+    fireEvent.click(screen.getByRole("button", { name: "Surprise me" }));
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
     fireEvent.click(screen.getByRole("button", { name: "Redo" }));
     expect(editor.reroll).toHaveBeenCalledOnce();

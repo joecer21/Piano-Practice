@@ -70,12 +70,10 @@ test("land, start five minutes, then loop bar 3 with the left hand at half speed
     .evaluateAll((keys) => [...new Set(keys.map((key) => key.dataset.note.replace(/-?\d+$/, "")))]);
   expect(rootNotes).toHaveLength(1);
 
+  // In a session the transport's main button pauses the session and its music.
   await page.getByRole("button", { name: "Pause" }).click();
   await expect(page.getByRole("button", { name: "Resume" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Play", exact: true })).toHaveAttribute(
-    "aria-pressed",
-    "false",
-  );
+  await expect(page.locator(".coach-timeline-playhead")).toBeHidden();
   expect(pageErrors).toEqual([]);
 });
 
@@ -184,15 +182,15 @@ test("a guided session walks the breakdown views and ends with a summary", async
 
   await page.getByRole("button", { name: "Next step" }).click();
   await page.getByRole("button", { name: "Finish" }).click();
-  await expect(page.getByText("5 minutes done.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Again, same assignment" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Five minutes, / })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Again", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Play", exact: true })).toHaveAttribute(
     "aria-pressed",
     "false",
   );
 
   const before = await page.getByTestId("coach-sentence").textContent();
-  await page.getByRole("button", { name: "Again in a new key" }).click();
+  await page.getByRole("button", { name: "Same shapes, new key" }).click();
   await expect(page.getByRole("timer")).toBeVisible();
   const after = await page.getByTestId("coach-sentence").textContent();
   // Same material, new key: the key changes, the rest of the sentence does not.

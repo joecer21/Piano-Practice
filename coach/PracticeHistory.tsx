@@ -1,34 +1,29 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { createPortal } from "react-dom";
 import type { PracticeRecord } from "../application/practice-record.js";
 import type { PracticeHistory as PracticeHistoryService } from "./bridge.js";
+import { Icon } from "./Icon.js";
+import { SESSION_STEPS } from "./session.js";
 
 export type HistoryAction = "resume" | "again" | "newKey" | "focus" | "faster";
 
 type PracticeHistoryProps = {
   history: PracticeHistoryService;
   canOpen: boolean;
-  expanded?: boolean;
-  detailsContainer?: HTMLElement | null;
-  onExpandedChange?(expanded: boolean): void;
   onAction(action: HistoryAction, record: PracticeRecord, bar?: number): void;
 };
 
-export function PracticeHistory({
-  history,
-  canOpen,
-  expanded: controlledExpanded,
-  detailsContainer = null,
-  onExpandedChange,
-  onAction,
-}: PracticeHistoryProps) {
+/**
+ * Recent practice on the Stage: a pick-up card for gentle continuity, and the full
+ * list opened in place. It is one section with one heading, so focus returned
+ * after a delete or clear always lands somewhere visible.
+ */
+export function PracticeHistory({ history, canOpen, onAction }: PracticeHistoryProps) {
   const { records, recommendation, revisitAfterDays } = useSyncExternalStore(
     history.subscribe,
     history.getSnapshot,
   );
   const [message, setMessage] = useState("");
-  const [localExpanded, setLocalExpanded] = useState(false);
-  const expanded = controlledExpanded ?? localExpanded;
+  const [expanded, setExpanded] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const importInput = useRef<HTMLInputElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -44,10 +39,6 @@ export function PracticeHistory({
     setFocusTarget(null);
   }, [focusTarget]);
   const byId = (id: string) => records.find((record) => record.id === id) ?? null;
-  const setExpanded = (next: boolean) => {
-    if (onExpandedChange) onExpandedChange(next);
-    else setLocalExpanded(next);
-  };
 
   const actOnRecommendation = () => {
     if (!recommendation) return;
@@ -92,82 +83,23 @@ export function PracticeHistory({
   return (
     <section className="practice-history" aria-labelledby="practice-history-title">
       <div className="practice-history-heading">
-        <div>
-          <p className="practice-history-kicker">Pick up where you left off</p>
-          <h2 id="practice-history-title" ref={headingRef} tabIndex={-1}>
-            Recent practice
-          </h2>
-        </div>
-        <div className="practice-history-heading-actions">
-          {records.length ? <span className="practice-history-count">{records.length} saved</span> : null}
-          <button
-            type="button"
-            className="coach-secondary practice-history-toggle"
-            data-tool-trigger="history"
-            aria-expanded={expanded}
-            aria-controls="practice-history-details"
-            onClick={() => setExpanded(!expanded)}
-          >
-            {expanded ? "Hide full history" : "Full history"}
-          </button>
-        </div>
-      </div>
-
-      {recommendation ? (
-        <div className="practice-recommendation">
-          <div>
-            <strong>{recommendation.title}</strong>
-            <p>{recommendation.reason}</p>
-          </div>
-          <button type="button" className="coach-primary" disabled={!canOpen} onClick={actOnRecommendation}>
-            {recommendation.kind === "resume" ? "Continue" : "Practice"}
-          </button>
-        </div>
-      ) : (
-        <p className="coach-hint">
-          Complete a guided session and your next practice suggestion will appear here.
-        </p>
-      )}
-
-      {detailsContainer ? createPortal(historyDetails(), detailsContainer) : historyDetails()}
-    </section>
-  );
-
-  function historyDetails() {
-    return (
-      <div
-        id="practice-history-details"
-        className="practice-history-details"
-        hidden={!expanded}
-        tabIndex={-1}
-      >
-        <p className="practice-history-privacy">
-          Your records stay on this device. No account or network connection is used.
-        </p>
-        {records.length ? (
-          <ul className="practice-history-list" aria-label="Practice records">
-            {records.slice(0, 12).map((record) => (
-              <PracticeHistoryItem
-                key={record.id}
-                record={record}
-                history={history}
-                canOpen={canOpen}
-                onAction={onAction}
-                onDeleted={() => {
-                  setMessage("Practice record deleted.");
-                  setFocusTarget("heading");
-                }}
-              />
-            ))}
-          </ul>
-        ) : (
-          <p className="practice-history-empty">
-            Your first guided session will be saved here automatically.
-          </p>
-        )}
-
+        <h2 id="practice-history-title" ref={headingRef} tabIndex={-1}>
+          Recent practice
+        </h2>
+        {records.length ? <span className="practice-history-count">{records.length} saved</span> : null}
+        <button
+          type="button"
+          className="coach-link practice-history-toggle"
+          aria-expanded={expanded}
+          aria-controls="practice-history-details"
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? "Show less" : "Full history"}
+        </button>
         <details className="practice-history-overflow">
-          <summary>History options</summary>
+          <summary aria-label="History options">
+            <Icon name="more" />
+          </summary>
           <div className="practice-history-tools">
             <label className="practice-history-interval">
               Revisit after
@@ -182,10 +114,10 @@ export function PracticeHistory({
                 ))}
               </select>
             </label>
-            <button type="button" className="coach-secondary" disabled={!records.length} onClick={download}>
+            <button type="button" className="coach-menu-item" disabled={!records.length} onClick={download}>
               Export history
             </button>
-            <button type="button" className="coach-secondary" onClick={() => importInput.current?.click()}>
+            <button type="button" className="coach-menu-item" onClick={() => importInput.current?.click()}>
               Import history
             </button>
             <input
@@ -200,7 +132,7 @@ export function PracticeHistory({
               <button
                 ref={clearButtonRef}
                 type="button"
-                className="coach-link"
+                className="coach-menu-item"
                 disabled={!records.length || !canOpen}
                 onClick={() => {
                   setConfirmClear(true);
@@ -238,14 +170,86 @@ export function PracticeHistory({
                 </button>
               </span>
             )}
-            <span className="coach-library-status" role="status">
-              {message}
-            </span>
           </div>
         </details>
       </div>
-    );
-  }
+
+      <div className="practice-pickup">
+        <div className="practice-pick practice-recommendation">
+          <p className="coach-eyebrow">
+            {!recommendation || recommendation.kind === "resume" ? "Pick up where you left off" : "Try next"}
+          </p>
+          {recommendation ? (
+            <>
+              <p className="practice-pick-name">{recommendation.title}</p>
+              <p>{recommendation.reason}</p>
+              <button
+                type="button"
+                className="coach-secondary"
+                disabled={!canOpen}
+                onClick={actOnRecommendation}
+              >
+                {recommendation.kind === "resume" ? "Continue" : "Practice"}
+              </button>
+            </>
+          ) : (
+            <p>Complete a guided session and your next practice suggestion will appear here.</p>
+          )}
+        </div>
+      </div>
+
+      <p className="coach-library-status practice-history-message" role="status">
+        {message}
+      </p>
+
+      <div
+        id="practice-history-details"
+        className="practice-history-details"
+        hidden={!expanded}
+        tabIndex={-1}
+      >
+        <p className="practice-history-privacy">
+          Your records stay on this device. No account or network connection is used.
+        </p>
+        {records.length ? (
+          <ul className="practice-history-list" aria-label="Practice records">
+            {records.slice(0, 12).map((record) => (
+              <PracticeHistoryItem
+                key={record.id}
+                record={record}
+                history={history}
+                canOpen={canOpen}
+                onAction={onAction}
+                onDeleted={() => {
+                  setMessage("Practice record deleted.");
+                  setFocusTarget("heading");
+                }}
+              />
+            ))}
+          </ul>
+        ) : (
+          <p className="practice-history-empty">
+            Your first guided session will be saved here automatically.
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/** A small copy of the session rail: which steps were reached, never how well. */
+function MiniRail({ record }: { record: PracticeRecord }) {
+  return (
+    <span className="practice-mini-rail" aria-hidden="true">
+      {SESSION_STEPS.map((step) => (
+        <i
+          key={step.id}
+          style={{ flexGrow: step.weight }}
+          data-on={record.learningLenses.includes(step.id) || undefined}
+        />
+      ))}
+    </span>
+  );
 }
 
 function PracticeHistoryItem({
@@ -300,10 +304,18 @@ function PracticeHistoryItem({
     <li className="practice-history-item">
       <details>
         <summary>
-          <span className="practice-history-title">{record.label || record.assignment.title}</span>
-          <span className={`practice-history-status practice-history-status-${record.status}`}>{status}</span>
           <time dateTime={record.startedAt}>{date.toLocaleDateString()}</time>
-          <span>{duration}</span>
+          <span className="practice-history-main">
+            <span className="practice-history-title">{record.label || record.assignment.title}</span>
+            <span className="practice-history-line">
+              <span className={`practice-history-status practice-history-status-${record.status}`}>
+                {status}
+              </span>{" "}
+              · {duration}
+            </span>
+            <MiniRail record={record} />
+            {record.notes ? <span className="practice-history-note">{record.notes}</span> : null}
+          </span>
         </summary>
         <div className="practice-history-body">
           {record.label ? <p className="coach-hint">{record.assignment.title}</p> : null}

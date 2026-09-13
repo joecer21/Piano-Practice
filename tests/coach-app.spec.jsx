@@ -187,6 +187,12 @@ function createFakeBridge({
   const offlineListeners = new Set();
   let offlineSnapshot = { offlineReady: true, update: "none", cacheVersion: "v1" };
   const scaleAuditionSnapshot = { playing: false, activeNote: null };
+  const soundSnapshot = {
+    tempoBpm: 90,
+    mix: { left: { volumeDb: 0, muted: false }, lead: { volumeDb: 0, muted: false } },
+    humanize: { enabled: false, amountPercent: 0, swingPercent: 0 },
+    effects: { reverbPercent: 0, largeRoom: false, motifWidthPercent: 0 },
+  };
   const bridge = {
     status: {
       getSnapshot: () => statusSnapshot,
@@ -238,6 +244,11 @@ function createFakeBridge({
     },
     library,
     practiceHistory,
+    soundSettings: {
+      getSnapshot: () => soundSnapshot,
+      subscribe: () => () => {},
+      setTempo: vi.fn(),
+    },
     offline: {
       getSnapshot: () => offlineSnapshot,
       subscribe: (listener) => {
@@ -304,9 +315,7 @@ describe("CoachApp", () => {
     render(<CoachApp bridge={bridge} summaryContainer={null} />);
 
     expect(screen.getByTestId("coach-sentence").textContent).toMatch(/^C major\. I–V–vi–IV\./);
-    expect(screen.getByTestId("coach-feel").textContent).toBe(
-      "Bright and open, a loop that circles back to the start.",
-    );
+    expect(screen.getByTestId("coach-feel").textContent).toBe("Bright and hopeful.");
     const start = screen.getByRole("button", { name: "Start 5 minutes" });
     expect(start.disabled).toBe(true);
     expect(screen.getByText("Loading Piano Lite 40%")).toBeTruthy();
@@ -450,7 +459,8 @@ describe("CoachApp", () => {
     render(<CoachApp bridge={bridge} summaryContainer={null} />);
 
     await click(screen.getByRole("button", { name: "Start 5 minutes" }));
-    await click(screen.getByRole("button", { name: "Stop" }));
+    const playing = bridge.audioEngine.sessions.at(-1);
+    await act(async () => bridge.audioEngine.emitStatus({ sessionId: playing.id, status: "stopped" }));
     await act(async () => vi.advanceTimersByTime(61_000));
 
     expect(screen.getByText(/Left hand alone/)).toBeTruthy();
@@ -477,7 +487,7 @@ describe("CoachApp", () => {
     await click(screen.getByRole("button", { name: "Finish" }));
 
     expect(screen.queryByRole("timer")).toBeNull();
-    expect(screen.getByText("5 minutes done.")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Five minutes, done." })).toBeTruthy();
     expect(
       within(screen.getByRole("list", { name: "What you covered" })).getByText(/The whole thing/),
     ).toBeTruthy();
@@ -491,15 +501,15 @@ describe("CoachApp", () => {
 
     // A note from the summary lands on the record the session just completed.
     await act(async () => {
-      fireEvent.change(screen.getByLabelText("A note for next time"), {
+      fireEvent.change(screen.getByLabelText("Notes for next time"), {
         target: { value: "  Slow bar 4  " },
       });
     });
-    await click(screen.getByRole("button", { name: "Save note" }));
+    await click(screen.getByRole("button", { name: "Save notes" }));
     expect(bridge.practiceHistory.annotate).toHaveBeenCalledWith("practice-test", { notes: "Slow bar 4" });
 
     const playsBefore = bridge.audioEngine.requests.length;
-    await click(screen.getByRole("button", { name: "Again in a new key" }));
+    await click(screen.getByRole("button", { name: "Same shapes, new key" }));
     expect(bridge.rerollIntoNewKey).toHaveBeenCalled();
     expect(screen.getByTestId("coach-sentence").textContent).toMatch(/^D major/);
     expect(screen.getByRole("timer").textContent).toBe("5:00");
@@ -512,11 +522,10 @@ describe("CoachApp", () => {
     bridge = createFakeBridge({ assignment: cMajor });
     render(<CoachApp bridge={bridge} summaryContainer={null} />);
 
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText("Session length"), { target: { value: "untimed" } });
-    });
+    await click(screen.getByRole("button", { name: "Untimed" }));
     await click(screen.getByRole("button", { name: "Start practising" }));
-    await click(screen.getByRole("button", { name: "Stop" }));
+    const playing = bridge.audioEngine.sessions.at(-1);
+    await act(async () => bridge.audioEngine.emitStatus({ sessionId: playing.id, status: "stopped" }));
     await act(async () => vi.advanceTimersByTime(20 * 60_000));
 
     expect(screen.getByRole("timer", { name: "Time practised" }).textContent).toBe("20:00");
@@ -662,9 +671,8 @@ describe("CoachApp", () => {
 
     await click(screen.getByRole("button", { name: "Degrees" }));
     expect(library.setPreference).toHaveBeenCalledWith("labelMode", "degrees");
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText("Session length"), { target: { value: "120" } });
-    });
+    expect(screen.getByRole("button", { name: "10 minutes" }).getAttribute("aria-pressed")).toBe("true");
+    await click(screen.getByRole("button", { name: "2 minutes" }));
     expect(library.setPreference).toHaveBeenCalledWith("sessionLength", 120);
   });
 
@@ -672,7 +680,7 @@ describe("CoachApp", () => {
     bridge = createFakeBridge({ assignment: assignmentFor({ motifId: "none", seed: "no-motif" }) });
     render(<CoachApp bridge={bridge} summaryContainer={null} />);
     await click(screen.getByRole("button", { name: "Note by note" }));
-    expect(screen.getByText(/has no motif/)).toBeTruthy();
+    expect(screen.getByText(/has no tune/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Play" }).disabled).toBe(true);
   });
 
@@ -722,12 +730,25 @@ describe("CoachApp", () => {
     expect(key("A3").querySelector(".key-label").textContent).toBe("A");
   });
 
-  it("opens the assignment drawer on request", async () => {
+  it("opens the assignment panel from the tool rail, feel presets first", async () => {
     bridge = createFakeBridge({ assignment: cMajor });
-    render(<CoachApp bridge={bridge} summaryContainer={null} />);
-    await click(screen.getByRole("button", { name: "Change the assignment" }));
+    const toolsContainer = document.body.appendChild(document.createElement("div"));
+    const panelContainer = document.body.appendChild(document.createElement("div"));
+    render(
+      <CoachApp
+        bridge={bridge}
+        summaryContainer={null}
+        toolsContainer={toolsContainer}
+        panelContainer={panelContainer}
+      />,
+    );
+    await click(screen.getByRole("button", { name: "Change assignment" }));
+    await frame(0);
     expect(document.getElementById("assignment-workspace").open).toBe(true);
-    expect(screen.getByRole("heading", { name: "Build the next assignment" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Start from a feel" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Bright and hopeful/ })).toBeTruthy();
+    toolsContainer.remove();
+    panelContainer.remove();
   });
 
   it("offers a waiting version as a reload the learner chooses, never an automatic one", async () => {

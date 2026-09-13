@@ -64,6 +64,8 @@
             </svg>
             <span>5-Minute Improv Coach</span>
           </h1>
+          <!-- The session clock and Next / End replace the tools while practising. -->
+          <div id="coach-focusbar" class="coach-focusbar"></div>
           <div class="coach-header-actions">
             <div id="coach-tools" class="coach-tools"></div>
             <div id="coach-theme" class="coach-theme"></div>
@@ -75,39 +77,43 @@
         <div class="coach-stage">
           <div id="coach-summary" class="coach-summary coach-stage-intro"></div>
 
+          <!-- The hero: practice controls, the Score timeline and the keyboard in one keybed. -->
           <section
             class="coach-keyboard live-piano-card"
             id="piano-visual-card"
             aria-labelledby="live-piano-title"
           >
-            <div class="coach-keyboard-head">
-              <h2 id="live-piano-title" class="coach-keyboard-title">Keyboard</h2>
-              <p class="muted live-piano-help" id="live-piano-help">
-                Labels show each key's scale degree in the current bar. Filled marks are chord tones; the
-                heaviest is the root.
-              </p>
-            </div>
+            <h2 id="live-piano-title" class="coach-visually-hidden">Timeline and keyboard</h2>
+            <div id="coach-hero-controls" class="coach-hero-controls"></div>
+            <div id="coach-timeline-slot" class="coach-timeline-slot"></div>
             <div class="piano-visual-wrapper">
               <div
                 id="piano-visual"
                 class="piano-visual"
                 role="group"
-                aria-labelledby="live-piano-title"
+                aria-label="Keyboard"
                 aria-describedby="live-piano-help piano-qwerty-help"
               ></div>
             </div>
-            <div id="coach-timeline-slot" class="coach-timeline-slot"></div>
+            <div id="coach-hero-detail" class="coach-hero-detail"></div>
+            <p class="coach-legend" id="live-piano-help">
+              <span><i class="coach-swatch" data-hand="lh"></i>Left hand</span>
+              <span><i class="coach-swatch" data-hand="rh"></i>Right hand</span>
+              <span><i class="coach-swatch" data-role="root"></i>Home note of the chord</span>
+              <span><i class="coach-swatch" data-role="chordTone"></i>In the chord</span>
+              <span><i class="coach-swatch" data-role="scaleTone"></i>In the key, safe to pass through</span>
+            </p>
             <div class="coach-keyboard-options piano-controls">
               <label class="piano-hover-toggle" for="piano-computer-keyboard">
                 <input type="checkbox" id="piano-computer-keyboard" /> Computer keys
               </label>
-              <p class="muted piano-qwerty-help" id="piano-qwerty-help">
-                Computer keys: A W S E D F T G Y H U J K play C4–C5; Z and X change octave. Shortcuts pause
-                while using a form control.
-              </p>
               <details class="coach-more">
                 <summary>Keyboard options</summary>
                 <div class="coach-more-body">
+                  <p class="muted piano-qwerty-help" id="piano-qwerty-help">
+                    Computer keys: A W S E D F T G Y H U J K play C4–C5; Z and X change octave. Shortcuts
+                    pause while using a form control.
+                  </p>
                   <fieldset class="piano-indicator-toggle">
                     <legend>Indicators</legend>
                     <label
@@ -148,7 +154,7 @@
         <div id="coach-panel-host" class="coach-panel-host"></div>
       </div>
 
-      <!-- Kept as static compatibility slots; Phase 3 renders these tools in the panel host. -->
+      <!-- Kept as static compatibility slots; the tools render in the panel host. -->
       <div id="coach-input" hidden></div>
       <div id="coach-settings" hidden></div>
     </main>

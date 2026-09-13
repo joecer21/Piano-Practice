@@ -10,6 +10,32 @@ type LibraryControlsProps = {
 
 type ShareState =
   { kind: "idle" } | { kind: "copied" } | { kind: "shared" } | { kind: "manual"; url: string };
+export type ShareResult = Exclude<ShareState, { kind: "idle" }> | { kind: "cancelled" };
+
+/**
+ * Share the assignment on screen: the device's share sheet where there is one,
+ * else the clipboard. "manual" means neither worked and the link must be shown.
+ */
+export async function shareCurrentAssignment(library: CoachLibrary): Promise<ShareResult> {
+  const url = library.currentShareUrl();
+  if (!url) return { kind: "cancelled" };
+  const title = library.currentTitle() ?? "Piano practice";
+  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+    try {
+      await navigator.share({ title, url });
+      return { kind: "shared" };
+    } catch (error) {
+      // Dismissing the share sheet is not an error worth reporting.
+      if (error instanceof DOMException && error.name === "AbortError") return { kind: "cancelled" };
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    return { kind: "copied" };
+  } catch {
+    return { kind: "manual", url };
+  }
+}
 
 /**
  * Come back to the same assignment: star it, send yourself the link, reopen it
@@ -23,26 +49,10 @@ export function LibraryControls({ library, canOpen, onOpened }: LibraryControlsP
   const linkId = useId();
 
   const shareLink = async () => {
-    const url = library.currentShareUrl();
-    if (!url) return;
-    const title = library.currentTitle() ?? "Piano practice";
-    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-      try {
-        await navigator.share({ title, url });
-        setShare({ kind: "shared" });
-        return;
-      } catch (error) {
-        // Dismissing the share sheet is not an error worth reporting.
-        if (error instanceof DOMException && error.name === "AbortError") return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      setShare({ kind: "copied" });
-    } catch {
-      setShare({ kind: "manual", url });
-      requestAnimationFrame(() => manualInput.current?.select());
-    }
+    const result = await shareCurrentAssignment(library);
+    if (result.kind === "cancelled") return;
+    setShare(result);
+    if (result.kind === "manual") requestAnimationFrame(() => manualInput.current?.select());
   };
 
   const open = (fragment: string) => {

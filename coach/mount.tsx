@@ -24,6 +24,9 @@ export function mountCoach(bridge: CoachBridge, doc: Document = document): () =>
         toolsContainer={doc.getElementById("coach-tools")}
         panelContainer={doc.getElementById("coach-panel-host")}
         timelineContainer={doc.getElementById("coach-timeline-slot")}
+        heroControlsContainer={doc.getElementById("coach-hero-controls")}
+        heroDetailContainer={doc.getElementById("coach-hero-detail")}
+        focusbarContainer={doc.getElementById("coach-focusbar")}
         shellContainer={doc.querySelector<HTMLElement>(".coach-shell")}
         headerContainer={doc.querySelector<HTMLElement>(".coach-top")}
       />

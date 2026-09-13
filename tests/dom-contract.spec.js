@@ -36,5 +36,8 @@ describe("index.html / Live Piano host contract", () => {
     expect(dom.window.document.querySelector(".coach-top #coach-tools")).not.toBeNull();
     expect(dom.window.document.getElementById("coach-panel-host")).not.toBeNull();
     expect(dom.window.document.querySelector("#piano-visual-card #coach-timeline-slot")).not.toBeNull();
+    expect(dom.window.document.querySelector("#piano-visual-card #coach-hero-controls")).not.toBeNull();
+    expect(dom.window.document.querySelector("#piano-visual-card #coach-hero-detail")).not.toBeNull();
+    expect(dom.window.document.querySelector(".coach-top #coach-focusbar")).not.toBeNull();
   });
 });
