@@ -11,6 +11,11 @@ test("the musical QA page auditions sequentially and records an exportable dispo
   await expect(page.getByRole("heading", { name: "First Pop Improv in C" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Listen for" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Structural signals" })).toBeVisible();
+  // A page wider than the screen makes phones zoom out, so taps miss their targets.
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow, "the audition page scrolls horizontally").toBeLessThanOrEqual(0);
 
   const play = page.getByRole("button", { name: "Play case" });
   await expect(play).toBeEnabled({ timeout: 20_000 });

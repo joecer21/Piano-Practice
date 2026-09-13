@@ -242,8 +242,24 @@ pre {
   .audit-progress {
     grid-template-columns: repeat(2, 1fr);
   }
+  /* Rows wrap instead of overflowing: font metrics differ between platforms, and
+     one row too wide makes a phone zoom the whole page out. */
+  .review-actions,
+  .audit-navigation {
+    flex-wrap: wrap;
+  }
   .audit-navigation {
     gap: 0.4rem;
+  }
+  .audit-navigation select {
+    flex: 1 1 100%;
+    order: -1;
+  }
+  .audit-shell {
+    padding-bottom: 9rem;
+  }
+  html {
+    scroll-padding-bottom: 9rem;
   }
   .audit-navigation button {
     padding-inline: 0.55rem;
