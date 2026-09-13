@@ -1,5 +1,6 @@
 import type { Preferences, StarredAssignment } from "../application/library.js";
 import type { AudioEngine } from "../audio/playback-engine.js";
+import type { AssignmentInputs, AssignmentLocks } from "../domain/assignment.js";
 import type { Score } from "../domain/score.js";
 import type { MidiInput } from "../input/midi.js";
 import type { NoteInputHub } from "../input/note-input.js";
@@ -13,7 +14,7 @@ export type CoachAssignment = {
 };
 
 /**
- * Everything the coach needs from the legacy application, passed in rather than
+ * Everything the coach needs from the host application, passed in rather than
  * imported. The coach never reaches into main.js state or the DOM it owns; the
  * audio engine is used only through its public PlayRequest contract.
  */
@@ -28,10 +29,9 @@ export type CoachBridge = {
   getTempoBpm(): number;
   /** Resolves false when the browser keeps audio blocked; the bridge reports why. */
   unlockAudio(): Promise<boolean>;
-  /** Stop any playback started by the legacy controls before the coach plays. */
+  /** Stop any playback started by the page controls before the coach plays. */
   stopOtherPlayback(): void;
   reportError(message: string): void;
-  openAssignmentDrawer(): void;
   getKeyboardElement(): HTMLElement | null;
   /** Everything the player plays, from any input. The coach mirrors it. */
   noteInput: NoteInputHub;
@@ -40,8 +40,36 @@ export type CoachBridge = {
   setMidiPlayThrough(enabled: boolean): Promise<void>;
   /** Same progression, groove, motif and mode in a new key. False if it could not be built. */
   rerollIntoNewKey(): boolean;
+  /** Edit and regenerate the assignment without exposing the legacy DOM or mutable store. */
+  assignmentEditor: AssignmentEditor;
   /** Starred assignments, share links and practice preferences, kept in this browser. */
   library: CoachLibrary;
+};
+
+export type AssignmentEditorSnapshot = {
+  /** Keeps the same identity until the assignment, locks, or history changes. */
+  inputs: AssignmentInputs;
+  locks: AssignmentLocks;
+  assignmentId: string | null;
+  seed: string;
+  canUndo: boolean;
+  canRedo: boolean;
+};
+
+export type AssignmentEditorResult = {
+  ok: boolean;
+  message: string;
+};
+
+export type AssignmentEditor = {
+  getSnapshot(): AssignmentEditorSnapshot;
+  subscribe(listener: () => void): () => void;
+  apply(inputs: AssignmentInputs): AssignmentEditorResult;
+  applyPreset(presetId: string): AssignmentEditorResult;
+  reroll(): AssignmentEditorResult;
+  undo(): AssignmentEditorResult;
+  redo(): AssignmentEditorResult;
+  toggleLock(component: keyof AssignmentLocks): void;
 };
 
 export type CoachLibrarySnapshot = {

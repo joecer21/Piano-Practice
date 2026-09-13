@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
-import { renderProgression, renderCustomProgressionPreview, renderPaletteButtons } from "../ui.js";
-import { getProgressionPreset, STYLE_PALETTE_SETS, getStyleProfile } from "../theory.js";
+import { renderProgression } from "../ui.js";
+import { getProgressionPreset, getStyleProfile } from "../theory.js";
 import { it } from "vitest";
 import { expect } from "vitest";
 
@@ -10,8 +10,6 @@ function setupDom() {
     <div id="progression-chords"></div>
     <div id="progression-description"></div>
     <div id="progression-visual"></div>
-    <div id="custom-progression-preview"></div>
-    <div id="chord-palette"></div>
   </body>`);
   global.document = dom.window.document;
   global.window = dom.window;
@@ -47,8 +45,6 @@ function run() {
     progressionChords: document.getElementById("progression-chords"),
     progressionDescription: document.getElementById("progression-description"),
     progressionVisual: document.getElementById("progression-visual"),
-    customPreview: document.getElementById("custom-progression-preview"),
-    paletteContainer: document.getElementById("chord-palette"),
   };
 
   const state = mockStateWithProgression();
@@ -59,24 +55,6 @@ function run() {
       dom.progressionRoman.textContent.includes("Imaj7"),
     `Progression labels missing jazz suffixes: ${dom.progressionRoman.textContent}`,
   ).toBe(true);
-
-  renderCustomProgressionPreview(state, dom);
-  expect(
-    dom.customPreview.textContent.includes("ii7") &&
-      dom.customPreview.textContent.includes("V7") &&
-      dom.customPreview.textContent.includes("Imaj7"),
-    `Custom preview missing jazz suffixes: ${dom.customPreview.textContent}`,
-  ).toBe(true);
-
-  renderPaletteButtons("jazz", dom, STYLE_PALETTE_SETS, {
-    mode: "major",
-    styleProfile: state.derived.styleProfile,
-  });
-  const firstButton = dom.paletteContainer.querySelector(".chord-button");
-  expect(firstButton, "Chord palette did not render").toBeTruthy();
-  expect(firstButton.textContent, `Palette labels missing suffix: ${firstButton.textContent}`).toMatch(
-    /maj7|7/,
-  );
 
   domEnv.window.close();
 }

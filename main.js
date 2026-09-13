@@ -1,6 +1,4 @@
 ﻿import {
-  PROGRESSION_PRESETS,
-  STYLE_PALETTE_SETS,
   MOTIF_STYLES,
   SCALE_PATTERNS,
   getProgressionPreset,
@@ -32,7 +30,7 @@ import {
   clearPianoHighlights,
   renderPianoDiatonic,
 } from "./components/piano.js";
-import { PRESET_CONFIGS, DEFAULT_PRESET_ID, getPresetConfig } from "./presets.js";
+import { DEFAULT_PRESET_ID, getPresetConfig } from "./presets.js";
 import { mountCoach } from "./coach/mount.tsx";
 import { createNoteInputHub } from "./input/note-input.ts";
 import { createMidiInput } from "./input/midi.ts";
@@ -63,31 +61,19 @@ import {
   renderPlaceholders,
   renderScale,
   renderProgression,
-  renderCustomProgressionPreview,
   renderLeftHand,
   renderMotif,
   renderPianoRoll,
-  populateProgressionSelector,
-  populateMotifSelector,
-  updateMotifOffering,
-  populatePresetSelector,
-  renderPaletteButtons,
-  attachPaletteButtonHandlers,
   renderProgressionPresetInfo,
-  toggleCustomCard,
   setTempoValue,
-  updateGenerateButtonLabel,
-  updateCustomHeaderCount,
   setStatusMessage,
   setPlayButtonsEnabled,
   updateLoopBadge,
   renderMixControls,
   renderHumanizeControls,
   renderSpatialControls,
-  renderAssignmentTools,
   renderSamplerStatus,
   setMixCardCollapsed,
-  setAdvancedControlsCollapsed,
   updatePianoRollPlayhead,
   updateMotifPlayhead,
   highlightProgressionBar,
@@ -96,7 +82,6 @@ import {
   highlightScaleNote,
   resetPlaybackIndicators,
   runAssignmentPulse,
-  pulsePresetCard,
   pulseSamplerBadge,
   showHint,
   pulseElement,
@@ -154,26 +139,12 @@ function init() {
   attachPianoNoteListeners(dom);
   renderSamplerStatus(dom, samplerSnapshot);
   renderPlaceholders(dom);
-  populateProgressionSelector(dom, PROGRESSION_PRESETS, state.inputs.progressionPresetId);
-  populateMotifSelector(dom, MOTIF_STYLES);
-  populatePresetSelector(dom, PRESET_CONFIGS, state.inputs.presetId || DEFAULT_PRESET_ID);
-  if (dom.motif) dom.motif.value = state.inputs.motifId;
-  if (dom.mode) dom.mode.value = state.inputs.mode;
-  updateMotifOffering(dom, state.inputs.mode);
   state.tempo = practiceLibrary.tempo() ?? state.tempo;
   if (dom.tempoSlider) dom.tempoSlider.value = state.tempo;
   updateTempo(state.tempo);
   const initialStyleProfile = getStyleProfile(state.inputs.styleId);
   state.derived.styleProfile = initialStyleProfile;
-  renderPaletteButtons(state.inputs.styleId, dom, STYLE_PALETTE_SETS, {
-    mode: state.inputs.mode,
-    styleProfile: initialStyleProfile,
-  });
-  attachPaletteButtonHandlers(dom, handleChordAdd);
-  updateGenerateButtonLabel(dom, false);
-  updateCustomHeaderCount(dom, 0);
   setPlayButtonsEnabled(dom, false);
-  toggleCustomCard(dom, false);
 
   onSamplerStatus(handleSamplerStatus);
   audioEngine.init().catch((err) => {
@@ -187,26 +158,11 @@ function init() {
   renderHumanizeControls(dom, state.playback);
   renderSpatialControls(dom, state.fx);
   setMixCardCollapsed(dom, state.ui.mixCollapsed);
-  setAdvancedControlsCollapsed(dom, state.ui.advancedCollapsed);
-  renderAssignmentTools(dom, state, {
-    canUndo: appStore.canUndo(),
-    canRedo: appStore.canRedo(),
-  });
   wireEvents(dom, {
-    onGenerate: handleGenerate,
-    onPresetChange: handlePresetChange,
-    onKeyChange: (value) => handleKeyChange(value),
-    onModeChange: (value) => handleModeChange(value),
-    onStyleChange: handleStyleChange,
-    onLeftHandChange: handleLeftHandChange,
-    onMotifChange: handleMotifChange,
-    onLengthChange: handleLengthChange,
     onTempoChange: updateTempo,
     onStopAll: handleStopAll,
     onPlayAll: handlePlayAll,
     onPlay: handlePlay,
-    onProgressionChange: handleProgressionChange,
-    onClearCustom: clearCustomProgression,
     onMixChange: handleMixVolumeChange,
     onMixMute: handleMixMuteChange,
     onHumanizeToggle: handleHumanizeToggle,
@@ -217,11 +173,6 @@ function init() {
     onMotifWidthChange: handleMotifWidthChange,
     onLibrarySelect: handleLibrarySelect,
     onMixCardToggle: handleMixCardToggle,
-    onAdvancedControlsToggle: handleAdvancedControlsToggle,
-    onAssignmentReroll: handleAssignmentReroll,
-    onAssignmentUndo: handleAssignmentUndo,
-    onAssignmentRedo: handleAssignmentRedo,
-    onAssignmentLockToggle: handleAssignmentLockToggle,
     onPianoKeyDown: handlePianoKeyDown,
     onPianoKeyUp: handlePianoKeyUp,
     onPianoIndicatorModeChange: handlePianoIndicatorModeChange,
@@ -250,9 +201,9 @@ function init() {
   if (!link.opened && !openInputs(practiceLibrary.lastInputs())) {
     const initialPresetId = state.inputs.presetId || DEFAULT_PRESET_ID;
     if (initialPresetId) {
-      applyPreset(initialPresetId, { autoGenerate: true });
+      applyPreset(initialPresetId);
     } else {
-      handleGenerate({ auto: true });
+      applyAssignmentDraft(state.inputs);
     }
   }
   reportLinkError(link);
@@ -280,7 +231,7 @@ function registerOfflineSupport() {
 /**
  * The coach is a React root layered over this application. It reads the
  * committed assignment and sampler status, and asks for audio unlock, through
- * this bridge - never by reaching into module state or the legacy DOM.
+ * this bridge rather than reaching into module state.
  */
 function createCoachBridge() {
   let cachedDerived = null;
@@ -315,20 +266,62 @@ function createCoachBridge() {
     unlockAudio,
     stopOtherPlayback: () => stopAllPlayback(),
     reportError: (message) => setStatusMessage(dom, message, { tone: "error" }),
-    openAssignmentDrawer() {
-      const drawer = document.getElementById("legacy-drawer");
-      if (!drawer) return;
-      drawer.open = true;
-      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-      drawer.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
-      drawer.querySelector("summary")?.focus();
-    },
     getKeyboardElement: () => dom.pianoVisual || null,
     noteInput,
     midiInput,
     setMidiPlayThrough,
     rerollIntoNewKey,
+    assignmentEditor: createAssignmentEditor(),
     library: createCoachLibrary(),
+  };
+}
+
+/** The React assignment workspace's typed view of assignment state and commands. */
+function createAssignmentEditor() {
+  const listeners = new Set();
+  let cachedSignature = "";
+  let cachedSnapshot = null;
+  const publish = () => {
+    cachedSignature = "";
+    listeners.forEach((listener) => listener());
+  };
+  appStore.subscribe(publish);
+
+  return {
+    getSnapshot() {
+      const inputs = state.assignment?.inputs ?? state.inputs;
+      const signature = [
+        state.assignment?.id ?? "",
+        state.history.past.length,
+        state.history.future.length,
+        ...Object.values(state.locks).map(Number),
+      ].join(":");
+      if (!cachedSnapshot || signature !== cachedSignature) {
+        cachedSignature = signature;
+        cachedSnapshot = {
+          inputs,
+          locks: { ...state.locks },
+          assignmentId: state.assignment?.id ?? null,
+          seed: state.assignment?.seed ?? inputs.seed,
+          canUndo: appStore.canUndo(),
+          canRedo: appStore.canRedo(),
+        };
+      }
+      return cachedSnapshot;
+    },
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    apply: applyAssignmentDraft,
+    applyPreset,
+    reroll: rerollAssignment,
+    undo: undoAssignment,
+    redo: redoAssignment,
+    toggleLock(component) {
+      toggleAssignmentLock(component);
+      publish();
+    },
   };
 }
 
@@ -415,7 +408,6 @@ function openInputs(inputs) {
     state.inputs = previous;
     return false;
   }
-  syncAssignmentUiFromState();
   renderAll();
   return true;
 }
@@ -453,13 +445,6 @@ function rememberCommittedAssignment() {
     // replaceState: rerolls and undo are not browser navigation, and it fires no hashchange.
     window.history.replaceState(window.history.state, "", fragment);
   }
-}
-
-function resolveLength(rawLength, progressionPresetId) {
-  const presetForLength = getProgressionPreset(progressionPresetId);
-  const presetLength = presetForLength?.roman?.length || 4;
-  if (!rawLength || Number.isNaN(rawLength)) return presetLength;
-  return rawLength;
 }
 
 // Validation failures phrased for the person editing, not the developer.
@@ -511,171 +496,42 @@ function computeDerived() {
   }
 }
 
-function syncInputsFromDom() {
-  const rawLength = Number(dom.length?.value);
-  const progressionPresetId = dom.progressionSelect?.value || state.inputs.progressionPresetId;
-
-  state.inputs = {
-    ...state.inputs,
-    key: dom.key?.value || state.inputs.key,
-    mode: dom.mode?.value || state.inputs.mode,
-    progressionPresetId,
-    styleId: dom.styleSelect?.value || state.inputs.styleId,
-    length: resolveLength(rawLength, progressionPresetId),
-    lhId: dom.leftHand?.value || state.inputs.lhId,
-    motifId: dom.motif?.value || state.inputs.motifId,
-    presetId: dom.presetSelect?.value || state.inputs.presetId,
-  };
-  updateMotifOffering(dom, state.inputs.mode);
-
-  if (progressionPresetId !== "custom") {
-    updateGenerateButtonLabel(dom, false);
-    toggleCustomCard(dom, false);
-  } else {
-    updateGenerateButtonLabel(dom, true);
-    toggleCustomCard(dom, true);
-  }
-}
-
-// Callers pass { auto: true } (see the preset and fallback paths below) but this
-// function has never acted on it. Kept as an explicit, named no-op so the
-// discrepancy stays visible instead of being silently dropped.
-function handleGenerate(_options = {}) {
-  syncInputsFromDom();
-
-  if (state.inputs.progressionPresetId === "custom" && state.inputs.customProgressionRoman.length === 0) {
-    state.inputs.progressionPresetId = PROGRESSION_PRESETS[0].id;
-    if (dom.progressionSelect) dom.progressionSelect.value = state.inputs.progressionPresetId;
-    toggleCustomCard(dom, false);
-    updateGenerateButtonLabel(dom, false);
-    showHint(dom, "Add at least one chord to use your custom palette.");
-    if (dom.customPreview) {
-      pulseElement(dom.customPreview, "status");
-    }
+/** Commit a complete draft from the React workspace, preserving the last valid assignment on failure. */
+function applyAssignmentDraft(inputs) {
+  const validation = validateAssignmentInputs(inputs);
+  if (!validation.valid) {
+    return {
+      ok: false,
+      message:
+        DRAFT_BLOCKED_MESSAGES[validation.errors[0]] ||
+        `Can't build that yet: ${validation.errors.join("; ")}.`,
+    };
   }
 
+  stopAllPlayback();
+  const previousInputs = state.inputs;
+  appStore.updateInputs(inputs);
   const result = computeDerived();
-  renderAll();
-  syncPlayButtonsAvailability();
-  if (!result.ok) return;
+  if (!result.ok) {
+    state.inputs = previousInputs;
+    return { ok: false, message: result.errors?.[0] || "That assignment could not be built." };
+  }
 
+  renderAll();
   const preset = getProgressionPreset(state.inputs.progressionPresetId);
   const scaleLabel = state.derived.scale?.label
     ? `${state.inputs.key} ${state.derived.scale.label}`
     : state.inputs.key;
-  const status = `Assignment updated for ${scaleLabel} · ${preset?.label || "Custom"} · ${state.derived.leftHand?.name || state.inputs.lhId} · ${state.derived.motif ? state.derived.motif.description : "No motif"}`;
-  // Keep the direct response to Generate visible long enough to be read. A
-  // sampler-ready message is ambient and will be restored after this expires.
-  setStatusMessage(dom, status, { tone: "success", transient: true });
+  const message = `Assignment updated for ${scaleLabel} · ${preset?.label || "Custom"} · ${state.derived.leftHand?.name || state.inputs.lhId} · ${state.derived.motif ? state.derived.motif.description : "No motif"}`;
+  setStatusMessage(dom, message, { tone: "success", transient: true });
   runAssignmentPulse(dom, { includeMotif: !!state.derived.motif });
-  pulseElement(dom.generate, "accent");
-}
-
-function handleKeyChange(key) {
-  state.inputs.key = key;
-  computeDerived();
-  renderAll();
-}
-
-function handleModeChange(mode) {
-  state.inputs.mode = mode || "major";
-  updateMotifOffering(dom, state.inputs.mode);
-  const styleProfile = getStyleProfile(state.inputs.styleId);
-  state.derived = { ...state.derived, styleProfile };
-  renderPaletteButtons(state.inputs.styleId, dom, STYLE_PALETTE_SETS, {
-    mode: state.inputs.mode,
-    styleProfile,
-  });
-  attachPaletteButtonHandlers(dom, handleChordAdd);
-  renderCustomProgressionPreview(state, dom);
-  computeDerived();
-  renderAll();
-}
-
-function handlePresetChange(presetId) {
-  pulsePresetCard(dom);
-  if (!presetId || presetId === state.inputs.presetId) {
-    applyPreset(presetId || state.inputs.presetId, { autoGenerate: true });
-    return;
-  }
-  applyPreset(presetId, { autoGenerate: true });
-}
-
-function handleStyleChange(styleId) {
-  state.inputs.styleId = styleId || "classical";
-  const styleProfile = getStyleProfile(state.inputs.styleId);
-  state.derived = { ...state.derived, styleProfile };
-  renderPaletteButtons(state.inputs.styleId, dom, STYLE_PALETTE_SETS, {
-    mode: state.inputs.mode,
-    styleProfile,
-  });
-  attachPaletteButtonHandlers(dom, handleChordAdd);
-  renderCustomProgressionPreview(state, dom);
-  computeDerived();
-  renderAll();
-}
-
-function handleLeftHandChange(lhId) {
-  if (!lhId) return;
-  state.inputs.lhId = lhId;
-  computeDerived();
-  renderAll();
-}
-
-function handleMotifChange(motifId) {
-  if (!motifId) return;
-  state.inputs.motifId = motifId;
-  computeDerived();
-  renderAll();
-}
-
-function handleLengthChange(newLength) {
-  const lengthNumber = Number(newLength);
-  const resolvedLength = resolveLength(lengthNumber, state.inputs.progressionPresetId);
-  state.inputs.length = resolvedLength;
-  if (dom.length) {
-    dom.length.value = String(resolvedLength);
-  }
-  computeDerived();
-  renderAll();
-}
-
-function handleProgressionChange(id) {
-  state.inputs.progressionPresetId = id;
-  const isCustom = id === "custom";
-  toggleCustomCard(dom, isCustom);
-  updateGenerateButtonLabel(dom, isCustom);
-  if (isCustom && state.inputs.customProgressionRoman.length === 0) {
-    renderCustomProgressionPreview(state, dom);
-    return;
-  }
-  computeDerived();
-  renderAll();
-  renderProgressionPresetInfo(
-    dom,
-    getProgressionPreset(id),
-    getStyleProfile(state.inputs.styleId),
-    state.derived.progression,
-  );
-}
-
-function handleChordAdd(chord) {
-  state.inputs.customProgressionRoman.push(chord);
-  renderCustomProgressionPreview(state, dom);
-  updateCustomHeaderCount(dom, state.inputs.customProgressionRoman.length);
-}
-
-function clearCustomProgression() {
-  state.inputs.customProgressionRoman = [];
-  renderCustomProgressionPreview(state, dom);
-  updateCustomHeaderCount(dom, 0);
+  return { ok: true, message };
 }
 
 function ensureAssignmentReady() {
   const ready = Boolean(state.derived?.progression && state.derived?.leftHand);
   if (!ready) {
     showHint(dom, "Generate an assignment first to unlock playback.");
-    pulseElement(dom.generate, "accent");
   }
   return ready;
 }
@@ -1057,21 +913,15 @@ function renderAll() {
   renderLeftHand(state, dom);
   renderMotif(state, dom);
   renderPianoRoll(state, dom);
-  renderCustomProgressionPreview(state, dom);
   renderProgressionPresetInfo(
     dom,
     getProgressionPreset(state.inputs.progressionPresetId),
     state.derived.styleProfile || getStyleProfile(state.inputs.styleId),
     state.derived.progression,
   );
-  updateCustomHeaderCount(dom, state.inputs.customProgressionRoman.length);
   renderMixControls(dom, state.mix);
   renderHumanizeControls(dom, state.playback);
   renderSpatialControls(dom, state.fx);
-  renderAssignmentTools(dom, state, {
-    canUndo: appStore.canUndo(),
-    canRedo: appStore.canRedo(),
-  });
   syncPlayButtonsAvailability();
 }
 
@@ -1089,82 +939,51 @@ function rerollIntoNewKey() {
   });
   appStore.updateInputs(next);
   if (!computeDerived().ok) return false;
-  syncAssignmentUiFromState();
   renderAll();
   return true;
 }
 
-function handleAssignmentReroll() {
+function rerollAssignment() {
   if (["key", "harmony", "groove", "motif"].every((part) => state.locks[part])) {
-    showHint(dom, "Unlock at least one part before rerolling.");
-    return;
+    return { ok: false, message: "Unlock at least one part before rerolling." };
   }
   stopAllPlayback();
   appStore.reroll();
-  computeDerived();
-  syncAssignmentUiFromState();
+  const result = computeDerived();
+  if (!result.ok) return { ok: false, message: result.errors?.[0] || "That variation could not be built." };
   renderAll();
   const shortId = state.assignment.id.replace(/^assignment-/, "");
-  setStatusMessage(dom, `Created variation ${shortId} · locked parts were kept`, {
-    tone: "success",
-  });
-  pulseElement(dom.assignmentReroll, "accent");
+  const message = `Created variation ${shortId} · locked parts were kept`;
+  setStatusMessage(dom, message, { tone: "success" });
+  return { ok: true, message };
 }
 
-function handleAssignmentUndo() {
+function undoAssignment() {
   stopAllPlayback();
   const assignment = appStore.undo();
-  if (!assignment) return;
-  syncAssignmentUiFromState();
+  if (!assignment) return { ok: false, message: "There is no earlier assignment to restore." };
   renderAll();
-  setStatusMessage(dom, "Restored the previous assignment", { tone: "info" });
+  const message = "Restored the previous assignment";
+  setStatusMessage(dom, message, { tone: "info" });
+  return { ok: true, message };
 }
 
-function handleAssignmentRedo() {
+function redoAssignment() {
   stopAllPlayback();
   const assignment = appStore.redo();
-  if (!assignment) return;
-  syncAssignmentUiFromState();
+  if (!assignment) return { ok: false, message: "There is no later assignment to restore." };
   renderAll();
-  setStatusMessage(dom, "Restored the next assignment", { tone: "info" });
+  const message = "Restored the next assignment";
+  setStatusMessage(dom, message, { tone: "info" });
+  return { ok: true, message };
 }
 
-function handleAssignmentLockToggle(component) {
+function toggleAssignmentLock(component) {
   const locks = appStore.toggleLock(component);
-  renderAssignmentTools(dom, state, {
-    canUndo: appStore.canUndo(),
-    canRedo: appStore.canRedo(),
-  });
   const label = component.charAt(0).toUpperCase() + component.slice(1);
   setStatusMessage(dom, `${label} ${locks[component] ? "locked" : "unlocked"} for the next reroll`, {
     tone: "info",
   });
-}
-
-function syncAssignmentUiFromState() {
-  const inputs = state.inputs;
-  const setValue = (element, value) => {
-    if (element) element.value = value == null ? "" : String(value);
-  };
-  setValue(dom.presetSelect, inputs.presetId);
-  setValue(dom.key, inputs.key);
-  setValue(dom.mode, inputs.mode);
-  setValue(dom.progressionSelect, inputs.progressionPresetId);
-  setValue(dom.leftHand, inputs.lhId);
-  setValue(dom.motif, inputs.motifId);
-  updateMotifOffering(dom, inputs.mode);
-  setValue(dom.length, inputs.length);
-  setValue(dom.styleSelect, inputs.styleId);
-
-  const styleProfile = getStyleProfile(inputs.styleId);
-  renderPaletteButtons(inputs.styleId, dom, STYLE_PALETTE_SETS, {
-    mode: inputs.mode,
-    styleProfile,
-  });
-  attachPaletteButtonHandlers(dom, handleChordAdd);
-  const isCustom = inputs.progressionPresetId === "custom";
-  toggleCustomCard(dom, isCustom);
-  updateGenerateButtonLabel(dom, isCustom);
 }
 
 function handleMixVolumeChange(partId, value) {
@@ -1187,53 +1006,20 @@ function handleMixCardToggle() {
   setMixCardCollapsed(dom, state.ui.mixCollapsed);
 }
 
-function handleAdvancedControlsToggle() {
-  state.ui.advancedCollapsed = !state.ui.advancedCollapsed;
-  setAdvancedControlsCollapsed(dom, state.ui.advancedCollapsed);
-}
-
-function applyPreset(presetId, options = {}) {
-  const fallbackId = DEFAULT_PRESET_ID || PRESET_CONFIGS[0]?.id;
-  const preset = getPresetConfig(presetId) || getPresetConfig(fallbackId);
-  if (!preset) return;
-
-  state.inputs.presetId = preset.id;
-  if (dom.presetSelect) {
-    dom.presetSelect.value = preset.id;
-  }
-
-  const setSelectValue = (element, value) => {
-    if (element && value != null) {
-      element.value = value;
-    }
-  };
-
-  setSelectValue(dom.key, preset.key);
-  setSelectValue(dom.mode, preset.mode);
-  setSelectValue(dom.progressionSelect, preset.progressionPresetId);
-  setSelectValue(dom.leftHand, preset.lhId);
-  setSelectValue(dom.motif, preset.motifId);
-  if (preset.length && dom.length) {
-    const desired = String(preset.length);
-    const hasOption = Array.from(dom.length.options || []).some((opt) => opt.value === desired);
-    dom.length.value = hasOption ? desired : dom.length.options?.[0]?.value || desired;
-  }
-
-  if (preset.styleId && dom.styleSelect) {
-    dom.styleSelect.value = preset.styleId;
-    const styleProfile = getStyleProfile(preset.styleId);
-    state.derived = { ...state.derived, styleProfile };
-    renderPaletteButtons(preset.styleId, dom, STYLE_PALETTE_SETS, {
-      mode: preset.mode || state.inputs.mode,
-      styleProfile,
-    });
-    attachPaletteButtonHandlers(dom, handleChordAdd);
-  }
-
-  syncInputsFromDom();
-  if (options.autoGenerate !== false) {
-    handleGenerate({ auto: true });
-  }
+function applyPreset(presetId) {
+  const preset = getPresetConfig(presetId) || getPresetConfig(DEFAULT_PRESET_ID);
+  if (!preset) return { ok: false, message: "That preset is not available." };
+  return applyAssignmentDraft({
+    ...(state.assignment?.inputs ?? state.inputs),
+    key: preset.key,
+    mode: preset.mode,
+    progressionPresetId: preset.progressionPresetId,
+    styleId: preset.styleId,
+    length: preset.length,
+    lhId: preset.lhId,
+    motifId: preset.motifId,
+    presetId: preset.id,
+  });
 }
 
 function handleHumanizeToggle(enabled) {

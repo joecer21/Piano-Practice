@@ -766,7 +766,207 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---- The drawer: legacy controls, relocated rather than ported ----------- */
+/* ---- Assignment workspace ------------------------------------------------ */
+
+.assignment-workspace {
+  margin: var(--space-4) 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+}
+
+.assignment-workspace > summary {
+  min-height: var(--touch-target);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.assignment-workspace-body {
+  display: grid;
+  gap: var(--space-4);
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.assignment-workspace-heading,
+.assignment-tools-heading,
+.assignment-variation,
+.assignment-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.assignment-workspace :is(h2, h3, p) {
+  margin: 0;
+}
+
+.assignment-workspace-heading p,
+.assignment-tools-heading p,
+.assignment-palette > p,
+.assignment-feedback {
+  color: var(--ink-muted);
+}
+
+.assignment-preset,
+.assignment-fields label {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.assignment-workspace select {
+  min-height: var(--touch-target);
+  max-width: 100%;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.assignment-tools,
+.assignment-form,
+.assignment-palette {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.assignment-history,
+.assignment-locks,
+.assignment-palette-actions,
+.assignment-palette-group > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.assignment-lock,
+.assignment-palette button,
+.assignment-palette-actions button {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.assignment-lock[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--focus-fill);
+}
+
+.assignment-variation code,
+.assignment-variation p {
+  overflow-wrap: anywhere;
+}
+
+.assignment-variation code {
+  margin-left: var(--space-1);
+  color: var(--ink);
+}
+
+#assignment-id {
+  margin-left: var(--space-2);
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+}
+
+.assignment-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.assignment-fields label:nth-child(2),
+.assignment-fields label:nth-child(3),
+.assignment-fields label:nth-child(6) {
+  grid-column: span 2;
+}
+
+.assignment-palette {
+  min-width: 0;
+  margin: 0;
+}
+
+.assignment-palette legend {
+  padding: 0 var(--space-1);
+  font-weight: 700;
+}
+
+.assignment-palette-group {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.3fr) 1fr;
+  align-items: start;
+  gap: var(--space-2);
+}
+
+.assignment-palette-group > span {
+  padding-top: 0.65rem;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+}
+
+.assignment-feedback {
+  min-height: 1.25rem;
+}
+
+.assignment-feedback.error {
+  color: #a0322a;
+}
+
+.assignment-feedback.success {
+  color: #237347;
+}
+
+@media (prefers-color-scheme: dark) {
+  .assignment-feedback.error {
+    color: #ff9d94;
+  }
+
+  .assignment-feedback.success {
+    color: #79d69f;
+  }
+}
+
+@media (max-width: 600px) {
+  .assignment-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .assignment-fields label:nth-child(n) {
+    grid-column: auto;
+  }
+
+  .assignment-palette-group {
+    grid-template-columns: 1fr;
+  }
+
+  .assignment-palette-group > span {
+    padding-top: 0;
+  }
+
+  .assignment-form-actions > button,
+  .assignment-variation > button {
+    flex: 1 1 10rem;
+  }
+}
+
+/* ---- The remaining legacy sound controls -------------------------------- */
 
 .legacy-drawer {
   margin-top: var(--space-6);

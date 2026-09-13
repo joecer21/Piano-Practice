@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openAssignmentDrawer, openSoundSettings } from "./support.js";
 
 const MINOR_BLUES =
   "v=1&key=A&mode=minorBlues&prog=blues-12-minor&style=jazz&lh=root-5th-oct&motif=blues-riff-minor&len=12&seed=shared-link&preset=blues-a";
@@ -15,7 +16,7 @@ test("a shared link opens its assignment, and the address bar stays a share link
 
   // Rerolling commits a new assignment; the URL follows it without adding history.
   const historyLength = await page.evaluate(() => window.history.length);
-  await page.locator("#legacy-drawer summary").click();
+  await openAssignmentDrawer(page);
   await page.locator("#assignment-reroll").click();
   await expect.poll(() => new URL(page.url()).hash).not.toBe(`#${MINOR_BLUES}`);
   const rerolled = new URL(page.url()).hash;
@@ -33,7 +34,7 @@ test("a reload comes back to the last assignment and tempo", async ({ page }) =>
   await page.goto(`/#${MINOR_BLUES}`);
   const sentence = page.getByTestId("coach-sentence");
   await expect(sentence).toContainText(/^A minor blues\./);
-  await page.locator("#legacy-drawer summary").click();
+  await openSoundSettings(page);
   await page.locator("#tempo-slider").fill("112");
 
   // No fragment this time: the library, not the URL, restores it.
@@ -52,7 +53,7 @@ test("a starred assignment survives a reload and reopens from the list", async (
   await expect(page.getByRole("button", { name: "★ Starred" })).toHaveAttribute("aria-pressed", "true");
 
   // Move on to something else, then come back tomorrow.
-  await page.locator("#legacy-drawer summary").click();
+  await openAssignmentDrawer(page);
   await page.locator("#assignment-reroll").click();
   await expect(sentence).not.toHaveText(starredSentence);
   await expect(page.getByRole("button", { name: "☆ Star" })).toBeVisible();

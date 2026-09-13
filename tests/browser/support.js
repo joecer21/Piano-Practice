@@ -1,11 +1,18 @@
 /**
- * The pre-coach controls live in a disclosure below the practice surface. Open it
- * the way a user would, by its visible summary, so tests exercise the real path.
+ * The React assignment workspace is a disclosure above the practice surface.
+ * Open it by its visible summary so tests exercise the real path.
  */
 export async function openAssignmentDrawer(page) {
-  const drawer = page.locator("#legacy-drawer");
+  const drawer = page.locator("#assignment-workspace");
   if (!(await drawer.evaluate((element) => element.open))) {
-    await page.getByText("Change the assignment, sound and more").click();
+    await drawer.locator("summary").click();
+  }
+}
+
+export async function openSoundSettings(page) {
+  const drawer = page.locator("#settings-drawer");
+  if (!(await drawer.evaluate((element) => element.open))) {
+    await page.getByText("Sound and playback settings").click();
   }
 }
 

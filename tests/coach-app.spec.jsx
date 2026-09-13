@@ -136,6 +136,16 @@ function createFakeBridge({
   });
   let current = assignment;
   let snapshot = sampler;
+  const editorListeners = new Set();
+  const editorSnapshot = {
+    inputs: { ...DEFAULT_ASSIGNMENT_INPUTS, customProgressionRoman: [] },
+    locks: { key: false, harmony: false, groove: false, motif: false },
+    assignmentId: "assignment-test",
+    seed: "coach-test",
+    canUndo: false,
+    canRedo: false,
+  };
+  const successfulEdit = { ok: true, message: "Assignment updated" };
   const bridge = {
     audioEngine: createFakeEngine(),
     getAssignment: () => current,
@@ -152,13 +162,25 @@ function createFakeBridge({
     unlockAudio: vi.fn(async () => unlock),
     stopOtherPlayback: vi.fn(),
     reportError: vi.fn(),
-    openAssignmentDrawer: vi.fn(),
     getKeyboardElement: () => keyboard,
     keyboard,
     noteInput,
     midiInput,
     fakeMidi,
     setMidiPlayThrough: vi.fn(async (enabled) => midiInput.setPlayThrough(enabled)),
+    assignmentEditor: {
+      getSnapshot: () => editorSnapshot,
+      subscribe: (listener) => {
+        editorListeners.add(listener);
+        return () => editorListeners.delete(listener);
+      },
+      apply: vi.fn(() => successfulEdit),
+      applyPreset: vi.fn(() => successfulEdit),
+      reroll: vi.fn(() => successfulEdit),
+      undo: vi.fn(() => successfulEdit),
+      redo: vi.fn(() => successfulEdit),
+      toggleLock: vi.fn(),
+    },
     library,
     setAssignment(nextAssignment) {
       current = nextAssignment;
@@ -570,7 +592,8 @@ describe("CoachApp", () => {
     bridge = createFakeBridge({ assignment: cMajor });
     render(<CoachApp bridge={bridge} summaryContainer={null} />);
     await click(screen.getByRole("button", { name: "Change the assignment" }));
-    expect(bridge.openAssignmentDrawer).toHaveBeenCalled();
+    expect(document.getElementById("assignment-workspace").open).toBe(true);
+    expect(screen.getByRole("heading", { name: "Build the next assignment" })).toBeTruthy();
   });
 
   it("mirrors what the player plays as a ring, never as a hand colour", async () => {

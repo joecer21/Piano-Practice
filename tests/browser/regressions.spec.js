@@ -25,11 +25,10 @@ test("B2: an empty custom progression does not kill the app", async ({ page }) =
   });
 
   await openAssignmentDrawer(page);
-  await page.getByRole("button", { name: "Show Controls" }).click();
 
   // Select the custom palette without adding any chord, then change the key.
-  // computeDerived() was unguarded here, so generateAssignment threw
-  // "custom progressions require at least one chord" and the handler died.
+  // This is now an explicitly supported draft: it cannot replace the last valid
+  // assignment until its first chord has been added.
   await page.locator("#progression-select").selectOption("custom");
   await page.locator("#key-select").selectOption("G");
 
@@ -37,13 +36,11 @@ test("B2: an empty custom progression does not kill the app", async ({ page }) =
 
   // The last valid assignment is preserved rather than blanked.
   await expect(page.locator("#scale-name")).not.toHaveText("--");
-  await expect
-    .poll(async () => (await page.evaluate(() => window.__statusLog)).join(" | "))
-    .toContain("Add at least one chord");
+  await expect(page.getByRole("alert")).toContainText("Add at least one chord");
 
   // And the app is still live: adding a chord recovers.
-  await page.locator("#chord-palette button").first().click();
-  await page.getByRole("button", { name: /Generate/ }).click();
+  await page.locator(".assignment-palette-group button").first().click();
+  await page.getByRole("button", { name: "Apply assignment" }).click();
   await expect
     .poll(async () => (await page.evaluate(() => window.__statusLog)).join(" | "))
     .toContain("Assignment updated");

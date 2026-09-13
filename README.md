@@ -15,7 +15,7 @@ npm install
 npm run dev
 ```
 
-Open the local URL printed by Vite. Choose a preset for a ready-made assignment, or select **Show Controls** to customize it. Browser audio begins after the first click, as required by modern autoplay policies.
+Open the local URL printed by Vite. Choose **Change the assignment** to load a ready-made preset or build a custom assignment. Edits stay in a draft until **Apply assignment**, so an incomplete custom progression cannot replace the music on screen. Browser audio begins after the first click, as required by modern autoplay policies.
 
 The **Live Piano** renders C2-E6 on larger screens and a touch-friendly C3-C5 range on phones. It follows assignment playback with separate left- and right-hand colors and supports click/tap, an explicit gliss mode, roving arrow-key focus with Enter/Space, and opt-in A-W-S-E-D-F-T-G-Y-H-U-J-K note keys. Computer-key shortcuts pause while a form control has focus.
 
@@ -57,15 +57,15 @@ Sample filenames spell sharps with `s` (`ds3vl.mp3`), because a literal `#` in a
 - `domain/describe.ts` turns Score facts into deterministic practice-coach language.
 - `domain/random.js` provides the reproducible pseudo-random stream and derived seeds.
 - `domain/live-piano.js` expands interactive keys into deterministic chord shapes.
-- `coach/` is the practice surface, a React root layered over the page: the one-sentence summary and five-minute session (`CoachApp.tsx`), the Score-drawn timeline (`Timeline.tsx`), the degree and note-role overlay on the keyboard (`keyboard-overlay.ts`), and the pure request and playhead logic behind slow, loop and isolate (`practice.ts`). It reaches the rest of the app only through `bridge.ts`.
+- `coach/` is the React practice surface: the assignment workspace (`AssignmentWorkspace.tsx`), one-sentence summary and five-minute session (`CoachApp.tsx`), Score-drawn timeline (`Timeline.tsx`), degree and note-role overlay on the keyboard (`keyboard-overlay.ts`), and the pure request and playhead logic behind slow, loop and isolate (`practice.ts`). It reaches the rest of the app only through typed services in `bridge.ts`.
 - `input/` is the single stream of notes the player plays, from any source: pointer, on-screen key, computer keys or MIDI (`note-input.ts`), the held and pedal-sustained state derived from it (`held-notes.ts`), and the Web MIDI adapter (`midi.ts`). It imports nothing from the app, UI or audio.
 - `application/state.js` owns assignment commits, bounded undo/redo history, and component locks without imposing a UI framework.
 - `components/piano.js` renders the Live Piano and responds to playback note events.
-- `main.js` coordinates UI state and requests playback without importing Tone.js.
+- `main.js` composes application services, coordinates the remaining page controls, and requests playback without importing Tone.js.
 - `audio/playback-engine.ts` owns validated Score playback requests, scheduled-event ownership, count-in, rate conversion, and session lifecycle.
 - `audio.js` adapts that engine to Tone.js instruments, sample loading, transport, mix, and effects.
 - `engine.js`, `theory.js`, and `presets.js` generate the musical material.
-- `ui.js` renders and wires the pre-coach controls, which now live in the "Change the assignment, sound and more" drawer until they are ported.
+- `ui.js` renders and wires the remaining pre-React sound, playback, mix, piano-roll and reference panels. Assignment editing no longer uses it.
 - `audio/local-samples.js` is the local sample manifest, free of Tone.js so it can be validated directly.
 - `tests/*.spec.js` contains the Vitest contract suite.
 - `tests/browser/` covers the practice flow and pins previously-shipped defects as user-visible behaviour.
@@ -108,7 +108,7 @@ Each pattern also declares how it fits each pentatonic and blues collection (`co
 
 Some patterns exist only for particular collections (`modes`), such as `blues-riff-minor`, which features ♭5. Every collection has an `exemplar` pattern playing its characteristic tone: 6 in major pentatonic, ♭7 in minor pentatonic, ♭3 in major blues, ♭5 in minor blues. The seven-note modes offer the original fifteen patterns, unchanged. `npm run report:outside-collection` writes the review behind these declarations: for every outside-collection note, the chord under it and its role, metric position, duration, accent, the notes before and after, and its melodic function, plus the auditions that chose each variant. `tests/motif-compatibility.spec.js` checks each declaration against what the pattern actually plays, in every key.
 
-Score degrees always name the pitch that sounds, so Note by note, the keyboard, the legacy motif panel and playback agree.
+Score degrees always name the pitch that sounds, so Note by note, the keyboard, the reference motif panel and playback agree.
 
 ## Visual channels
 

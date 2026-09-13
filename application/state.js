@@ -45,7 +45,6 @@ export function createInitialAppState(overrides = {}) {
     },
     ui: {
       mixCollapsed: true,
-      advancedCollapsed: true,
       livePianoIndicatorMode: "both",
       livePianoGlissMode: false,
       livePianoComputerKeyboardEnabled: false,

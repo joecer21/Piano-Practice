@@ -5,9 +5,9 @@ import { CoachApp } from "./CoachApp.js";
 import "./coach.css";
 
 /**
- * Mount the coach into the static page. The legacy application keeps running
- * beside it; the coach renders its practice panel into #coach-root and its
- * summary into #coach-summary, and reaches everything else through the bridge.
+ * Mount the React practice application into the static page. Its summary is
+ * portalled into #coach-summary so it can stay above the permanent keyboard;
+ * application services arrive through the bridge rather than global state.
  */
 export function mountCoach(bridge: CoachBridge, doc: Document = document): () => void {
   const rootElement = doc.getElementById("coach-root");

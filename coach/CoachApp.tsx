@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import type { PlayRequest, PlaybackSession } from "../audio/playback-engine.js";
 import { describeAssignment } from "../domain/describe.js";
 import { EMPTY_HELD_NOTES, playedNotes, reduceHeldNotes } from "../input/held-notes.js";
+import { AssignmentWorkspace } from "./AssignmentWorkspace.js";
 import type { CoachBridge } from "./bridge.js";
 import { applyKeyboardOverlay, clearKeyboardOverlay } from "./keyboard-overlay.js";
 import type { LabelMode } from "./keyboard-overlay.js";
@@ -85,6 +86,7 @@ export function CoachApp({ bridge, summaryContainer, inputContainer = null }: Co
 
   const sessionRef = useRef<PlaybackSession | null>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
+  const assignmentWorkspaceRef = useRef<HTMLDetailsElement>(null);
   const viewRef = useRef(view);
   viewRef.current = view;
 
@@ -390,6 +392,15 @@ export function CoachApp({ bridge, summaryContainer, inputContainer = null }: Co
     if (!bridge.rerollIntoNewKey()) pendingSessionStart.current = false;
   }, [bridge]);
 
+  const openAssignmentWorkspace = useCallback(() => {
+    const workspace = assignmentWorkspaceRef.current;
+    if (!workspace) return;
+    workspace.open = true;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    workspace.scrollIntoView?.({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    workspace.querySelector("summary")?.focus();
+  }, []);
+
   useEffect(() => {
     if (!pendingSessionStart.current || !score) return;
     pendingSessionStart.current = false;
@@ -455,6 +466,8 @@ export function CoachApp({ bridge, summaryContainer, inputContainer = null }: Co
           )
         : null}
 
+      <AssignmentWorkspace editor={bridge.assignmentEditor} detailsRef={assignmentWorkspaceRef} />
+
       <PracticePanel
         score={score}
         view={view}
@@ -471,7 +484,7 @@ export function CoachApp({ bridge, summaryContainer, inputContainer = null }: Co
         onLabelMode={setLabelMode}
         onTogglePlayback={togglePlayback}
         onStepChord={stepChordBy}
-        onChangeAssignment={bridge.openAssignmentDrawer}
+        onChangeAssignment={openAssignmentWorkspace}
         assignmentActions={libraryControls}
       />
     </>

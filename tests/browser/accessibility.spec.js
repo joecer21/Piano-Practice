@@ -44,10 +44,8 @@ test("Live Piano exposes accessible controls and a phone-friendly range", async 
   await expect(piano.locator('[data-note="D4"]')).not.toHaveAttribute("data-played");
   await page.keyboard.up("s");
 
-  const controlsToggle = page.locator("#advanced-controls-toggle");
-  await expect(controlsToggle).toHaveAttribute("aria-expanded", "false");
-  await controlsToggle.click();
-  await expect(controlsToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator("#assignment-workspace")).toHaveAttribute("open", "");
+  await expect(page.getByRole("button", { name: "Apply assignment" })).toBeVisible();
 
   await openKeyboardOptions(page);
   await expect(page.getByLabel("Gliss / play")).toBeVisible();

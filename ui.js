@@ -8,39 +8,10 @@ import {
   noteStringToMidi,
   midiToNote,
   getChordTagForSymbol,
-  isMotifOfferedInMode,
-  SCALE_PATTERNS,
 } from "./theory.js";
 import { formatDegreeToken } from "./domain/describe.ts";
 
 const MIX_PARTS = ["left", "lead"];
-
-const CUSTOM_PALETTE_LIBRARY = {
-  classical: [
-    { label: "Core Diatonics", chords: ["I", "ii", "iii", "IV", "V", "vi", "viio"] },
-    { label: "Diatonic 7ths", chords: ["Imaj7", "ii7", "V7", "vi7", "viio7"] },
-    { label: "Borrowed / Modal", chords: ["iv", "bVII", "bVI", "bIII"] },
-    { label: "Secondary Dominants", chords: ["V/V", "V/ii", "V/vi", "V/IV"] },
-  ],
-  pop: [
-    { label: "Core Progressions", chords: ["I", "V", "vi", "IV", "ii", "iii"] },
-    { label: "Dreamy 7ths", chords: ["Imaj7", "IVmaj7", "V7", "vi7"] },
-    { label: "Borrowed Hooks", chords: ["bVII", "bIII", "bVI", "iv"] },
-    { label: "Lift / Drive", chords: ["V/vi", "V/IV", "V/V", "ii7"] },
-  ],
-  jazz: [
-    { label: "Cadence Staples", chords: ["ii7", "V7", "Imaj7", "vi7"] },
-    { label: "Extended Dominants", chords: ["V/ii", "V/iii", "V/vi", "bII7"] },
-    { label: "Chromatic Colors", chords: ["iii7", "bIII7", "bVII7", "bVImaj7"] },
-    { label: "Minor & Dim", chords: ["iio7", "viio7", "iv7", "i7"] },
-  ],
-  modal: [
-    { label: "Centers & Pedals", chords: ["I", "bVII", "bVI", "v"] },
-    { label: "Floating 7ths", chords: ["Imaj7", "bVII7", "iv7", "i7"] },
-    { label: "Colors", chords: ["bII", "bIII", "bVI", "bVII"] },
-    { label: "Lift / Motion", chords: ["ii", "IV", "V", "bIII7"] },
-  ],
-};
 
 const hasWindow = typeof window !== "undefined";
 const scheduleTimeout = hasWindow ? window.setTimeout.bind(window) : setTimeout;
@@ -119,17 +90,6 @@ export function cacheDom() {
   }, {});
 
   return {
-    presetSelect: document.getElementById("preset-select"),
-    key: document.getElementById("key-select"),
-    mode: document.getElementById("mode-select"),
-    styleSelect: document.getElementById("palette-level"),
-    paletteLevel: document.getElementById("palette-level"),
-    progressionSelect: document.getElementById("progression-select"),
-    paletteContainer: document.getElementById("chord-palette"),
-    leftHand: document.getElementById("lh-select"),
-    motif: document.getElementById("motif-select"),
-    length: document.getElementById("length-select"),
-    generate: document.getElementById("generate"),
     tempoSlider: document.getElementById("tempo-slider"),
     tempoValue: document.getElementById("tempo-value"),
     stopAll: document.getElementById("stop-all"),
@@ -159,10 +119,7 @@ export function cacheDom() {
     motifVisual: document.getElementById("motif-visual"),
     motifCard: document.getElementById("motif-card"),
     motifPlayhead: null,
-    customPreview: document.getElementById("custom-progression-preview"),
-    clearCustom: document.getElementById("clear-custom-progression"),
     statusLine: document.getElementById("status-line"),
-    customHeader: document.getElementById("custom-progression-title"),
     playButtons: document.querySelectorAll(".play"),
     cards: document.querySelectorAll(".card"),
     playAllLoopBadge: document.getElementById("play-all-loop-badge"),
@@ -172,14 +129,6 @@ export function cacheDom() {
     mixControls,
     mixCard: document.querySelector(".mix-card"),
     mixCardToggle: document.getElementById("mix-card-toggle"),
-    advancedControlsCard: document.getElementById("advanced-controls-card"),
-    advancedControlsToggle: document.getElementById("advanced-controls-toggle"),
-    assignmentReroll: document.getElementById("assignment-reroll"),
-    assignmentUndo: document.getElementById("assignment-undo"),
-    assignmentRedo: document.getElementById("assignment-redo"),
-    assignmentSeed: document.getElementById("assignment-seed"),
-    assignmentId: document.getElementById("assignment-id"),
-    assignmentLockButtons: document.querySelectorAll("[data-assignment-lock]"),
     humanizeToggle: document.getElementById("humanize-toggle"),
     humanizeAmount: document.getElementById("humanize-amount"),
     humanizeValue: document.getElementById("humanize-value"),
@@ -194,18 +143,9 @@ export function cacheDom() {
 }
 
 export function wireEvents(dom, handlers) {
-  dom.generate?.addEventListener("click", handlers.onGenerate);
-  dom.presetSelect?.addEventListener("change", (e) => handlers.onPresetChange?.(e.target.value));
-  dom.key?.addEventListener("change", (e) => handlers.onKeyChange(e.target.value));
-  dom.mode?.addEventListener("change", (e) => handlers.onModeChange && handlers.onModeChange(e.target.value));
-  dom.styleSelect?.addEventListener("change", (e) => handlers.onStyleChange(e.target.value));
-  dom.leftHand?.addEventListener("change", (e) => handlers.onLeftHandChange?.(e.target.value));
-  dom.motif?.addEventListener("change", (e) => handlers.onMotifChange?.(e.target.value));
-  dom.length?.addEventListener("change", (e) => handlers.onLengthChange?.(e.target.value));
   dom.tempoSlider?.addEventListener("input", (e) => handlers.onTempoChange(Number(e.target.value)));
   dom.stopAll?.addEventListener("click", handlers.onStopAll);
   dom.playAll?.addEventListener("click", handlers.onPlayAll);
-  dom.progressionSelect?.addEventListener("change", (e) => handlers.onProgressionChange(e.target.value));
 
   dom.playButtons.forEach((btn) => {
     btn.addEventListener("click", (e) => {
@@ -215,18 +155,7 @@ export function wireEvents(dom, handlers) {
     });
   });
 
-  dom.clearCustom?.addEventListener("click", handlers.onClearCustom);
   dom.mixCardToggle?.addEventListener("click", () => handlers.onMixCardToggle?.());
-  dom.advancedControlsToggle?.addEventListener("click", () => handlers.onAdvancedControlsToggle?.());
-  dom.assignmentReroll?.addEventListener("click", () => handlers.onAssignmentReroll?.());
-  dom.assignmentUndo?.addEventListener("click", () => handlers.onAssignmentUndo?.());
-  dom.assignmentRedo?.addEventListener("click", () => handlers.onAssignmentRedo?.());
-  dom.assignmentLockButtons?.forEach((button) => {
-    button.addEventListener("click", () => {
-      const component = button.dataset.assignmentLock;
-      if (component) handlers.onAssignmentLockToggle?.(component);
-    });
-  });
   dom.pianoModel?.addEventListener("change", (e) => {
     const value = e.target.value;
     handlers.onLibrarySelect?.(value);
@@ -521,28 +450,6 @@ export function renderProgression(state, dom, getPreset) {
       return `<div class="bar progression-bar${borrowedClass}" data-bar-index="${idx}"${titleAttr}>${idx + 1}. ${bar.label}</div>`;
     })
     .join("");
-}
-
-export function renderCustomProgressionPreview(state, dom) {
-  if (!dom.customPreview) return;
-  const mode = state.inputs?.mode || state.derived.scale?.mode;
-  if (!state.inputs.customProgressionRoman.length) {
-    dom.customPreview.textContent = "No chords yet. Click palette buttons to build your sequence.";
-  } else {
-    const labels = state.inputs.customProgressionRoman.map((chord) => {
-      const parsed = parseRomanSymbol(chord);
-      const tag = getChordTagForSymbol(chord, {
-        mode,
-        parsed,
-        preferModeQuality: true,
-        styleProfile: state.derived.styleProfile,
-        applyStyleOverrides: true,
-      });
-      return labelRomanWithTag(chord, tag, parsed);
-    });
-
-    dom.customPreview.textContent = labels.join(" | ");
-  }
 }
 
 export function renderLeftHand(state, dom) {
@@ -841,35 +748,6 @@ export function renderSpatialControls(dom, fx = {}) {
   }
 }
 
-export function renderAssignmentTools(dom, state, history = {}) {
-  const locks = state?.locks || {};
-  dom.assignmentLockButtons?.forEach((button) => {
-    const component = button.dataset.assignmentLock;
-    if (!component) return;
-    const locked = !!locks[component];
-    const label = component.charAt(0).toUpperCase() + component.slice(1);
-    button.setAttribute("aria-pressed", String(locked));
-    button.classList.toggle("active", locked);
-    button.textContent = `${locked ? "Unlock" : "Lock"} ${label.toLowerCase()}`;
-    button.title = `${label} is ${locked ? "kept" : "eligible to change"} on the next reroll`;
-  });
-
-  if (dom.assignmentReroll) {
-    const allLocked = ["key", "harmony", "groove", "motif"].every((part) => !!locks[part]);
-    dom.assignmentReroll.disabled = allLocked || !state?.assignment;
-    dom.assignmentReroll.title = allLocked
-      ? "Unlock at least one part to create a variation"
-      : "Create the next deterministic variation";
-  }
-  if (dom.assignmentUndo) dom.assignmentUndo.disabled = !history.canUndo;
-  if (dom.assignmentRedo) dom.assignmentRedo.disabled = !history.canRedo;
-  if (dom.assignmentSeed) dom.assignmentSeed.textContent = state?.assignment?.seed || "—";
-  if (dom.assignmentId) {
-    const id = state?.assignment?.id || "";
-    dom.assignmentId.textContent = id ? `ID ${id.replace(/^assignment-/, "")}` : "";
-  }
-}
-
 export function setMixCardCollapsed(dom, collapsed) {
   if (dom.mixCard) {
     dom.mixCard.classList.toggle("collapsed", !!collapsed);
@@ -877,28 +755,6 @@ export function setMixCardCollapsed(dom, collapsed) {
   if (dom.mixCardToggle) {
     dom.mixCardToggle.textContent = collapsed ? "Show" : "Hide";
     dom.mixCardToggle.setAttribute("aria-expanded", String(!collapsed));
-  }
-}
-
-export function setAdvancedControlsCollapsed(dom, collapsed) {
-  if (dom.advancedControlsCard) {
-    dom.advancedControlsCard.classList.toggle("collapsed", !!collapsed);
-  }
-  if (dom.advancedControlsToggle) {
-    dom.advancedControlsToggle.textContent = collapsed ? "Show Controls" : "Hide Controls";
-    dom.advancedControlsToggle.setAttribute("aria-expanded", String(!collapsed));
-  }
-}
-
-export function populatePresetSelector(dom, presets = [], selectedId) {
-  if (!dom?.presetSelect) return;
-  dom.presetSelect.innerHTML = [
-    '<option value="" disabled>Custom variation</option>',
-    ...presets.map((preset) => `<option value="${preset.id}">${preset.name}</option>`),
-  ].join("");
-  const resolvedId = selectedId || presets[0]?.id || "";
-  if (resolvedId) {
-    dom.presetSelect.value = resolvedId;
   }
 }
 
@@ -1027,69 +883,6 @@ function formatDb(value, muted) {
   return `${sign}${rounded} dB`;
 }
 
-/**
- * Disable the motif patterns not offered in a mode, saying why in the option text.
- * The selected option stays selected even when disabled, so a mode change never
- * swaps the learner's pattern (or its notes) for another; generation is blocked
- * with an explanation instead.
- */
-export function updateMotifOffering(dom, mode) {
-  const select = dom.motif;
-  if (!select) return;
-  const modeLabel = SCALE_PATTERNS[mode]?.label ?? mode;
-  Array.from(select.options).forEach((option) => {
-    if (option.value === "none") return;
-    const offered = isMotifOfferedInMode(option.value, mode);
-    option.disabled = !offered;
-    option.textContent = offered ? option.dataset.label : `${option.dataset.label} - not for ${modeLabel}`;
-  });
-}
-
-export function populateMotifSelector(dom, motifs) {
-  const select = dom.motif;
-  if (!select) return;
-
-  select.innerHTML = "";
-
-  const noneOption = document.createElement("option");
-  noneOption.value = "none";
-  noneOption.textContent = "No Motif (chords + LH only)";
-  select.appendChild(noneOption);
-
-  const grouped = {};
-  Object.entries(motifs).forEach(([id, style]) => {
-    if (!grouped[style.category]) grouped[style.category] = [];
-    grouped[style.category].push({ id, ...style });
-  });
-
-  Object.keys(grouped).forEach((category) => {
-    const groupEl = document.createElement("optgroup");
-    groupEl.label = category.charAt(0).toUpperCase() + category.slice(1);
-    grouped[category].forEach((style) => {
-      const option = document.createElement("option");
-      option.value = style.id;
-      option.dataset.label = `${style.label} (${style.difficulty})`;
-      option.textContent = option.dataset.label;
-      groupEl.appendChild(option);
-    });
-    select.appendChild(groupEl);
-  });
-
-  if (select.options.length > 0 && select.selectedIndex === -1) {
-    select.selectedIndex = 0;
-  }
-}
-
-export function toggleCustomCard(dom, isCustom) {
-  const card = document.getElementById("custom-progression-card");
-  if (!card) return;
-  if (isCustom) {
-    card.classList.remove("hidden");
-  } else {
-    card.classList.add("hidden");
-  }
-}
-
 export function renderProgressionPresetInfo(dom, preset, styleProfile, progression) {
   if (!dom.progressionDescription) return;
   const styleText = styleProfile ? `Style: ${styleProfile.label} - ${styleProfile.description}` : "";
@@ -1101,134 +894,8 @@ export function renderProgressionPresetInfo(dom, preset, styleProfile, progressi
   dom.progressionDescription.textContent = borrowedSummary ? `${baseText} | ${borrowedSummary}` : baseText;
 }
 
-export function populateProgressionSelector(dom, presets, activeId) {
-  const select = dom.progressionSelect;
-  if (!select) return;
-  const ownerDocument = select.ownerDocument || document;
-
-  select.innerHTML = "";
-
-  presets.forEach((preset) => {
-    const option = ownerDocument.createElement("option");
-    option.value = preset.id;
-    const romanText = preset.roman.join(" – ");
-    option.textContent = `${preset.label} (${romanText})`;
-    select.appendChild(option);
-  });
-
-  const customOption = ownerDocument.createElement("option");
-  customOption.value = "custom";
-  customOption.textContent = "Custom (use chord palette)";
-  select.appendChild(customOption);
-
-  const resolvedId = activeId || presets[0]?.id || "custom";
-  select.value = resolvedId;
-  if (select.value !== resolvedId && select.options.length > 0) {
-    select.selectedIndex = 0;
-  }
-}
-
-export function renderPaletteButtons(styleId, dom, paletteSets, options = {}) {
-  const container = dom.paletteContainer;
-  if (!container) return;
-  container.innerHTML = "";
-
-  const groups =
-    CUSTOM_PALETTE_LIBRARY[styleId] ||
-    paletteSets?.[styleId] ||
-    CUSTOM_PALETTE_LIBRARY.classical ||
-    paletteSets?.classical ||
-    [];
-  const mode = options.mode;
-
-  groups.forEach((group) => {
-    const wrapper = document.createElement("div");
-    wrapper.className = "palette-group";
-
-    const labelEl = document.createElement("div");
-    labelEl.className = "palette-label";
-    labelEl.textContent = group.label;
-    wrapper.appendChild(labelEl);
-
-    const row = document.createElement("div");
-    row.className = "chord-palette-row";
-
-    group.chords.forEach((chord) => {
-      const parsed = parseRomanSymbol(chord);
-      const tag = getChordTagForSymbol(chord, {
-        mode,
-        parsed,
-        preferModeQuality: true,
-        styleProfile: options.styleProfile,
-        applyStyleOverrides: true,
-      });
-      const labelText = labelRomanWithTag(chord, tag, parsed);
-
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "chord-button";
-      btn.dataset.chord = chord;
-      btn.textContent = labelText;
-      row.appendChild(btn);
-    });
-
-    wrapper.appendChild(row);
-    container.appendChild(wrapper);
-  });
-
-  if (!container.children.length) {
-    const row = document.createElement("div");
-    row.className = "chord-palette-row";
-    ["I", "ii", "iii", "IV", "V", "vi", "viio"].forEach((chord) => {
-      const parsed = parseRomanSymbol(chord);
-      const tag = getChordTagForSymbol(chord, {
-        mode,
-        parsed,
-        preferModeQuality: true,
-        styleProfile: options.styleProfile,
-        applyStyleOverrides: true,
-      });
-      const labelText = labelRomanWithTag(chord, tag, parsed);
-
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "chord-button";
-      btn.dataset.chord = chord;
-      btn.textContent = labelText;
-      row.appendChild(btn);
-    });
-    container.appendChild(row);
-  }
-}
-
-export function attachPaletteButtonHandlers(dom, onChordAdd) {
-  if (!dom.paletteContainer) return;
-  const buttons = dom.paletteContainer.querySelectorAll(".chord-button");
-  buttons.forEach((btn) => {
-    btn.onclick = () => {
-      const chord = btn.dataset.chord;
-      if (!chord) return;
-      onChordAdd(chord);
-      pulseElement(btn, "tap");
-      if (dom.customPreview) pulseElement(dom.customPreview, "status");
-      if (dom.customHeader) pulseElement(dom.customHeader, "accent");
-    };
-  });
-}
-
 export function setTempoValue(dom, value) {
   if (dom.tempoValue) dom.tempoValue.textContent = `${value} BPM`;
-}
-
-export function updateGenerateButtonLabel(dom, isCustom) {
-  if (!dom.generate) return;
-  dom.generate.textContent = isCustom ? "Generate from Custom Chords" : "Generate Assignment";
-}
-
-export function updateCustomHeaderCount(dom, count) {
-  if (!dom.customHeader) return;
-  const bars = count || 0;
-  dom.customHeader.textContent = `Custom Progression (${bars} bar${bars === 1 ? "" : "s"})`;
 }
 
 export function setStatusMessage(dom, text, options = {}) {
@@ -1388,17 +1055,6 @@ export function runAssignmentPulse(dom, { includeMotif = true } = {}) {
     targets.push(dom.motifCard);
   }
   targets.filter(Boolean).forEach((node) => pulseElement(node, "card"));
-}
-
-export function pulsePresetCard(dom) {
-  const fallbackCard = typeof document !== "undefined" ? document.getElementById("preset-card") : null;
-  const presetCard = findCardNode(dom.presetSelect) || fallbackCard;
-  if (presetCard) {
-    pulseElement(presetCard, "card");
-  }
-  if (dom.advancedControlsCard && !dom.advancedControlsCard.classList.contains("collapsed")) {
-    pulseElement(dom.advancedControlsCard, "card");
-  }
 }
 
 export function pulseSamplerBadge(dom) {

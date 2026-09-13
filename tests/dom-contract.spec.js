@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { JSDOM } from "jsdom";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { cacheDom, renderSamplerStatus, setAdvancedControlsCollapsed, setMixCardCollapsed } from "../ui.js";
+import { cacheDom, renderSamplerStatus, setMixCardCollapsed } from "../ui.js";
 
 const html = readFileSync(fileURLToPath(new URL("../index.html", import.meta.url)), "utf8");
 
@@ -86,13 +86,9 @@ describe("index.html / cacheDom contract", () => {
     const cached = cacheDom();
 
     setMixCardCollapsed(cached, true);
-    setAdvancedControlsCollapsed(cached, true);
     expect(cached.mixCardToggle.getAttribute("aria-expanded")).toBe("false");
-    expect(cached.advancedControlsToggle.getAttribute("aria-expanded")).toBe("false");
 
     setMixCardCollapsed(cached, false);
-    setAdvancedControlsCollapsed(cached, false);
     expect(cached.mixCardToggle.getAttribute("aria-expanded")).toBe("true");
-    expect(cached.advancedControlsToggle.getAttribute("aria-expanded")).toBe("true");
   });
 });

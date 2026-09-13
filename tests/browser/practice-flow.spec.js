@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { openAssignmentDrawer } from "./support.js";
+import { openAssignmentDrawer, openSoundSettings } from "./support.js";
 
 test("loads, generates, plays, stops, and switches piano models", async ({ page }, testInfo) => {
   await page.goto("/");
@@ -18,8 +18,8 @@ test("loads, generates, plays, stops, and switches piano models", async ({ page 
     )
     .toEqual({ overflowX: "auto", pageFitsViewport: true });
 
-  await page.getByRole("button", { name: "Show Controls" }).click();
-  await page.getByRole("button", { name: "Generate Assignment" }).click();
+  await page.locator("#key-select").selectOption("D");
+  await page.getByRole("button", { name: "Apply assignment" }).click();
   await expect(page.locator("#status-line")).toContainText("Assignment updated");
 
   const initialKey = await page.locator("#key-select").inputValue();
@@ -34,6 +34,8 @@ test("loads, generates, plays, stops, and switches piano models", async ({ page 
   await expect(page.getByRole("button", { name: "Redo" })).toBeEnabled();
   await page.getByRole("button", { name: "Redo" }).click();
   await expect(page.locator("#assignment-seed")).not.toHaveText(initialSeed || "");
+
+  await openSoundSettings(page);
 
   await page.waitForFunction(() => {
     const snapshot = window.__samplerSnapshot;
