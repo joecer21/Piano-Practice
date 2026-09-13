@@ -1,4 +1,12 @@
-import { buildChord, getStyleProfile, degreeToNote } from "../theory.js";
+import {
+  buildChord,
+  getStyleProfile,
+  degreeToNote,
+  degreeTokenSemitones,
+  noteStringToMidi,
+  SCALE_PATTERNS,
+} from "../theory.js";
+import { DEFAULT_ASSIGNMENT_INPUTS, generateAssignment } from "../domain/assignment.js";
 import { generateProgression, generateScale } from "../engine.js";
 import { describe, it } from "vitest";
 import { expect } from "vitest";
@@ -52,6 +60,46 @@ function run() {
       const sharpFour = degreeToNote("\u266f4", scale.mode, scale);
       expect(["D#", "Eb"], `Unexpected ♭3: ${flatThree}`).toContain(flatThree);
       expect(["F#", "Gb"], `Unexpected ♯4: ${sharpFour}`).toContain(sharpFour);
+    });
+
+    it("measures an altered degree from the major scale in every mode", () => {
+      for (const mode of Object.keys(SCALE_PATTERNS)) {
+        expect(degreeToNote("b3", mode, { mode, key: "A" }), mode).toBe("C");
+        expect(degreeTokenSemitones("b3", mode), mode).toBe(3);
+        expect(degreeTokenSemitones("b10", mode), mode).toBe(15);
+      }
+      expect(degreeToNote("b7", "minor", { mode: "minor", key: "C" })).toBe("Bb");
+    });
+
+    it("keeps plain degrees on the mode's own scale steps", () => {
+      expect(degreeTokenSemitones(3, "minor")).toBe(3);
+      expect(degreeTokenSemitones(3, "pentatonicMinor")).toBe(5);
+      expect(degreeTokenSemitones(8, "pentatonicMinor")).toBe(17);
+      expect(degreeToNote(4, "pentatonicMinor", { mode: "pentatonicMinor", key: "A" })).toBe("E");
+    });
+
+    it("spells a lowered degree in a sharp key without flats", () => {
+      expect(degreeToNote("b3", "minor", { mode: "minor", key: "D#" })).toBe("F#");
+      expect(degreeToNote("b3", "major", { mode: "major", key: "Eb" })).toBe("Gb");
+    });
+  });
+
+  describe("Motif flat degrees", () => {
+    it("plays pent-grid's ♭3 a minor third above home in every mode", () => {
+      for (const mode of Object.keys(SCALE_PATTERNS)) {
+        const assignment = generateAssignment({
+          ...DEFAULT_ASSIGNMENT_INPUTS,
+          key: "A",
+          mode,
+          motifId: "pent-grid",
+          seed: `pent-grid-${mode}`,
+        });
+        const [home, flatThree] = assignment.motif.steps
+          .filter((step) => !step.rest)
+          .slice(0, 2)
+          .map((step) => noteStringToMidi(step.note));
+        expect(flatThree - home, mode).toBe(3);
+      }
     });
   });
 

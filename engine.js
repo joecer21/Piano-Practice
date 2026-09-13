@@ -23,6 +23,7 @@ import {
   stripOctave,
   toneToBeatsFromDuration,
   degreeToNote,
+  degreeTokenSemitones,
   getStylePlaybackHints,
   analyzeRomanAgainstMode,
   parseRomanSymbol,
@@ -64,12 +65,6 @@ const PATTERN_LH_GAP_ADJUST = {
   "power-8ths": 1,
 };
 const MIN_LH_RH_INTERVAL = 4;
-
-function resolveDegreeNumber(token) {
-  if (typeof token === "number" && Number.isFinite(token)) return token;
-  const numeric = parseInt(String(token ?? "1").replace(/[^0-9]/g, ""), 10);
-  return Number.isFinite(numeric) ? numeric : 1;
-}
 
 export function generateScale({ key, mode = "major" }) {
   const normalizedMode = SCALE_PATTERNS[mode] ? mode : "major";
@@ -288,14 +283,9 @@ export function generateMotif({ motifPatternId, styleId: playbackStyleId, phrase
 
     if (!rest) {
       const degree = degreePattern[idx % degreePattern.length];
-      const degreeNumber = resolveDegreeNumber(degree);
       const noteName = degreeToNote(degree, scale?.mode, scale);
-      const stepsPerOctave = scale?.intervals?.length || scale?.notes?.length || 7;
-      const octaveShift = Math.floor((degreeNumber - 1) / stepsPerOctave);
-      const scaleIndex = (((degreeNumber - 1) % stepsPerOctave) + stepsPerOctave) % stepsPerOctave;
-      const scaleInterval = scale?.intervals?.[scaleIndex] ?? scaleIndex * 2;
       const rootMidi = noteToMidi(motifRootNote, octaveBase);
-      const expectedMidi = rootMidi + octaveShift * 12 + scaleInterval;
+      const expectedMidi = rootMidi + degreeTokenSemitones(degree, scale?.mode);
       const noteOctave = findClosestOctave(noteName, expectedMidi);
 
       step.note = `${noteName}${noteOctave}`;
@@ -1600,7 +1590,6 @@ function estimateMotifRangeForAnchors({ motifStyle, key, mode, rhAnchor }) {
     return null;
   }
   const scale = generateScale({ key, mode });
-  const stepsPerOctave = scale?.intervals?.length || 7;
   const anchorMidi = noteStringToMidiSafe(rhAnchor, rhAnchor);
   const baseNoteName = scale?.notes?.[0] || stripOctave(key || "C") || "C";
   const reference = `${baseNoteName}${extractOctaveNumber(rhAnchor, 5)}`;
@@ -1609,10 +1598,9 @@ function estimateMotifRangeForAnchors({ motifStyle, key, mode, rhAnchor }) {
   const startOctave = extractOctaveNumber(reference, 5) + octaveAdjust;
   const midis = motifStyle.degreePattern
     .map((degreeToken) => {
-      const degreeNumber = resolveDegreeNumber(degreeToken);
       const noteName = degreeToNote(degreeToken, mode, scale);
       if (!noteName) return null;
-      const octaveShift = Math.floor((degreeNumber - 1) / stepsPerOctave);
+      const octaveShift = Math.floor(degreeTokenSemitones(degreeToken, mode) / 12);
       const finalNote = `${noteName}${startOctave + octaveShift}`;
       return noteStringToMidiSafe(finalNote, finalNote);
     })

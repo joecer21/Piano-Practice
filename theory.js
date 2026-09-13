@@ -1057,18 +1057,30 @@ function parseDegreeToken(token) {
   return { degree, accidental };
 }
 
-export function degreeToNote(degreeInput, mode, scale = {}) {
+/**
+ * Semitones from the tonic (octaves included) to a motif degree token. A plain
+ * degree counts the mode's own scale steps, so "3" in pentatonic minor is its third
+ * note. An altered one is measured from the major scale, like a chord numeral:
+ * "\u266d3" is a minor third above home in every mode, not a flat applied on top of a
+ * scale step that may already be lowered.
+ */
+export function degreeTokenSemitones(degreeInput, mode) {
   const parsed = parseDegreeToken(degreeInput);
-  const normalizedMode = normalizeModeId(mode || scale.mode);
-  const intervals = getModeIntervals(normalizedMode);
+  const intervals = parsed.accidental ? MAJOR_SCALE_STEPS : getModeIntervals(normalizeModeId(mode));
   const span = intervals.length || 7;
   const degreeIndex = (((parsed.degree - 1) % span) + span) % span;
   const octaveOffset = Math.floor((parsed.degree - 1) / span);
-  const semitoneOffset = intervals[degreeIndex] + parsed.accidental + octaveOffset * 12;
+  return intervals[degreeIndex] + parsed.accidental + octaveOffset * 12;
+}
+
+export function degreeToNote(degreeInput, mode, scale = {}) {
+  const parsed = parseDegreeToken(degreeInput);
+  const semitoneOffset = degreeTokenSemitones(degreeInput, mode || scale.mode);
   const root = scale.key || scale.root || scale.notes?.[0] || "C";
   const rootIndex = NOTE_TO_INDEX[root] ?? NOTE_TO_INDEX.C;
   const absoluteIndex = (rootIndex + semitoneOffset + 1200) % 12;
-  const preferFlat = parsed.accidental < 0 || /b|\u266d/.test(root);
+  // As with chord numerals, a lowered degree in a sharp key is a natural or a sharp.
+  const preferFlat = /b|\u266d/.test(root) || (parsed.accidental < 0 && !/#/.test(root));
   return noteNameFromIndex(absoluteIndex, preferFlat);
 }
 
