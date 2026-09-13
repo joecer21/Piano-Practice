@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { openAssignmentDrawer, openSoundSettings } from "./support.js";
+import { openAssignmentDrawer, openScaleReference, openSoundSettings } from "./support.js";
 
 const auditedStandards = ["wcag2a", "wcag2aa", "wcag21aa"];
 
@@ -17,7 +17,7 @@ test("the landing and expanded practice controls have no detectable WCAG A/AA vi
   expect((await audit(page)).violations).toEqual([]);
 
   await openAssignmentDrawer(page);
-  await page.locator("#scale-reference > summary").click();
+  await openScaleReference(page);
   await openSoundSettings(page);
   await page.getByText("Mix and feel").click();
 

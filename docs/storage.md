@@ -17,6 +17,8 @@ One `localStorage` key, `piano-practice:library`, owned by `application/library.
 
 Assignments are always stored as **share fragments** and read back through the same strict decoder as a shared link (`domain/share.ts`). Storage can therefore never open an assignment a link could not, and existing links and stored assignments share one compatibility promise.
 
+A second key, `piano-practice:theme`, holds the visual theme as the bare string `studio` or `paper` (`coach/theme.ts`). It is a presentation preference, kept apart from the versioned library so that the inline script in `index.html` can read it before first paint. A first visit always uses `studio`; the operating-system colour scheme is intentionally ignored. Any other value reads as `studio`. Clearing history leaves it alone.
+
 The musical QA audition page keeps its in-progress review ledger under its own key; it is maintainer-only.
 
 ## Guarantees

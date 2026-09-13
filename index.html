@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="studio">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,7 +8,19 @@
       name="description"
       content="Something to play right now, and why it works: a five-minute piano improvisation session, broken down hands apart, chord by chord and note by note."
     />
-    <meta name="theme-color" content="#2a1f19" />
+    <meta name="theme-color" content="#181513" />
+    <!-- Apply a stored theme before first paint, so paper never flashes studio.
+         Key and colour must match coach/theme.ts (tests/theme.spec.js). -->
+    <script>
+      try {
+        if (localStorage.getItem("piano-practice:theme") === "paper") {
+          document.documentElement.dataset.theme = "paper";
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", "#f6f1eb");
+        }
+      } catch {
+        // Storage blocked: stay on the default studio theme.
+      }
+    </script>
     <!-- Relative, so the page works at a domain root and under /Piano-Practice/. -->
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
@@ -36,78 +48,109 @@
   <body>
     <main class="app-shell coach-shell">
       <header class="coach-top">
-        <h1 class="coach-title">5-Minute Improv Coach</h1>
-        <div id="coach-summary" class="coach-summary"></div>
+        <div class="coach-brand">
+          <h1 class="coach-title">
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linejoin="round"
+            >
+              <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
+              <path d="M8 5v14M13 5v14M18 5v14" />
+              <path d="M8 5v8M13 5v8" stroke-width="4" />
+            </svg>
+            <span>5-Minute Improv Coach</span>
+          </h1>
+          <div class="coach-header-actions">
+            <div id="coach-tools" class="coach-tools"></div>
+            <div id="coach-theme" class="coach-theme"></div>
+          </div>
+        </div>
       </header>
 
-      <section
-        class="coach-keyboard live-piano-card"
-        id="piano-visual-card"
-        aria-labelledby="live-piano-title"
-      >
-        <div class="coach-keyboard-head">
-          <h2 id="live-piano-title" class="coach-keyboard-title">Keyboard</h2>
-          <p class="muted live-piano-help" id="live-piano-help">
-            Labels show each key's scale degree in the current bar. Filled marks are chord tones; the heaviest
-            is the root.
-          </p>
-        </div>
-        <div class="piano-visual-wrapper">
-          <div
-            id="piano-visual"
-            class="piano-visual"
-            role="group"
+      <div class="coach-stage-layout">
+        <div class="coach-stage">
+          <div id="coach-summary" class="coach-summary coach-stage-intro"></div>
+
+          <section
+            class="coach-keyboard live-piano-card"
+            id="piano-visual-card"
             aria-labelledby="live-piano-title"
-            aria-describedby="live-piano-help piano-qwerty-help"
-          ></div>
-        </div>
-        <div class="coach-keyboard-options piano-controls">
-          <label class="piano-hover-toggle" for="piano-computer-keyboard">
-            <input type="checkbox" id="piano-computer-keyboard" /> Computer keys
-          </label>
-          <p class="muted piano-qwerty-help" id="piano-qwerty-help">
-            Computer keys: A W S E D F T G Y H U J K play C4–C5; Z and X change octave. Shortcuts pause while
-            using a form control.
-          </p>
-          <div id="coach-input" class="coach-input"></div>
-          <details class="coach-more">
-            <summary>Keyboard options</summary>
-            <div class="coach-more-body">
-              <fieldset class="piano-indicator-toggle">
-                <legend>Indicators</legend>
-                <label><input type="radio" name="piano-indicator-mode" value="both" checked /> Both</label>
-                <label><input type="radio" name="piano-indicator-mode" value="lh" /> LH</label>
-                <label><input type="radio" name="piano-indicator-mode" value="rh" /> RH</label>
-              </fieldset>
-              <label class="piano-control" for="piano-chord-mode">
-                Shape
-                <select id="piano-chord-mode">
-                  <option value="single" selected>Single note</option>
-                  <option value="diatonic-triad">Diatonic triad</option>
-                  <option value="diatonic-7th">Diatonic 7th</option>
-                  <option value="sus2">Sus2</option>
-                  <option value="sus4">Sus4</option>
-                  <option value="power5">Power 5</option>
-                  <option value="maj6">Major 6</option>
-                  <option value="min6">Minor 6</option>
-                  <option value="add9">Add9</option>
-                  <option value="quartal">Quartal stack</option>
-                  <option value="dom7">Dominant 7</option>
-                  <option value="maj7">Major 7</option>
-                  <option value="min7">Minor 7</option>
-                </select>
-              </label>
-              <label class="piano-hover-toggle" for="piano-gliss-mode">
-                <input type="checkbox" id="piano-gliss-mode" /> Gliss / play
-              </label>
+          >
+            <div class="coach-keyboard-head">
+              <h2 id="live-piano-title" class="coach-keyboard-title">Keyboard</h2>
+              <p class="muted live-piano-help" id="live-piano-help">
+                Labels show each key's scale degree in the current bar. Filled marks are chord tones; the
+                heaviest is the root.
+              </p>
             </div>
-          </details>
+            <div class="piano-visual-wrapper">
+              <div
+                id="piano-visual"
+                class="piano-visual"
+                role="group"
+                aria-labelledby="live-piano-title"
+                aria-describedby="live-piano-help piano-qwerty-help"
+              ></div>
+            </div>
+            <div id="coach-timeline-slot" class="coach-timeline-slot"></div>
+            <div class="coach-keyboard-options piano-controls">
+              <label class="piano-hover-toggle" for="piano-computer-keyboard">
+                <input type="checkbox" id="piano-computer-keyboard" /> Computer keys
+              </label>
+              <p class="muted piano-qwerty-help" id="piano-qwerty-help">
+                Computer keys: A W S E D F T G Y H U J K play C4–C5; Z and X change octave. Shortcuts pause
+                while using a form control.
+              </p>
+              <details class="coach-more">
+                <summary>Keyboard options</summary>
+                <div class="coach-more-body">
+                  <fieldset class="piano-indicator-toggle">
+                    <legend>Indicators</legend>
+                    <label
+                      ><input type="radio" name="piano-indicator-mode" value="both" checked /> Both</label
+                    >
+                    <label><input type="radio" name="piano-indicator-mode" value="lh" /> LH</label>
+                    <label><input type="radio" name="piano-indicator-mode" value="rh" /> RH</label>
+                  </fieldset>
+                  <label class="piano-control" for="piano-chord-mode">
+                    Shape
+                    <select id="piano-chord-mode">
+                      <option value="single" selected>Single note</option>
+                      <option value="diatonic-triad">Diatonic triad</option>
+                      <option value="diatonic-7th">Diatonic 7th</option>
+                      <option value="sus2">Sus2</option>
+                      <option value="sus4">Sus4</option>
+                      <option value="power5">Power 5</option>
+                      <option value="maj6">Major 6</option>
+                      <option value="min6">Minor 6</option>
+                      <option value="add9">Add9</option>
+                      <option value="quartal">Quartal stack</option>
+                      <option value="dom7">Dominant 7</option>
+                      <option value="maj7">Major 7</option>
+                      <option value="min7">Minor 7</option>
+                    </select>
+                  </label>
+                  <label class="piano-hover-toggle" for="piano-gliss-mode">
+                    <input type="checkbox" id="piano-gliss-mode" /> Gliss / play
+                  </label>
+                </div>
+              </details>
+            </div>
+          </section>
+
+          <div id="coach-root" class="coach-root"></div>
         </div>
-      </section>
 
-      <div id="coach-root" class="coach-root"></div>
+        <div id="coach-panel-host" class="coach-panel-host"></div>
+      </div>
 
-      <div id="coach-settings"></div>
+      <!-- Kept as static compatibility slots; Phase 3 renders these tools in the panel host. -->
+      <div id="coach-input" hidden></div>
+      <div id="coach-settings" hidden></div>
     </main>
 
     <script type="module" src="/main.js"></script>

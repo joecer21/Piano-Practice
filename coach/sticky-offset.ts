@@ -4,7 +4,7 @@
  *
  * The header's height changes with the assignment sentence and the session
  * controls, so no fixed CSS value is right. This publishes its current height as
- * `--coach-top-height`, which `scroll-padding-top` in coach.css reads. It is one of
+ * `--coach-top-height`, which `scroll-padding-top` in styles/layout.css reads. It is one of
  * the justified direct-DOM accessibility utilities: it writes a single custom
  * property on the root element and nothing else.
  */

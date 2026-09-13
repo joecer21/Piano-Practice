@@ -1,4 +1,4 @@
-import "./style.css";
+import "./styles/index.css";
 import { startApplication } from "./application/app-controller.js";
 
 let disposeApplication = () => {};

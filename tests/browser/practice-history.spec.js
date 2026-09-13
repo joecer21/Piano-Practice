@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { expandPracticeHistory, openHistoryOptions, openSoundSettings } from "./support.js";
 
 async function waitForPiano(page) {
   await page.waitForFunction(() => {
@@ -11,9 +12,10 @@ async function waitForPiano(page) {
 test("an interrupted session survives reload and returns as an explainable next step", async ({ page }) => {
   await page.goto("/");
   await waitForPiano(page);
-  await expect(page.getByText(/records stay on this device/i)).toBeVisible();
+  await expect(page.getByText(/pick up where you left off/i)).toBeVisible();
 
   await page.getByRole("button", { name: "Start 5 minutes" }).click();
+  await expandPracticeHistory(page);
   await expect(page.locator(".practice-history-status-incomplete")).toHaveText("Incomplete");
 
   await page.reload();
@@ -23,6 +25,7 @@ test("an interrupted session survives reload and returns as an explainable next 
   await expect(page.getByRole("timer")).toBeVisible();
 
   await page.getByRole("button", { name: "End session" }).click();
+  await expandPracticeHistory(page);
   await expect(page.locator(".practice-history-status-abandoned")).toHaveText("Ended early");
   await page.locator(".practice-history-item summary").click();
   await page.getByLabel("Short label").fill("Work on the turnaround");
@@ -31,8 +34,11 @@ test("an interrupted session survives reload and returns as an explainable next 
   await page.getByRole("button", { name: "Save notes" }).click();
 
   await page.reload();
+  await expandPracticeHistory(page);
   await expect(page.getByText("Work on the turnaround")).toBeVisible();
   await expect(page.locator(".practice-recommendation")).toContainText("Focus on bar 2");
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#coach-tool-panel")).toBeHidden();
   await page.locator(".practice-recommendation").getByRole("button", { name: "Practice" }).click();
   await expect(page.getByRole("button", { name: /^Bar 2,/ })).toHaveAttribute("aria-pressed", "true");
 });
@@ -42,6 +48,8 @@ test("history can be annotated, deleted and cleared by keyboard without losing f
   await waitForPiano(page);
   await page.getByRole("button", { name: "Start 5 minutes" }).click();
   await page.getByRole("button", { name: "End session" }).click();
+  await expandPracticeHistory(page);
+  await openHistoryOptions(page);
   await page.locator(".practice-history-item summary").focus();
   await page.keyboard.press("Enter");
 
@@ -101,7 +109,7 @@ test("practice saved in one tab appears in another and survives that tab's own w
   await expect(second.locator(".practice-history-item")).toHaveCount(1);
 
   // The second tab changes something unrelated; the first tab's record must survive it.
-  await second.getByText("Sound and playback settings").click();
+  await openSoundSettings(second);
   await second.locator("#tempo-slider").fill("104");
   await first.reload();
   await waitForPiano(first);

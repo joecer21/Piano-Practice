@@ -4,20 +4,21 @@ Target: WCAG 2.2 AA. This page records what is verified automatically, what the 
 
 ## Automated checks
 
-| Area                                                      | Where                                                            |
-| --------------------------------------------------------- | ---------------------------------------------------------------- |
-| axe (WCAG 2.0/2.1 A and AA) on landing and expanded tools | `tests/browser/accessibility-audit.spec.js`, desktop and Pixel 7 |
-| axe (to WCAG 2.2 AA) on expanded practice history         | `tests/browser/practice-history.spec.js`                         |
-| axe on the update notice                                  | `tests/browser/pwa-lifecycle.spec.js`                            |
-| axe on the audition page                                  | `tests/browser/audition.spec.js`                                 |
-| Live piano roving focus, arrow keys, Space/Enter          | `tests/browser/accessibility.spec.js`                            |
-| Computer-key shortcuts pause in form controls             | `tests/browser/accessibility.spec.js`                            |
-| Focus never hidden under the sticky header (2.4.11)       | `tests/browser/accessibility.spec.js`                            |
-| Keyboard-only history annotate, delete, clear with focus  | `tests/browser/practice-history.spec.js`                         |
-| 44 px minimum key width on phones                         | `tests/browser/accessibility.spec.js`                            |
-| Hand colour reserved for sounding notes (1.4.1)           | `tests/browser/coach.spec.js`                                    |
-| Status, update and history messages are live regions      | component specs and the browser specs above                      |
-| Reduced motion                                            | `coach.css`, `style.css`; checked in the pass below              |
+| Area                                                      | Where                                                                 |
+| --------------------------------------------------------- | --------------------------------------------------------------------- |
+| axe (WCAG 2.0/2.1 A and AA) on landing and expanded tools | `tests/browser/accessibility-audit.spec.js`, desktop and Pixel 7      |
+| axe (to WCAG 2.2 AA) on expanded practice history         | `tests/browser/practice-history.spec.js`                              |
+| axe on the update notice                                  | `tests/browser/pwa-lifecycle.spec.js`                                 |
+| axe on the audition page                                  | `tests/browser/audition.spec.js`                                      |
+| Live piano roving focus, arrow keys, Space/Enter          | `tests/browser/accessibility.spec.js`                                 |
+| Computer-key shortcuts pause in form controls             | `tests/browser/accessibility.spec.js`                                 |
+| Focus never hidden under the sticky header (2.4.11)       | `tests/browser/accessibility.spec.js`                                 |
+| Modeless tool panel, Escape focus return, 320 px reflow   | `tests/browser/stage-layout.spec.js`                                  |
+| Keyboard-only history annotate, delete, clear with focus  | `tests/browser/practice-history.spec.js`                              |
+| 44 px minimum key width on phones                         | `tests/browser/accessibility.spec.js`                                 |
+| Hand colour reserved for sounding notes (1.4.1)           | `tests/browser/coach.spec.js`                                         |
+| Status, update and history messages are live regions      | component specs and the browser specs above                           |
+| Reduced motion                                            | `styles/base.css`, `styles/components.css`; checked in the pass below |
 
 ## Slice 14 pass, 2026-09-13
 
@@ -44,5 +45,5 @@ Automation cannot judge whether announcements make sense. Run this at each stabl
 6. **MIDI:** connect, device name, disconnect and the unsupported-browser message are read.
 7. **Practice history:** the recommendation, records, notes fields, delete and clear confirmations, and export/import results are announced.
 8. **Offline and update:** "Saved for offline use" on first visit; the update notice and its button after a deploy.
-9. **Settings drawers and dialogs:** disclosure state is announced; closing returns focus sensibly.
+9. **Tool panel:** each rail button announces its expanded state; the panel remains modeless; _Close tools_ or Escape returns focus to the invoking rail button.
 10. **Zoom and reflow:** at 200% and 400% browser zoom nothing is clipped; on iOS, text size at the largest accessibility setting does not hide controls.

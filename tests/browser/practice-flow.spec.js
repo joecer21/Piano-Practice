@@ -1,13 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { openAssignmentDrawer, openSoundSettings } from "./support.js";
+import { openAssignmentDrawer, openScaleReference, openSoundSettings } from "./support.js";
 
 test("loads, generates, plays, stops, and switches piano models", async ({ page }, testInfo) => {
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "5-Minute Improv Coach" })).toBeVisible();
   await openAssignmentDrawer(page);
-  await page.locator("#scale-reference > summary").click();
-  await expect(page.getByRole("list", { name: "Scale notes" }).locator("li")).toHaveCount(7);
   await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Redo" })).toBeDisabled();
   await expect
@@ -36,13 +34,13 @@ test("loads, generates, plays, stops, and switches piano models", async ({ page 
   await page.getByRole("button", { name: "Redo" }).click();
   await expect(page.locator("#assignment-seed")).not.toHaveText(initialSeed || "");
 
-  await openSoundSettings(page);
-
   await page.waitForFunction(() => {
     const snapshot = window.__PIANO_PRACTICE_TEST__?.sampler;
     return snapshot?.libraries?.[snapshot.activeLibraryId]?.phase === "ready";
   });
 
+  await openScaleReference(page);
+  await expect(page.getByRole("list", { name: "Scale notes" }).locator("li")).toHaveCount(7);
   await page.getByRole("button", { name: "Play scale" }).click();
   await expect(page.getByRole("button", { name: "Stop scale" })).toBeVisible();
   await expect
@@ -51,6 +49,7 @@ test("loads, generates, plays, stops, and switches piano models", async ({ page 
   await page.getByRole("button", { name: "Stop scale" }).click();
   await expect(page.getByRole("button", { name: "Play scale" })).toBeVisible();
 
+  await openSoundSettings(page);
   await page.getByText("Mix and feel").click();
   await page.locator("#mix-left-volume").fill("-6");
   await expect(page.locator("#mix-left-volume")).toHaveValue("-6");

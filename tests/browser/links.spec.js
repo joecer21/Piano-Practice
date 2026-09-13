@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { openAssignmentDrawer, openSoundSettings } from "./support.js";
+import { openAssignmentDrawer, openLibraryTools, openSoundSettings } from "./support.js";
 
 const MINOR_BLUES =
   "v=1&key=A&mode=minorBlues&prog=blues-12-minor&style=jazz&lh=root-5th-oct&motif=blues-riff-minor&len=12&seed=shared-link&preset=blues-a";
@@ -49,6 +49,7 @@ test("a starred assignment survives a reload and reopens from the list", async (
   await expect(sentence).toContainText(/^A minor blues\./);
   const starredSentence = await sentence.textContent();
 
+  await openLibraryTools(page);
   await page.getByRole("button", { name: "☆ Star" }).click();
   await expect(page.getByRole("button", { name: "★ Starred" })).toHaveAttribute("aria-pressed", "true");
 
@@ -56,9 +57,11 @@ test("a starred assignment survives a reload and reopens from the list", async (
   await openAssignmentDrawer(page);
   await page.locator("#assignment-reroll").click();
   await expect(sentence).not.toHaveText(starredSentence);
+  await openLibraryTools(page);
   await expect(page.getByRole("button", { name: "☆ Star" })).toBeVisible();
   await page.goto("/");
 
+  await openLibraryTools(page);
   await page.getByText("Starred (1)").click();
   const list = page.getByRole("list", { name: "Starred assignments" });
   await expect(list).toContainText("A minor blues · 12-Bar Minor Blues · Blues Riff - minor blues ♭5");

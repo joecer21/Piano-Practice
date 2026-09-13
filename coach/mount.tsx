@@ -2,12 +2,12 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import type { CoachBridge } from "./bridge.js";
 import { CoachApp } from "./CoachApp.js";
-import "./coach.css";
 
 /**
  * Mount the React practice application into the static page. Its summary is
  * portalled into #coach-summary so it can stay above the permanent keyboard;
  * application services arrive through the bridge rather than global state.
+ * Styles load with the page entry (main.js imports styles/index.css).
  */
 export function mountCoach(bridge: CoachBridge, doc: Document = document): () => void {
   const rootElement = doc.getElementById("coach-root");
@@ -20,6 +20,12 @@ export function mountCoach(bridge: CoachBridge, doc: Document = document): () =>
         summaryContainer={doc.getElementById("coach-summary")}
         inputContainer={doc.getElementById("coach-input")}
         settingsContainer={doc.getElementById("coach-settings")}
+        themeContainer={doc.getElementById("coach-theme")}
+        toolsContainer={doc.getElementById("coach-tools")}
+        panelContainer={doc.getElementById("coach-panel-host")}
+        timelineContainer={doc.getElementById("coach-timeline-slot")}
+        shellContainer={doc.querySelector<HTMLElement>(".coach-shell")}
+        headerContainer={doc.querySelector<HTMLElement>(".coach-top")}
       />
     </StrictMode>,
   );

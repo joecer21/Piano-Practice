@@ -1,0 +1,158 @@
+/* The page frame: shell width, the sticky header and the rhythm between sections. */
+@layer layout {
+  /* Focused and scrolled-to content lands below the sticky header, whose live
+     height coach/sticky-offset.ts publishes. */
+  html {
+    scroll-padding-top: calc(var(--coach-top-height, 0px) + var(--space-2));
+  }
+
+  .app-shell {
+    min-height: 100vh;
+  }
+
+  .coach-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: var(--space-2) clamp(var(--space-4), 4vw, var(--space-8));
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .coach-brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    width: min(100%, 1440px);
+    margin: 0 auto;
+  }
+
+  .coach-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: 650;
+    letter-spacing: 0.01em;
+    color: var(--ink-muted);
+  }
+
+  .coach-title svg {
+    width: 22px;
+    height: 22px;
+    color: var(--ink);
+  }
+
+  .coach-theme {
+    display: flex;
+    align-items: center;
+  }
+
+  .coach-header-actions {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+  }
+
+  .coach-tools {
+    min-width: 0;
+  }
+
+  .coach-stage-layout {
+    width: min(100%, 1440px);
+    margin: 0 auto;
+    padding: 0 clamp(var(--space-4), 4vw, var(--space-8)) var(--space-8);
+  }
+
+  .coach-stage {
+    min-width: 0;
+  }
+
+  .coach-stage-intro {
+    padding-top: clamp(var(--space-6), 4vw, 3rem);
+  }
+
+  /* Sections below the keyboard share one vertical rhythm. */
+  /* Margins rather than grid gap: the always-present, usually empty update live
+     region comes first and must stay rendered without adding a gap of its own. */
+  .coach-root > * + * {
+    margin-top: var(--space-4);
+  }
+
+  .coach-panel-host {
+    min-width: 0;
+  }
+
+  @media (min-width: 1200px) {
+    .coach-stage-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 0;
+      gap: var(--space-6);
+      transition: grid-template-columns 180ms var(--ease);
+    }
+
+    .coach-stage-layout:has(.coach-tool-panel:not([hidden])) {
+      grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem);
+    }
+
+    .coach-panel-host {
+      position: sticky;
+      top: calc(var(--coach-top-height, 0px) + var(--space-4));
+      align-self: start;
+      max-height: calc(100vh - var(--coach-top-height, 0px) - var(--space-8));
+    }
+  }
+
+  @media (max-width: 1199px) {
+    .coach-panel-host {
+      position: fixed;
+      z-index: 30;
+      pointer-events: none;
+    }
+
+    .coach-panel-host:has(.coach-tool-panel:not([hidden])) {
+      pointer-events: auto;
+    }
+  }
+
+  @media (min-width: 900px) and (max-width: 1199px) {
+    .coach-panel-host {
+      top: var(--coach-top-height, 0px);
+      right: 0;
+      bottom: 0;
+      width: min(420px, 46vw);
+    }
+  }
+
+  @media (max-width: 899px) {
+    .coach-panel-host {
+      right: 0;
+      bottom: 0;
+      left: 0;
+      max-height: 70vh;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .coach-top {
+      padding-inline: var(--space-3);
+    }
+
+    .coach-stage-layout {
+      padding-inline: var(--space-3);
+    }
+
+    .coach-title span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+}

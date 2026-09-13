@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openMidiInput } from "./support.js";
 
 // Real MIDI hardware cannot run in CI. These tests replace navigator.requestMIDIAccess
 // before the app loads with a fake a test can plug devices into and play.
@@ -40,6 +41,7 @@ const send = (page, bytes) => page.evaluate((data) => window.__fakeMidi.send("pi
 test("a connected MIDI keyboard is mirrored on the keyboard, pedal included", async ({ page }) => {
   await installFakeMidi(page);
   await page.goto("/");
+  await openMidiInput(page);
 
   const connect = page.getByRole("button", { name: "Connect MIDI keyboard" });
   await expect(connect).toBeVisible();
@@ -70,6 +72,7 @@ test("a connected MIDI keyboard is mirrored on the keyboard, pedal included", as
 test("the ring for a played note never uses a hand colour", async ({ page }) => {
   await installFakeMidi(page);
   await page.goto("/");
+  await openMidiInput(page);
   await page.evaluate(() => window.__fakeMidi.plug("piano", "Stage Piano"));
   await page.getByRole("button", { name: "Connect MIDI keyboard" }).click();
   await send(page, [0x90, 60, 100]);
@@ -100,6 +103,7 @@ test("the ring for a played note never uses a hand colour", async ({ page }) => 
 test("a denied MIDI permission is explained and can be retried", async ({ page }) => {
   await installFakeMidi(page, { deny: true });
   await page.goto("/");
+  await openMidiInput(page);
   await page.getByRole("button", { name: "Connect MIDI keyboard" }).click();
   await expect(page.getByText(/MIDI access was blocked/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
@@ -113,9 +117,11 @@ test("without Web MIDI the app explains in one line and everything else still wo
   const pageErrors = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
   await page.goto("/");
+  await openMidiInput(page);
 
-  await expect(page.locator("#coach-input")).toContainText("this browser does not support them");
-  await expect(page.locator("#coach-input").getByRole("button")).toHaveCount(0);
+  const inputPanel = page.locator('.coach-tool-section[data-tool="input"]');
+  await expect(inputPanel).toContainText("this browser does not support them");
+  await expect(inputPanel.getByRole("button")).toHaveCount(0);
 
   await page.getByLabel("Computer keys").check();
   await page.evaluate(() => document.activeElement?.blur());

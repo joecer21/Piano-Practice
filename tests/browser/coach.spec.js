@@ -134,6 +134,7 @@ test("coach controls meet touch targets and the page never scrolls sideways", as
     )
     .evaluateAll((elements) =>
       elements
+        .filter((element) => element.getClientRects().length > 0)
         .map((element) => ({
           name: element.textContent.trim(),
           height: element.getBoundingClientRect().height,

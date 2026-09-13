@@ -115,7 +115,7 @@ async function measureOnce(browser, profile) {
   );
 
   const clickAt = await sinceNavigation(page);
-  await page.locator("#assignment-workspace > summary").click();
+  await page.locator(".coach-tool-rail").getByRole("button", { name: "Change assignment" }).click();
   await page.getByRole("button", { name: "Apply assignment" }).waitFor({ state: "visible" });
   const workspace = (await sinceNavigation(page)) - clickAt;
   await context.close();

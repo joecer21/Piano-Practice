@@ -1,4 +1,5 @@
 import type { ReactNode, Ref } from "react";
+import { createPortal } from "react-dom";
 import { describeChordFunction, describeMotifParts } from "../domain/describe.js";
 import type { Score } from "../domain/score.js";
 import type { LabelMode } from "./keyboard-overlay.js";
@@ -19,6 +20,9 @@ type PracticePanelProps = {
   chordBar: number;
   activeMotifIndex: number;
   playheadRef: Ref<HTMLDivElement>;
+  sectionRef?: Ref<HTMLElement>;
+  /** Static hero slot that keeps the timeline beside the permanent keyboard. */
+  timelineContainer?: HTMLElement | null;
   onView: (view: BreakdownView) => void;
   onControls: (patch: Partial<PracticeControls>) => void;
   onLabelMode: (mode: LabelMode) => void;
@@ -40,7 +44,12 @@ export function PracticePanel(props: PracticePanelProps) {
   const motifMissing = !!score && view === "notes" && !hasMotif(score);
 
   return (
-    <section className="coach-practice-panel" aria-label="Practice">
+    <section
+      id="coach-practice"
+      ref={props.sectionRef}
+      className="coach-practice-panel"
+      aria-label="Practice"
+    >
       <div className="coach-segmented coach-views" role="group" aria-label="Breakdown">
         {BREAKDOWN_VIEWS.map((option) => (
           <button
@@ -120,15 +129,20 @@ export function PracticePanel(props: PracticePanelProps) {
 
       {score ? <ViewDetail {...props} score={score} /> : null}
 
-      {score ? (
-        <Timeline
-          score={score}
-          lens={controls.lens}
-          focusBar={controls.focusBar}
-          onSelectBar={(focusBar) => props.onControls({ focusBar })}
-          playheadRef={playheadRef}
-        />
-      ) : null}
+      {score
+        ? (() => {
+            const timeline = (
+              <Timeline
+                score={score}
+                lens={controls.lens}
+                focusBar={controls.focusBar}
+                onSelectBar={(focusBar) => props.onControls({ focusBar })}
+                playheadRef={playheadRef}
+              />
+            );
+            return props.timelineContainer ? createPortal(timeline, props.timelineContainer) : timeline;
+          })()
+        : null}
 
       {props.assignmentActions}
 

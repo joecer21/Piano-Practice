@@ -1,0 +1,1572 @@
+/*
+ * Coach components.
+ *
+ * Channel rule - one visual channel per musical fact:
+ *   hue           -> which hand is sounding      (--hand-lh / --hand-rh, nothing else)
+ *   fill weight   -> note role                   (data-role: root/chordTone solid, scaleTone muted, parentScaleTone lighter + dashed)
+ *   text label    -> scale degree or letter      (.key-label)
+ *   stroke weight -> root                        (ring on the root mark)
+ *   badge + label -> chord provenance            (.coach-timeline-badge)
+ *   ring          -> a note you are playing      (data-played)
+ *   shape bar     -> the keys of a chord voicing  (data-shape, chord by chord)
+ * Interface chrome uses ink and surface tokens only, so no control can be
+ * mistaken for a hand.
+ */
+@layer components {
+  /* ---- Surfaces --------------------------------------------------------------- */
+
+  .coach-practice-panel,
+  .practice-history,
+  .assignment-workspace,
+  .coach-settings,
+  .coach-scale-reference {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--raised);
+    color: var(--ink);
+  }
+
+  /* The instrument: a sunken keybed, the one surface that reads as an object. */
+  .coach-keyboard {
+    overflow: hidden;
+    margin-top: var(--space-6);
+    padding: var(--space-4) var(--space-4) var(--space-3);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--sunk);
+    color: var(--ink);
+  }
+
+  .coach-practice-panel {
+    padding: var(--space-4);
+  }
+
+  /* ---- Buttons ------------------------------------------------------------------ */
+
+  .coach-shell :is(.coach-start, .coach-play, .coach-secondary, .coach-toggle) {
+    min-height: var(--touch-target);
+    padding: 0 var(--space-4);
+    border-radius: var(--radius-md);
+    font-weight: 650;
+  }
+
+  .coach-start,
+  .coach-play {
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .coach-start:hover:not(:disabled),
+  .coach-play:hover:not(:disabled) {
+    background: var(--ink);
+    opacity: 0.9;
+  }
+
+  .coach-secondary,
+  .coach-toggle {
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--ink);
+  }
+
+  .coach-shell :is(.coach-toggle, .coach-segmented button)[aria-pressed="true"] {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .coach-segmented {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: calc(var(--radius-md) + 3px);
+    background: var(--sunk);
+  }
+
+  .coach-shell .coach-segmented button {
+    min-height: var(--touch-target);
+    padding: 0 var(--space-3);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+
+  .coach-shell .coach-segmented button[aria-pressed="true"] {
+    background: var(--raised);
+    color: var(--ink);
+    box-shadow: 0 0 0 1px var(--line-strong);
+  }
+
+  .coach-link {
+    min-height: var(--touch-target);
+    padding: 0 var(--space-2);
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: var(--line-strong);
+    text-underline-offset: 3px;
+  }
+
+  /* ---- Header: the sentence and the session -------------------------------------- */
+
+  .coach-sentence {
+    margin: var(--space-2) 0 var(--space-3);
+    font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+    font-weight: 600;
+    line-height: 1.3;
+    text-wrap: pretty;
+  }
+
+  .coach-session,
+  .coach-transport,
+  .coach-keyboard-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .coach-clock {
+    min-width: 3.5ch;
+    font-family: var(--font-feel);
+    font-size: var(--text-xl);
+    line-height: 1;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  .coach-readiness,
+  .coach-complete,
+  .coach-focus,
+  .coach-count-in {
+    color: var(--ink-muted);
+  }
+
+  .coach-readiness {
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-sm);
+  }
+
+  .coach-count-in {
+    min-width: 6.5ch;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .coach-length select {
+    border-radius: var(--radius-md);
+    background: var(--raised);
+  }
+
+  .coach-steps {
+    display: flex;
+    gap: 5px;
+    margin: var(--space-4) 0 var(--space-2);
+    padding: 0;
+    list-style: none;
+  }
+
+  .coach-step {
+    flex: 1 1 0;
+    min-width: 0;
+    display: grid;
+    gap: 6px;
+    font-size: var(--text-xs);
+    color: var(--ink-faint);
+  }
+
+  .coach-step[data-state="done"] {
+    color: var(--ink-muted);
+  }
+
+  .coach-step[data-state="current"] {
+    color: var(--ink);
+    font-weight: 650;
+  }
+
+  .coach-step-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .coach-step-bar {
+    display: block;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--line);
+    overflow: hidden;
+  }
+
+  .coach-step-fill {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: var(--ink);
+    transform-origin: left center;
+    transition: transform 250ms linear;
+  }
+
+  .coach-instruction {
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-lg);
+    line-height: 1.35;
+    max-width: 48ch;
+  }
+
+  .coach-due {
+    color: var(--ink-muted);
+  }
+
+  .coach-summary-done .coach-complete {
+    margin: 0 0 var(--space-2);
+  }
+
+  .coach-covered {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    margin: 0 0 var(--space-3);
+    padding: 0;
+    list-style: none;
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+  }
+
+  .coach-covered-time {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+
+  /* ---- The keyboard ---------------------------------------------------------------- */
+
+  .coach-keyboard-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-3);
+  }
+
+  .coach-keyboard-title {
+    margin: 0;
+    font-size: var(--text-md);
+  }
+
+  .coach-keyboard :is(.live-piano-help, .piano-qwerty-help) {
+    margin: 0;
+    max-width: 44rem;
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+  }
+
+  .coach-keyboard .piano-visual-wrapper {
+    margin: var(--space-3) 0;
+  }
+
+  .piano-controls {
+    justify-content: flex-start;
+  }
+
+  .coach-more > summary {
+    min-height: var(--touch-target);
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .coach-more-body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+  }
+
+  .piano-indicator-toggle {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .piano-indicator-toggle legend,
+  .piano-control {
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+
+  .piano-indicator-toggle legend {
+    width: 100%;
+    margin-bottom: var(--space-1);
+  }
+
+  .piano-indicator-toggle label,
+  .piano-hover-toggle {
+    min-height: var(--touch-target);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0 var(--space-3);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--raised);
+    color: var(--ink);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .piano-control {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .piano-control select {
+    width: auto;
+    min-width: 150px;
+  }
+
+  .piano-visual-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: var(--space-1) 0 var(--space-2);
+    scrollbar-width: thin;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .piano-visual {
+    width: max-content;
+    min-width: 100%;
+    min-height: calc(var(--piano-white-height) + 18px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding: 9px;
+    border-radius: var(--radius-md);
+    background: var(--keybed);
+    touch-action: auto;
+  }
+
+  .piano-keys {
+    position: relative;
+    flex: 0 0 auto;
+    margin: 0 auto;
+    user-select: none;
+  }
+
+  button.piano-key {
+    position: absolute;
+    bottom: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--key-ivory-edge);
+    border-radius: 0 0 5px 5px;
+    font-weight: 400;
+    touch-action: auto;
+    transition:
+      background-color 80ms ease,
+      border-color 80ms ease,
+      box-shadow 80ms ease;
+  }
+
+  .piano-visual.gliss-mode,
+  .piano-visual.gliss-mode .piano-key {
+    touch-action: none;
+  }
+
+  button.piano-key:focus-visible {
+    z-index: 5;
+    outline: 3px solid var(--ink);
+    outline-offset: -4px;
+  }
+
+  .piano-key.white {
+    z-index: 1;
+    background: var(--key-ivory);
+  }
+
+  .piano-key.black {
+    z-index: 2;
+    bottom: calc(var(--piano-white-height) - var(--piano-black-height));
+    border-color: var(--key-ebony-edge);
+    background: var(--key-ebony);
+  }
+
+  .piano-key.nondiatonic.white {
+    background: var(--key-ivory-muted);
+  }
+
+  .piano-key.active {
+    color: var(--key-active-ink);
+  }
+
+  .piano-key.active.lh {
+    z-index: 3;
+    border-color: var(--hand-lh);
+    background: var(--hand-lh);
+    box-shadow: 0 0 16px 3px var(--hand-lh-glow);
+  }
+
+  .piano-key.active.rh {
+    z-index: 3;
+    border-color: var(--hand-rh);
+    background: var(--hand-rh);
+    box-shadow: 0 0 16px 3px var(--hand-rh-glow);
+  }
+
+  /* Role marks on keys. Weight, not colour. */
+  .piano-key .key-label {
+    position: absolute;
+    left: 50%;
+    bottom: 6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 3px;
+    transform: translateX(-50%);
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    pointer-events: none;
+    --mark: var(--key-mark-on-white);
+    --mark-contrast: var(--key-mark-on-black);
+  }
+
+  .piano-key.black .key-label {
+    bottom: 5px;
+    min-width: 16px;
+    font-size: 10px;
+    --mark: var(--key-mark-on-black);
+    --mark-contrast: var(--key-mark-on-white);
+  }
+
+  .piano-key:is([data-role="chordTone"], [data-role="root"]) .key-label {
+    background: var(--mark);
+    color: var(--mark-contrast);
+  }
+
+  .piano-key[data-role="root"] .key-label {
+    box-shadow:
+      0 0 0 2.5px var(--mark-contrast),
+      0 0 0 4.5px var(--mark);
+  }
+
+  .piano-key[data-role="scaleTone"] .key-label {
+    border: 1px solid color-mix(in srgb, var(--mark) 35%, transparent);
+    color: color-mix(in srgb, var(--mark) 70%, transparent);
+    background: transparent;
+  }
+
+  /* A tone borrowed from the parent scale: lighter than a collection tone, and dashed
+     so it never reads as a note of the pentatonic or blues scale itself. */
+  .piano-key[data-role="parentScaleTone"] .key-label {
+    border: 1px dashed color-mix(in srgb, var(--mark) 35%, transparent);
+    color: color-mix(in srgb, var(--mark) 50%, transparent);
+    background: transparent;
+  }
+
+  .piano-key:is([data-out-of-lens], [data-dimmed]) {
+    opacity: 0.35;
+  }
+
+  /* The chord shape: an ink bar across each key to press, just above its degree
+     label. It sits in the lower part of the key because black keys cover the top of
+     the white ones. Neutral, like the role marks, so it never reads as a hand. */
+  .piano-key[data-shape]::before {
+    content: "";
+    position: absolute;
+    bottom: 30px;
+    left: 4px;
+    right: 4px;
+    height: 5px;
+    border-radius: var(--radius-pill);
+    background: var(--key-mark-on-white);
+    pointer-events: none;
+  }
+
+  .piano-key.black[data-shape]::before {
+    bottom: 27px;
+    left: 3px;
+    right: 3px;
+    background: var(--key-mark-on-black);
+  }
+
+  /* A sounding key is filled with its hand's hue; keep the mark legible on it. */
+  .piano-key.active .key-label {
+    --mark: var(--key-active-mark);
+    --mark-contrast: var(--key-active-mark-contrast);
+  }
+
+  /* Played by you: the ring channel. Neutral ink, never a hand hue, so your own
+     notes cannot be mistaken for the assignment sounding. Solid while held; a thin
+     double ring while it only rings on the pedal. */
+  .piano-key[data-played] {
+    --key-ring: var(--key-mark-on-white);
+    box-shadow: inset 0 0 0 3px var(--key-ring);
+  }
+
+  .piano-key.black[data-played] {
+    --key-ring: var(--key-mark-on-black);
+  }
+
+  .piano-key[data-played="sustained"] {
+    box-shadow:
+      inset 0 0 0 1.5px var(--key-ring),
+      inset 0 0 0 5px color-mix(in srgb, var(--key-ring) 22%, transparent);
+  }
+
+  /* Playing along with the assignment: keep the hand's fill and glow, ring on top. */
+  .piano-key.active.lh[data-played] {
+    box-shadow:
+      inset 0 0 0 3px var(--key-active-mark),
+      0 0 16px 3px var(--hand-lh-glow);
+  }
+
+  .piano-key.active.rh[data-played] {
+    box-shadow:
+      inset 0 0 0 3px var(--key-active-mark),
+      0 0 16px 3px var(--hand-rh-glow);
+  }
+
+  .coach-input,
+  .coach-midi {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .coach-midi-note {
+    margin: 0;
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+  }
+
+  .coach-midi-select {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+  }
+
+  /* ---- Theme toggle ------------------------------------------------------------------ */
+
+  .coach-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    border-color: transparent;
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+  }
+
+  .coach-theme-toggle:hover:not(:disabled) {
+    border-color: var(--line);
+    color: var(--ink);
+  }
+
+  /* ---- Stage and responsive tool rail ------------------------------------------ */
+
+  .coach-stage-intro .coach-sentence {
+    max-width: 58rem;
+    margin-top: 0;
+    font-family: var(--font-feel);
+    font-size: clamp(var(--text-xl), 3vw, var(--text-2xl));
+    font-weight: 600;
+    line-height: 1.18;
+  }
+
+  .coach-tool-rail {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    max-width: min(64vw, 46rem);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .coach-tool-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .coach-tool-trigger,
+  .coach-tool-close {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: var(--touch-target);
+    padding: 0 var(--space-2);
+    border-color: transparent;
+    color: var(--ink-muted);
+    font-size: var(--text-xs);
+    white-space: nowrap;
+  }
+
+  .coach-tool-trigger[aria-expanded="true"],
+  .coach-tool-trigger:hover,
+  .coach-tool-close:hover {
+    border-color: var(--line);
+    color: var(--ink);
+  }
+
+  .coach-tool-trigger .coach-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .coach-tool-panel {
+    min-width: 0;
+    max-height: inherit;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--raised);
+    color: var(--ink);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .coach-tool-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    min-height: calc(var(--touch-target) + var(--space-2));
+    padding: var(--space-1) var(--space-2) var(--space-1) var(--space-4);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .coach-tool-panel-head h2,
+  .coach-tool-card :is(h3, p) {
+    margin: 0;
+  }
+
+  .coach-tool-panel-head h2 {
+    font-size: var(--text-md);
+  }
+
+  .coach-tool-close {
+    width: var(--touch-target);
+    padding: 0;
+  }
+
+  .coach-tool-panel-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .coach-tool-section {
+    min-width: 0;
+    padding: var(--space-3);
+  }
+
+  .coach-tool-section > :is(.assignment-workspace, .coach-settings, .coach-scale-reference) {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .coach-tool-card {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-2);
+  }
+
+  .coach-tool-note {
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+  }
+
+  .coach-timeline-slot {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--line);
+  }
+
+  @media (max-width: 1199px) {
+    .coach-tool-panel {
+      height: 100%;
+      border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+    }
+  }
+
+  @media (max-width: 899px) {
+    .coach-tool-panel {
+      max-height: 70vh;
+      border-width: 1px 0 0;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .coach-tool-trigger span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .coach-tool-trigger {
+      width: var(--touch-target);
+      padding: 0;
+    }
+
+    .coach-tool-rail {
+      max-width: calc(100vw - 9.5rem);
+    }
+  }
+
+  .coach-icon {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* ---- Practice panel: views, transport and the timeline ----------------------------- */
+
+  .coach-focus {
+    min-height: var(--touch-target);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+    margin: var(--space-2) 0;
+  }
+
+  .coach-views {
+    margin-bottom: var(--space-3);
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .coach-timeline {
+    overflow-x: auto;
+    padding-bottom: var(--space-1);
+  }
+
+  .coach-timeline-bars,
+  .coach-timeline-roll {
+    min-width: max(100%, calc(var(--timeline-bars) * 76px));
+  }
+
+  .coach-timeline-bars {
+    display: grid;
+    grid-template-columns: repeat(var(--timeline-bars), minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .coach-shell .coach-timeline-bar {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    min-height: var(--touch-target);
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--ink);
+    font-weight: 400;
+    text-align: left;
+  }
+
+  .coach-shell .coach-timeline-bar[aria-pressed="true"] {
+    border-color: var(--ink);
+    background: var(--focus-fill);
+    box-shadow: inset 0 0 0 1px var(--ink);
+  }
+
+  .coach-timeline-bar-number,
+  .coach-timeline-roman {
+    font-size: var(--text-xs);
+    color: var(--ink-muted);
+  }
+
+  .coach-timeline-chord {
+    font-weight: 700;
+  }
+
+  .coach-timeline-badge {
+    margin-top: 2px;
+    padding: 0 4px;
+    border: 1px dashed var(--ink-muted);
+    border-radius: 4px;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+  }
+
+  .coach-timeline-roll {
+    position: relative;
+    height: 128px;
+    margin-top: var(--space-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    overflow: hidden;
+  }
+
+  .coach-timeline-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .coach-timeline-barline {
+    stroke: var(--line);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .coach-timeline-focus {
+    fill: var(--focus-fill);
+  }
+
+  .coach-timeline-lane.hand-lh {
+    color: var(--hand-lh);
+  }
+
+  .coach-timeline-lane.hand-rh {
+    color: var(--hand-rh);
+  }
+
+  .coach-timeline-note {
+    fill: currentColor;
+  }
+
+  .coach-timeline-note[data-role="scaleTone"] {
+    fill-opacity: 0.5;
+  }
+
+  .coach-timeline-note[data-role="parentScaleTone"] {
+    fill-opacity: 0.3;
+  }
+
+  .coach-timeline-note[data-role="chromatic"] {
+    fill-opacity: 0.12;
+    stroke: currentColor;
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .coach-timeline-note[data-role="root"] {
+    stroke: var(--ink);
+    stroke-width: 1.5;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .coach-timeline-lane[data-dimmed="true"] {
+    opacity: 0.18;
+  }
+
+  .coach-timeline-playhead {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--ink);
+    pointer-events: none;
+  }
+
+  .coach-timeline-lane-label {
+    position: absolute;
+    left: var(--space-2);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    pointer-events: none;
+  }
+
+  .coach-timeline-lane-label-rh {
+    top: 2px;
+  }
+
+  .coach-timeline-lane-label-lh {
+    top: calc(50% + 2px);
+  }
+
+  .coach-change {
+    margin-top: var(--space-2);
+  }
+
+  .coach-detail {
+    margin: var(--space-3) 0;
+  }
+
+  .coach-chord {
+    margin: 0;
+    min-width: 9rem;
+    text-align: center;
+  }
+
+  .coach-chord-name {
+    font-size: var(--text-xl);
+    font-weight: 700;
+  }
+
+  .coach-chord-count,
+  .coach-hint {
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+  }
+
+  .coach-blurb {
+    margin: var(--space-2) 0 var(--space-1);
+    font-size: 1.05rem;
+  }
+
+  .coach-hint {
+    margin: 0;
+  }
+
+  .coach-motif {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .coach-motif-note {
+    min-width: 2.75rem;
+    min-height: var(--touch-target);
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+
+  .coach-motif-note[data-membership="parentScale"] {
+    border-style: dashed;
+  }
+
+  /* The note sounding now: weight and ink, not a hand colour. */
+  .coach-motif-note[aria-current="true"] {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  /* ---- Star, share, reopen ------------------------------------------------------------ */
+
+  .coach-library {
+    margin-top: var(--space-2);
+  }
+
+  .coach-library-status {
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+  }
+
+  .coach-library-manual {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin: var(--space-2) 0 0;
+  }
+
+  .coach-library-manual input {
+    flex: 1 1 16rem;
+    min-width: 0;
+  }
+
+  .coach-starred-list {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .coach-starred-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+    padding: var(--space-2) 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .coach-starred-title {
+    flex: 1 1 14rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .coach-starred-date {
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Recent practice ----------------------------------------------------------------- */
+
+  .practice-history {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-4);
+  }
+
+  .practice-history-heading,
+  .practice-history-heading-actions,
+  .practice-recommendation,
+  .practice-history-tools,
+  .practice-history-confirm {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .practice-history :is(h2, p) {
+    margin: 0;
+  }
+
+  .practice-history-kicker {
+    color: var(--ink-muted);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .practice-history-heading-actions {
+    justify-content: flex-end;
+  }
+
+  .practice-history-details {
+    display: grid;
+    gap: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--line);
+  }
+
+  .practice-history-details p {
+    margin: 0;
+  }
+
+  .practice-history-details[hidden] {
+    display: none;
+  }
+
+  .practice-history-privacy {
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+  }
+
+  .practice-history-overflow > summary {
+    min-height: var(--touch-target);
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 650;
+  }
+
+  .practice-history-tools {
+    padding-top: var(--space-2);
+  }
+
+  .practice-history h2 {
+    font-size: var(--text-lg);
+  }
+
+  .practice-history-heading p,
+  .practice-history-meta,
+  .practice-history-count,
+  .practice-history-item summary > :is(time, span:not(.practice-history-title, .practice-history-status)) {
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+  }
+
+  .practice-recommendation {
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--bg);
+  }
+
+  .practice-recommendation > div {
+    flex: 1 1 18rem;
+  }
+
+  .practice-history-list {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .practice-history-item {
+    border-top: 1px solid var(--line);
+  }
+
+  .practice-history-item summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    min-height: var(--touch-target);
+    padding: var(--space-2) 0;
+    cursor: pointer;
+  }
+
+  .practice-history-title {
+    flex: 1 1 16rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-weight: 650;
+  }
+
+  .practice-history-status {
+    padding: 0.1rem 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    font-size: var(--text-xs);
+    color: var(--ink-muted);
+  }
+
+  /* Status is words and weight, never a colour: records say what you did, not how well. */
+  .practice-history-status-completed {
+    color: var(--ink);
+  }
+
+  .practice-history-status-incomplete {
+    border-style: dashed;
+  }
+
+  .practice-history-body {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-2) 0 var(--space-4);
+  }
+
+  .practice-history-actions {
+    justify-content: flex-start;
+  }
+
+  .practice-history-notes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .practice-history-notes label {
+    display: grid;
+    gap: var(--space-1);
+    font-weight: 600;
+  }
+
+  .practice-history-notes :is(input, textarea) {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .practice-history-notes-wide {
+    grid-column: 1 / -1;
+  }
+
+  .practice-history-file {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .practice-history-interval {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+
+  /* ---- Assignment workspace ------------------------------------------------------------ */
+
+  .assignment-workspace > summary,
+  .coach-settings > summary,
+  .coach-scale-reference > summary,
+  .coach-mix-settings > summary {
+    min-height: var(--touch-target);
+    display: flex;
+    align-items: center;
+    padding: var(--space-1) var(--space-4);
+    cursor: pointer;
+    font-weight: 650;
+  }
+
+  .assignment-workspace-body {
+    display: grid;
+    gap: var(--space-4);
+    padding: 0 var(--space-4) var(--space-4);
+  }
+
+  .assignment-workspace-heading,
+  .assignment-tools-heading,
+  .assignment-variation,
+  .assignment-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .assignment-workspace :is(h2, h3, p) {
+    margin: 0;
+  }
+
+  .assignment-workspace-heading p,
+  .assignment-tools-heading p,
+  .assignment-palette > p,
+  .assignment-feedback {
+    color: var(--ink-muted);
+  }
+
+  .assignment-preset,
+  .assignment-fields label {
+    display: grid;
+    gap: var(--space-1);
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+
+  .assignment-workspace select {
+    max-width: 100%;
+  }
+
+  .assignment-tools,
+  .assignment-form,
+  .assignment-palette {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+  }
+
+  .assignment-history,
+  .assignment-locks,
+  .assignment-palette-actions,
+  .assignment-palette-group > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .assignment-lock,
+  .assignment-palette button,
+  .assignment-palette-actions button {
+    padding: 0 var(--space-3);
+    border-color: var(--line);
+  }
+
+  .assignment-lock[aria-pressed="true"] {
+    border-color: var(--ink);
+    background: var(--focus-fill);
+  }
+
+  .assignment-variation :is(code, p) {
+    overflow-wrap: anywhere;
+  }
+
+  .assignment-variation code {
+    margin-left: var(--space-1);
+    color: var(--ink);
+  }
+
+  #assignment-id {
+    margin-left: var(--space-2);
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+  }
+
+  .assignment-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .assignment-fields label:is(:nth-child(2), :nth-child(3), :nth-child(6)) {
+    grid-column: span 2;
+  }
+
+  .assignment-palette {
+    min-width: 0;
+    margin: 0;
+  }
+
+  .assignment-palette legend {
+    padding: 0 var(--space-1);
+    font-weight: 650;
+  }
+
+  .assignment-palette-group {
+    display: grid;
+    grid-template-columns: minmax(7rem, 0.3fr) 1fr;
+    align-items: start;
+    gap: var(--space-2);
+  }
+
+  .assignment-palette-group > span {
+    padding-top: 0.65rem;
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+  }
+
+  .assignment-feedback {
+    min-height: 1.25rem;
+  }
+
+  .assignment-feedback.error,
+  .coach-sampler-status.error {
+    color: var(--danger);
+  }
+
+  .assignment-feedback.success {
+    color: var(--success);
+  }
+
+  /* ---- Scale reference and sound settings ---------------------------------------------- */
+
+  .coach-scale-reference-body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: 0 var(--space-4) var(--space-4);
+  }
+
+  .coach-scale-reference-body h2,
+  .coach-settings-body h2 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-md);
+  }
+
+  .coach-scale-notes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .coach-scale-notes li {
+    min-width: 2.1rem;
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    background: var(--bg);
+    text-align: center;
+    font-weight: 700;
+    transition:
+      color 120ms ease,
+      background-color 120ms ease,
+      border-color 120ms ease;
+  }
+
+  .coach-scale-notes li[aria-current="true"] {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .coach-settings-body {
+    display: grid;
+    gap: var(--space-4);
+    padding: 0 var(--space-4) var(--space-4);
+  }
+
+  .coach-settings-grid,
+  .coach-mix-body {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .coach-setting {
+    display: grid;
+    gap: var(--space-1);
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+
+  .coach-setting output {
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .coach-setting :is(select, input[type="range"]) {
+    width: 100%;
+  }
+
+  .coach-settings-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+  }
+
+  .coach-check {
+    min-height: var(--touch-target);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .coach-sampler-status {
+    display: grid;
+    gap: 2px;
+    margin-top: var(--space-2);
+    color: var(--ink-muted);
+    font-size: var(--text-xs);
+  }
+
+  .coach-mix-settings {
+    border-top: 1px solid var(--line);
+  }
+
+  .coach-mix-settings > summary {
+    padding: 0;
+  }
+
+  .coach-mix-body fieldset {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+    margin: 0;
+    padding: var(--space-3);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+  }
+
+  .coach-mix-body legend {
+    padding: 0 var(--space-1);
+    font-weight: 650;
+  }
+
+  /* ---- Status and update notice --------------------------------------------------------- */
+
+  .status-line {
+    min-height: 1.4rem;
+    margin: var(--space-2) 0;
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+
+  .status-line:is([data-tone="hint"], [data-tone="info"]) {
+    color: var(--ink);
+  }
+
+  .status-line[data-tone="success"] {
+    color: var(--success);
+  }
+
+  .status-line[data-tone="error"] {
+    color: var(--danger);
+  }
+
+  /* A newer version is waiting. Neutral ink, like every other interface control. */
+  .update-notice {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+    margin-top: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-lg);
+    background: var(--raised);
+    color: var(--ink);
+  }
+
+  .update-notice p {
+    flex: 1 1 18rem;
+    margin: 0;
+  }
+
+  @media (max-width: 600px) {
+    .practice-history {
+      padding: var(--space-3);
+    }
+
+    .practice-history-notes,
+    .assignment-fields,
+    .assignment-palette-group,
+    .coach-settings-grid,
+    .coach-mix-body {
+      grid-template-columns: 1fr;
+    }
+
+    .practice-history-notes-wide,
+    .assignment-fields label:nth-child(n) {
+      grid-column: auto;
+    }
+
+    .assignment-palette-group > span {
+      padding-top: 0;
+    }
+
+    .assignment-form-actions > button,
+    .assignment-variation > button {
+      flex: 1 1 10rem;
+    }
+
+    /* Too narrow for six labels: the bars stay, the names stay readable to assistive tech. */
+    .coach-step-title {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+}

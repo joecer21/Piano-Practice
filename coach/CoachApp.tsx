@@ -26,6 +26,9 @@ import { pianoReadiness } from "./sampler.js";
 import { ScaleReference } from "./ScaleReference.js";
 import { StatusLine } from "./StatusLine.js";
 import { trackStickyHeaderHeight } from "./sticky-offset.js";
+import { ThemeToggle } from "./ThemeToggle.js";
+import { ToolPanel, ToolRail } from "./ToolPanel.js";
+import type { ToolId } from "./ToolPanel.js";
 import { UpdateNotice } from "./UpdateNotice.js";
 import { SessionHeader } from "./SessionHeader.js";
 import { SoundSettings } from "./SoundSettings.js";
@@ -56,6 +59,18 @@ type CoachAppProps = {
   inputContainer?: HTMLElement | null;
   /** Static slot that keeps settings below the status line and above reference tools. */
   settingsContainer?: HTMLElement | null;
+  /** Header slot for the studio/paper theme switch. */
+  themeContainer?: HTMLElement | null;
+  /** Header slot for the responsive tool rail. */
+  toolsContainer?: HTMLElement | null;
+  /** Responsive side-panel / bottom-sheet host. */
+  panelContainer?: HTMLElement | null;
+  /** Static hero slot beside the permanent keyboard. */
+  timelineContainer?: HTMLElement | null;
+  /** Static page shell that exposes session state to responsive CSS. */
+  shellContainer?: HTMLElement | null;
+  /** Slim sticky header whose height drives focus scroll padding. */
+  headerContainer?: HTMLElement | null;
 };
 
 const TIMER_TICK_MS = 250;
@@ -65,6 +80,12 @@ export function CoachApp({
   summaryContainer,
   inputContainer = null,
   settingsContainer = null,
+  themeContainer = null,
+  toolsContainer = null,
+  panelContainer = null,
+  timelineContainer = null,
+  shellContainer = null,
+  headerContainer = null,
 }: CoachAppProps) {
   const assignment = useSyncExternalStore(bridge.subscribeAssignment, bridge.getAssignment);
   const samplerSnapshot = useSyncExternalStore(bridge.subscribeSampler, bridge.getSamplerSnapshot);
@@ -83,6 +104,8 @@ export function CoachApp({
     () => bridge.library.preferences().sessionLength ?? DEFAULT_SESSION_LENGTH,
   );
   const [session, dispatch] = useReducer(sessionReducer, IDLE_SESSION);
+  const [activeTool, setActiveTool] = useState<ToolId | null>(null);
+  const [historyContainer, setHistoryContainer] = useState<HTMLDivElement | null>(null);
 
   // Degrees or letters, and the session length, are remembered between visits.
   const setLabelMode = useCallback(
@@ -105,6 +128,7 @@ export function CoachApp({
   const wantsPlaybackRef = useRef(false);
   const playheadRef = useRef<HTMLDivElement>(null);
   const assignmentWorkspaceRef = useRef<HTMLDetailsElement>(null);
+  const practicePanelRef = useRef<HTMLElement>(null);
   const activePracticeRef = useRef<{ id: string; baseDurationMs: number } | null>(null);
   const practisedHandsRef = useRef(new Set<"left" | "right">());
   const visitedBarsRef = useRef(new Set<number>());
@@ -506,14 +530,72 @@ export function CoachApp({
     if (!bridge.rerollIntoNewKey()) pendingSessionStart.current = false;
   }, [bridge]);
 
+  const closeTools = useCallback(() => {
+    const tool = activeTool;
+    setActiveTool(null);
+    if (!tool) return;
+    requestAnimationFrame(() => {
+      const doc = panelContainer?.ownerDocument ?? document;
+      doc.querySelector<HTMLButtonElement>(`[data-tool-trigger="${tool}"]`)?.focus();
+    });
+  }, [activeTool, panelContainer]);
+
+  const openTool = useCallback(
+    (tool: ToolId, detailsSelector?: string) => {
+      setActiveTool(tool);
+      requestAnimationFrame(() => {
+        const doc = panelContainer?.ownerDocument ?? document;
+        if (doc.defaultView?.matchMedia("(max-width: 899px)").matches) {
+          doc.querySelector<HTMLElement>("#piano-visual-card")?.scrollIntoView({
+            behavior: "auto",
+            block: "start",
+          });
+        }
+        const details = detailsSelector ? doc.querySelector<HTMLDetailsElement>(detailsSelector) : null;
+        if (details) {
+          details.open = true;
+          details.querySelector<HTMLElement>("summary")?.focus();
+        } else {
+          doc
+            .querySelector<HTMLElement>(
+              `#coach-tool-panel [data-tool="${tool}"] button, #coach-tool-panel [data-tool="${tool}"] [tabindex]`,
+            )
+            ?.focus();
+        }
+      });
+    },
+    [panelContainer],
+  );
+
   const openAssignmentWorkspace = useCallback(() => {
+    if (panelContainer) {
+      openTool("assignment", "#assignment-workspace");
+      return;
+    }
     const workspace = assignmentWorkspaceRef.current;
     if (!workspace) return;
     workspace.open = true;
     const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     workspace.scrollIntoView?.({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
     workspace.querySelector("summary")?.focus();
+  }, [openTool, panelContainer]);
+
+  const explorePractice = useCallback(() => {
+    setActiveTool(null);
+    const section = practicePanelRef.current;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    section?.scrollIntoView?.({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    section?.querySelector<HTMLButtonElement>("button")?.focus();
   }, []);
+
+  useEffect(() => {
+    if (!activeTool) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeTools();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [activeTool, closeTools]);
 
   useEffect(() => {
     if (!pendingSessionStart.current || !score) return;
@@ -548,10 +630,15 @@ export function CoachApp({
     [bridge, session.status],
   );
 
-  useEffect(
-    () => trackStickyHeaderHeight(summaryContainer?.closest<HTMLElement>(".coach-top") ?? null),
-    [summaryContainer],
-  );
+  useEffect(() => trackStickyHeaderHeight(headerContainer), [headerContainer]);
+
+  useEffect(() => {
+    if (!shellContainer) return;
+    shellContainer.dataset.sessionStatus = session.status;
+    return () => {
+      delete shellContainer.dataset.sessionStatus;
+    };
+  }, [session.status, shellContainer]);
 
   // ---- Render --------------------------------------------------------------
 
@@ -596,10 +683,66 @@ export function CoachApp({
     />
   ) : null;
 
+  const midiControls = (
+    <section className="coach-tool-card" aria-labelledby="coach-input-title">
+      <h3 id="coach-input-title">MIDI keyboard</h3>
+      <p className="coach-tool-note">
+        Connect a keyboard, choose its input and optionally play through this piano.
+      </p>
+      <MidiControl
+        midi={bridge.midiInput}
+        setPlayThrough={bridge.setMidiPlayThrough}
+        offKeyboard={offKeyboard}
+      />
+    </section>
+  );
+
+  const libraryPanel = (
+    <section className="coach-tool-card" aria-labelledby="coach-library-title">
+      <h3 id="coach-library-title">Star and share</h3>
+      <p className="coach-tool-note">Keep this assignment nearby or copy a link to the music itself.</p>
+      {libraryControls}
+    </section>
+  );
+
+  const panel = panelContainer ? (
+    <ToolPanel
+      active={activeTool}
+      onClose={closeTools}
+      assignment={
+        <AssignmentWorkspace editor={bridge.assignmentEditor} detailsRef={assignmentWorkspaceRef} />
+      }
+      reference={
+        <ScaleReference scale={assignment?.scale ?? null} audition={bridge.scaleAudition} ready={ready} />
+      }
+      sound={<SoundSettings settings={bridge.soundSettings} sampler={samplerSnapshot} />}
+      input={midiControls}
+      library={libraryPanel}
+      onHistoryContainer={setHistoryContainer}
+    />
+  ) : null;
+
   return (
     <>
       {summaryContainer ? createPortal(header, summaryContainer) : header}
-      {inputContainer
+      {themeContainer ? createPortal(<ThemeToggle />, themeContainer) : null}
+      {toolsContainer
+        ? createPortal(
+            <ToolRail
+              active={activeTool}
+              onSelect={(tool) => {
+                if (tool === activeTool) closeTools();
+                else if (tool === "assignment") openTool(tool, "#assignment-workspace");
+                else if (tool === "reference") openTool(tool, "#scale-reference");
+                else if (tool === "sound") openTool(tool, "#settings-drawer");
+                else openTool(tool);
+              }}
+              onExplore={explorePractice}
+            />,
+            toolsContainer,
+          )
+        : null}
+      {!panelContainer && inputContainer
         ? createPortal(
             <MidiControl
               midi={bridge.midiInput}
@@ -611,7 +754,9 @@ export function CoachApp({
         : null}
 
       <UpdateNotice offline={bridge.offline} />
-      <AssignmentWorkspace editor={bridge.assignmentEditor} detailsRef={assignmentWorkspaceRef} />
+      {!panelContainer ? (
+        <AssignmentWorkspace editor={bridge.assignmentEditor} detailsRef={assignmentWorkspaceRef} />
+      ) : null}
 
       <PracticePanel
         score={score}
@@ -624,22 +769,40 @@ export function CoachApp({
         chordBar={controls.focusBar ?? playheadBar}
         activeMotifIndex={activeMotifIndex}
         playheadRef={playheadRef}
+        sectionRef={practicePanelRef}
+        timelineContainer={timelineContainer}
         onView={selectView}
         onControls={updateControls}
         onLabelMode={setLabelMode}
         onTogglePlayback={togglePlayback}
         onStepChord={stepChordBy}
         onChangeAssignment={openAssignmentWorkspace}
-        assignmentActions={libraryControls}
+        assignmentActions={!panelContainer ? libraryControls : null}
       />
       <PracticeHistory
         history={bridge.practiceHistory}
         canOpen={session.status === "idle" || session.status === "complete"}
-        onAction={handleHistoryAction}
+        expanded={panelContainer ? activeTool === "history" : undefined}
+        detailsContainer={panelContainer ? historyContainer : null}
+        onExpandedChange={
+          panelContainer
+            ? (expanded) => {
+                if (expanded) openTool("history");
+                else closeTools();
+              }
+            : undefined
+        }
+        onAction={(action, record, bar) => {
+          if (panelContainer) setActiveTool(null);
+          handleHistoryAction(action, record, bar);
+        }}
       />
-      <ScaleReference scale={assignment?.scale ?? null} audition={bridge.scaleAudition} ready={ready} />
+      {!panelContainer ? (
+        <ScaleReference scale={assignment?.scale ?? null} audition={bridge.scaleAudition} ready={ready} />
+      ) : null}
       <StatusLine status={bridge.status} />
-      {settingsContainer
+      {panelContainer && panel ? createPortal(panel, panelContainer) : null}
+      {!panelContainer && settingsContainer
         ? createPortal(
             <SoundSettings settings={bridge.soundSettings} sampler={samplerSnapshot} />,
             settingsContainer,

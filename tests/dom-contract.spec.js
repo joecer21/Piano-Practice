@@ -32,5 +32,9 @@ describe("index.html / Live Piano host contract", () => {
   it("provides React mount slots for the coach and its settings", () => {
     expect(dom.window.document.getElementById("coach-root")).not.toBeNull();
     expect(dom.window.document.getElementById("coach-settings")).not.toBeNull();
+    expect(dom.window.document.querySelector(".coach-top #coach-theme")).not.toBeNull();
+    expect(dom.window.document.querySelector(".coach-top #coach-tools")).not.toBeNull();
+    expect(dom.window.document.getElementById("coach-panel-host")).not.toBeNull();
+    expect(dom.window.document.querySelector("#piano-visual-card #coach-timeline-slot")).not.toBeNull();
   });
 });

@@ -1,0 +1,150 @@
+/* Element defaults. Everything here reads tokens; components refine it. */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    background: var(--bg);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: var(--text-md) / 1.5 var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :where(h1, h2, h3) {
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+
+  [hidden],
+  .hidden {
+    display: none !important;
+  }
+
+  :where(button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  button {
+    min-height: var(--touch-target);
+    padding: 0 var(--space-4);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background-color 120ms var(--ease),
+      border-color 120ms var(--ease);
+  }
+
+  button:hover:not(:disabled) {
+    background-color: var(--focus-fill);
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  select,
+  input:not([type="checkbox"], [type="radio"], [type="range"]),
+  textarea {
+    min-height: var(--touch-target);
+    padding: 0 var(--space-3);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    color: var(--ink);
+    font: inherit;
+  }
+
+  textarea {
+    padding: var(--space-2) var(--space-3);
+    line-height: 1.45;
+  }
+
+  /* Fill the field's track: option labels can be long, and a select sized to its
+     longest option would push a phone layout sideways. */
+  select {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  :where(input[type="checkbox"], input[type="radio"], input[type="range"]) {
+    accent-color: var(--ink);
+  }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+  }
+
+  .muted {
+    color: var(--ink-muted);
+  }
+
+  .coach-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Status feedback: a small settle for news, a small shake for errors. Motion only:
+     fading the text would dip it below contrast minimums while it animates. */
+  @keyframes status-in {
+    from {
+      transform: translateY(3px);
+    }
+  }
+
+  @keyframes status-alert {
+    25% {
+      transform: translateX(-3px);
+    }
+    75% {
+      transform: translateX(3px);
+    }
+  }
+
+  .mf-status {
+    animation: status-in 400ms var(--ease);
+  }
+
+  .mf-alert {
+    animation: status-alert 300ms var(--ease);
+  }
+
+  @media (max-width: 600px) {
+    button,
+    select {
+      font-size: var(--text-md);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

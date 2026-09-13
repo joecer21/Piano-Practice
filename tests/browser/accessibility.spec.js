@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { openAssignmentDrawer, openKeyboardOptions } from "./support.js";
+import { openAssignmentDrawer, openKeyboardOptions, openScaleReference } from "./support.js";
 
 test("Live Piano exposes accessible controls and a phone-friendly range", async ({ page }, testInfo) => {
   await page.goto("/");
@@ -76,7 +76,7 @@ test("Live Piano exposes accessible controls and a phone-friendly range", async 
 test("keyboard focus is never hidden under the sticky summary header", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByTestId("coach-sentence")).toBeVisible();
-  await page.locator("#scale-reference > summary").click();
+  await openScaleReference(page);
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await page.locator("#status-line").evaluate((element) => {
     element.tabIndex = -1;
