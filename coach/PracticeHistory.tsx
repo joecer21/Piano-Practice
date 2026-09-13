@@ -274,6 +274,15 @@ function PracticeHistoryItem({
   const [label, setLabel] = useState(record.label ?? "");
   const [notes, setNotes] = useState(record.notes ?? "");
   const [bars, setBars] = useState(record.needsWorkBars.join(", "));
+  // A note saved from the session summary (or another tab) replaces a stale draft.
+  const persisted = JSON.stringify([record.label, record.notes, record.needsWorkBars]);
+  const [syncedFrom, setSyncedFrom] = useState(persisted);
+  if (syncedFrom !== persisted) {
+    setSyncedFrom(persisted);
+    setLabel(record.label ?? "");
+    setNotes(record.notes ?? "");
+    setBars(record.needsWorkBars.join(", "));
+  }
   const saveNotes = () => {
     history.annotate(record.id, { label, notes, needsWorkBars: parseBars(bars) });
     setSaved("Notes saved.");

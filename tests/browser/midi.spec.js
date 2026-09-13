@@ -1,39 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { openMidiInput } from "./support.js";
-
-// Real MIDI hardware cannot run in CI. These tests replace navigator.requestMIDIAccess
-// before the app loads with a fake a test can plug devices into and play.
-async function installFakeMidi(page, { deny = false } = {}) {
-  await page.addInitScript(
-    ({ deny }) => {
-      const inputs = new Map();
-      const access = { inputs: { forEach: (callback) => inputs.forEach(callback) }, onstatechange: null };
-      window.__fakeMidi = {
-        requested: 0,
-        plug(id, name) {
-          inputs.set(id, { id, name, manufacturer: "", state: "connected", onmidimessage: null });
-          access.onstatechange?.({ port: { type: "input" } });
-        },
-        unplug(id) {
-          inputs.get(id).state = "disconnected";
-          access.onstatechange?.({ port: { type: "input" } });
-        },
-        send(id, bytes) {
-          inputs.get(id)?.onmidimessage?.({ data: Uint8Array.from(bytes) });
-        },
-      };
-      Object.defineProperty(Navigator.prototype, "requestMIDIAccess", {
-        configurable: true,
-        value: async () => {
-          window.__fakeMidi.requested += 1;
-          if (deny) throw new DOMException("denied", "NotAllowedError");
-          return access;
-        },
-      });
-    },
-    { deny },
-  );
-}
+import { installFakeMidi, openMidiInput } from "./support.js";
 
 const key = (page, note) => page.locator(`#piano-visual [data-note="${note}"]`);
 const send = (page, bytes) => page.evaluate((data) => window.__fakeMidi.send("piano", data), bytes);

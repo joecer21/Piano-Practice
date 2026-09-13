@@ -486,6 +486,15 @@ describe("CoachApp", () => {
       expect.objectContaining({ activeDurationMs: expect.any(Number) }),
     );
 
+    // A note from the summary lands on the record the session just completed.
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("A note for next time"), {
+        target: { value: "  Slow bar 4  " },
+      });
+    });
+    await click(screen.getByRole("button", { name: "Save note" }));
+    expect(bridge.practiceHistory.annotate).toHaveBeenCalledWith("practice-test", { notes: "Slow bar 4" });
+
     const playsBefore = bridge.audioEngine.requests.length;
     await click(screen.getByRole("button", { name: "Again in a new key" }));
     expect(bridge.rerollIntoNewKey).toHaveBeenCalled();

@@ -54,3 +54,44 @@ export async function openKeyboardOptions(page) {
     await page.getByText("Keyboard options").click();
   }
 }
+
+// Real MIDI hardware cannot run in CI. These tests replace navigator.requestMIDIAccess
+// before the app loads with a fake a test can plug devices into and play.
+export async function installFakeMidi(page, { deny = false } = {}) {
+  await page.addInitScript(
+    ({ deny }) => {
+      const inputs = new Map();
+      const access = { inputs: { forEach: (callback) => inputs.forEach(callback) }, onstatechange: null };
+      window.__fakeMidi = {
+        requested: 0,
+        plug(id, name) {
+          inputs.set(id, { id, name, manufacturer: "", state: "connected", onmidimessage: null });
+          access.onstatechange?.({ port: { type: "input" } });
+        },
+        unplug(id) {
+          inputs.get(id).state = "disconnected";
+          access.onstatechange?.({ port: { type: "input" } });
+        },
+        send(id, bytes) {
+          inputs.get(id)?.onmidimessage?.({ data: Uint8Array.from(bytes) });
+        },
+      };
+      Object.defineProperty(Navigator.prototype, "requestMIDIAccess", {
+        configurable: true,
+        value: async () => {
+          window.__fakeMidi.requested += 1;
+          if (deny) throw new DOMException("denied", "NotAllowedError");
+          return access;
+        },
+      });
+    },
+    { deny },
+  );
+}
+
+export async function waitForPiano(page) {
+  await page.waitForFunction(() => {
+    const snapshot = window.__PIANO_PRACTICE_TEST__?.sampler;
+    return snapshot?.libraries?.[snapshot.activeLibraryId]?.phase === "ready";
+  });
+}

@@ -106,6 +106,8 @@ export function CoachApp({
   const [session, dispatch] = useReducer(sessionReducer, IDLE_SESSION);
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
   const [historyContainer, setHistoryContainer] = useState<HTMLDivElement | null>(null);
+  // The record a completed session wrote, so the summary can add a note to it.
+  const [finishedRecordId, setFinishedRecordId] = useState<string | null>(null);
 
   // Degrees or letters, and the session length, are remembered between visits.
   const setLabelMode = useCallback(
@@ -387,6 +389,7 @@ export function CoachApp({
   const startSession = useCallback(
     async (resumeId?: string) => {
       if (!score) return;
+      setFinishedRecordId(null);
       dispatch({ type: "start", length: sessionLength, hasMotif: hasMotif(score) });
       appliedStep.current = 0;
       const [firstStep] = sessionSteps(hasMotif(score));
@@ -500,6 +503,7 @@ export function CoachApp({
         const active = activePracticeRef.current;
         if (active) {
           bridge.practiceHistory.finish(active.id, "completed", activityFor(session));
+          setFinishedRecordId(active.id);
           activePracticeRef.current = null;
         }
       }
@@ -668,6 +672,12 @@ export function CoachApp({
       onPrevious={() => dispatch({ type: "previous" })}
       onEnd={endSession}
       onAgainNewKey={againInNewKey}
+      onDone={() => dispatch({ type: "end" })}
+      onSaveNote={
+        finishedRecordId
+          ? (notes) => bridge.practiceHistory.annotate(finishedRecordId, { notes: notes.trim() || null })
+          : undefined
+      }
     />
   );
 

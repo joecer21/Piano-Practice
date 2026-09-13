@@ -99,6 +99,11 @@
       grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem);
     }
 
+    /* Focus mode hides the tool panel, so it gives its column back to the Stage. */
+    .coach-shell:is([data-session-status="running"], [data-session-status="paused"]) .coach-stage-layout {
+      grid-template-columns: minmax(0, 1fr) 0;
+    }
+
     .coach-panel-host {
       position: sticky;
       top: calc(var(--coach-top-height, 0px) + var(--space-4));
