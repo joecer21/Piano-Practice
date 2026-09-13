@@ -66,6 +66,33 @@ export default [
   },
 
   {
+    // Product code generates assignments for learners, so it must go through
+    // generateLearnerAssignment, which refuses motifs a mode does not offer. The
+    // unrestricted generateAssignment stays available to tests and reports.
+    files: [
+      "main.js",
+      "ui.js",
+      "presets.js",
+      "application/**/*.js",
+      "components/**/*.js",
+      "coach/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: ["./domain/assignment.js", "../domain/assignment.js"].map((name) => ({
+            name,
+            importNames: ["generateAssignment"],
+            message:
+              "Use generateLearnerAssignment: learner-facing generation must refuse motifs the mode does not offer.",
+          })),
+        },
+      ],
+    },
+  },
+
+  {
     files: ["audio.js", "audio/**/*.{js,ts}"],
     rules: {
       "no-restricted-imports": [

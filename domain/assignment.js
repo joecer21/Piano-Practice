@@ -157,7 +157,38 @@ export function assertValidAssignmentInputs(value) {
 }
 
 /**
- * Generate a complete assignment through the deterministic musical engine.
+ * Thrown when a learner-facing path asks for a motif its mode does not offer.
+ * Carries the explanation and any variant written for that mode.
+ */
+export class MotifNotOfferedError extends Error {
+  /** @param {{ reason: string | null, variant: string | null }} offer */
+  constructor(offer) {
+    super(offer.reason ?? "That motif is not offered in this mode.");
+    this.name = "MotifNotOfferedError";
+    this.reason = offer.reason;
+    this.variant = offer.variant;
+  }
+}
+
+/**
+ * Generate an assignment for a learner. The only generation entry point for
+ * product code (main.js, ui.js, application/, components/, coach/; ESLint
+ * forbids importing generateAssignment there): it refuses a motif that its mode
+ * does not offer, rather than generating it or changing its notes.
+ * @param {Partial<AssignmentInputs>} rawInputs
+ * @returns {PracticeAssignment}
+ */
+export function generateLearnerAssignment(rawInputs) {
+  const offer = checkMotifOffer(normalizeAssignmentInputs(rawInputs));
+  if (!offer.offered) throw new MotifNotOfferedError(offer);
+  return generateAssignment(rawInputs);
+}
+
+/**
+ * Generate a complete assignment through the deterministic musical engine, for
+ * any combination of inputs, including motifs a mode does not offer. This
+ * unrestricted path exists for analysis (fingerprints, the outside-collection
+ * report, tests). Product code must use generateLearnerAssignment.
  * @param {Partial<AssignmentInputs>} rawInputs
  * @returns {PracticeAssignment}
  */

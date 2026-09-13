@@ -31,7 +31,7 @@ export const PRESET_CONFIGS = [
     mode: "minorBlues",
     progressionPresetId: "blues-12-minor",
     lhId: "root-5th-oct",
-    motifId: "blues-riff",
+    motifId: "blues-riff-minor",
     length: 12,
     styleId: "jazz",
     anchors: {

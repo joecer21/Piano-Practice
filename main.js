@@ -10,8 +10,8 @@
 import "./style.css";
 
 import {
-  checkMotifOffer,
-  generateAssignment,
+  MotifNotOfferedError,
+  generateLearnerAssignment,
   rerollAssignmentInputs,
   validateAssignmentInputs,
 } from "./domain/assignment.js";
@@ -314,7 +314,7 @@ const DRAFT_BLOCKED_MESSAGES = {
  *
  * The chord palette is edited one chord at a time, so inputs legitimately pass
  * through states that are not yet a complete assignment - selecting "Custom"
- * before adding any chord is the obvious one. generateAssignment throws on those,
+ * before adding any chord is the obvious one. Generation throws on those,
  * and six handlers called this with no guard, so changing the key while a custom
  * progression was empty killed the interaction with nothing shown to the user.
  *
@@ -331,21 +331,19 @@ function computeDerived() {
     return { ok: false, errors };
   }
 
-  // A pattern that undermines the chosen scale is not offered there. Say so and keep
-  // the last assignment, rather than changing the pattern or its notes.
-  const offer = checkMotifOffer(state.inputs);
-  if (!offer.offered) {
-    const variant = offer.variant ? MOTIF_STYLES[offer.variant] : null;
-    showHint(dom, variant ? `${offer.reason} Try ${variant.label}.` : offer.reason);
-    return { ok: false, errors: [offer.reason] };
-  }
-
   try {
-    const assignment = generateAssignment(state.inputs);
+    const assignment = generateLearnerAssignment(state.inputs);
     appStore.commitAssignment(assignment);
     updateAudioHumanize();
     return { ok: true, assignment };
   } catch (error) {
+    // A pattern that undermines the chosen scale is not offered there. Say so and
+    // keep the last assignment, rather than changing the pattern or its notes.
+    if (error instanceof MotifNotOfferedError) {
+      const variant = error.variant ? MOTIF_STYLES[error.variant] : null;
+      showHint(dom, variant ? `${error.reason} Try ${variant.label}.` : error.reason);
+      return { ok: false, errors: [error.message] };
+    }
     // Validation passed but generation still failed: a real defect, not a draft.
     console.error("Assignment generation failed", error);
     setStatusMessage(dom, `Could not build that assignment: ${error?.message || "unknown error"}`, {
