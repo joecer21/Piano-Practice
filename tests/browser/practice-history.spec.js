@@ -35,7 +35,7 @@ test("an interrupted session survives reload and returns as an explainable next 
 
   await page.reload();
   await expandPracticeHistory(page);
-  await expect(page.getByText("Work on the turnaround")).toBeVisible();
+  await expect(page.locator(".practice-history-title", { hasText: "Work on the turnaround" })).toBeVisible();
   await expect(page.locator(".practice-recommendation")).toContainText("Focus on bar 2");
   await page.keyboard.press("Escape");
   await expect(page.locator("#coach-tool-panel")).toBeHidden();

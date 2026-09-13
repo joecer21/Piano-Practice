@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { PracticeRecord } from "../application/practice-record.js";
 import type { PracticeHistory as PracticeHistoryService } from "./bridge.js";
+import { recordNames } from "./feel.js";
 import { Icon } from "./Icon.js";
 import { SESSION_STEPS } from "./session.js";
 
@@ -175,27 +176,39 @@ export function PracticeHistory({ history, canOpen, onAction }: PracticeHistoryP
       </div>
 
       <div className="practice-pickup">
-        <div className="practice-pick practice-recommendation">
-          <p className="coach-eyebrow">
-            {!recommendation || recommendation.kind === "resume" ? "Pick up where you left off" : "Try next"}
-          </p>
-          {recommendation ? (
-            <>
-              <p className="practice-pick-name">{recommendation.title}</p>
-              <p>{recommendation.reason}</p>
-              <button
-                type="button"
-                className="coach-secondary"
-                disabled={!canOpen}
-                onClick={actOnRecommendation}
-              >
-                {recommendation.kind === "resume" ? "Continue" : "Practice"}
-              </button>
-            </>
-          ) : (
+        {recommendation?.kind === "resume" ? (
+          <PickCard
+            eyebrow="Pick up where you left off"
+            record={byId(recommendation.recordId)}
+            recommendation={recommendation}
+            action="Continue"
+            canOpen={canOpen}
+            onClick={actOnRecommendation}
+          />
+        ) : records[0] && records[0].id !== recommendation?.recordId ? (
+          <PickCard
+            eyebrow="Pick up where you left off"
+            record={records[0]}
+            action="Play it again"
+            canOpen={canOpen}
+            onClick={() => onAction("again", records[0])}
+          />
+        ) : (
+          <div className="practice-pick">
+            <p className="coach-eyebrow">Pick up where you left off</p>
             <p>Complete a guided session and your next practice suggestion will appear here.</p>
-          )}
-        </div>
+          </div>
+        )}
+        {recommendation && recommendation.kind !== "resume" ? (
+          <PickCard
+            eyebrow="Try next"
+            record={byId(recommendation.recordId)}
+            recommendation={recommendation}
+            action="Practice"
+            canOpen={canOpen}
+            onClick={actOnRecommendation}
+          />
+        ) : null}
       </div>
 
       <p className="coach-library-status practice-history-message" role="status">
@@ -235,6 +248,67 @@ export function PracticeHistory({ history, canOpen, onAction }: PracticeHistoryP
       </div>
     </section>
   );
+}
+
+type Recommendation = NonNullable<ReturnType<PracticeHistoryService["getSnapshot"]>["recommendation"]>;
+
+/** One pick-up card: the assignment by feel, where it stands, and one way back in. */
+function PickCard({
+  eyebrow,
+  record,
+  recommendation,
+  action,
+  canOpen,
+  onClick,
+}: {
+  eyebrow: string;
+  record: PracticeRecord | null;
+  recommendation?: Recommendation;
+  action: string;
+  canOpen: boolean;
+  onClick(): void;
+}) {
+  const names = record ? recordNames(record) : null;
+  return (
+    <div className={`practice-pick${recommendation ? " practice-recommendation" : ""}`}>
+      <p className="coach-eyebrow">{eyebrow}</p>
+      <p className="practice-pick-name">
+        {names?.feel ? `${names.feel}.` : (recommendation?.title ?? names?.title)}
+      </p>
+      {record && names ? (
+        <p>
+          {record.label || names.title} · {formatWhen(record.startedAt).toLowerCase()}, {progressText(record)}
+        </p>
+      ) : null}
+      {recommendation ? (
+        <p>
+          {recommendation.title}. {recommendation.reason}
+        </p>
+      ) : null}
+      <button type="button" className="coach-secondary" disabled={!canOpen} onClick={onClick}>
+        {action}
+      </button>
+    </div>
+  );
+}
+
+/** How far a session got, in steps: never how well. */
+function progressText(record: PracticeRecord): string {
+  const reached = SESSION_STEPS.filter((step) => record.learningLenses.includes(step.id));
+  if (record.status === "completed") return "played all the way through";
+  const last = reached.at(-1);
+  return last ? `stopped at ${last.title.toLowerCase()}` : "stopped early";
+}
+
+/** "Today 8:14", "Yesterday 21:40", "Thu 11 Sep". */
+function formatWhen(iso: string, now = new Date()): string {
+  const date = new Date(iso);
+  const day = (value: Date) => new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
+  const days = Math.round((day(now) - day(date)) / 86_400_000);
+  const time = date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  if (days === 0) return `Today ${time}`;
+  if (days === 1) return `Yesterday ${time}`;
+  return date.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
 }
 
 /** A small copy of the session rail: which steps were reached, never how well. */
@@ -292,7 +366,7 @@ function PracticeHistoryItem({
     setSaved("Notes saved.");
   };
   const duration = formatDuration(record.activeDurationMs);
-  const date = new Date(record.startedAt);
+  const names = recordNames(record);
   const status =
     record.status === "completed"
       ? "Completed"
@@ -304,21 +378,21 @@ function PracticeHistoryItem({
     <li className="practice-history-item">
       <details>
         <summary>
-          <time dateTime={record.startedAt}>{date.toLocaleDateString()}</time>
+          <time dateTime={record.startedAt}>{formatWhen(record.startedAt)}</time>
           <span className="practice-history-main">
-            <span className="practice-history-title">{record.label || record.assignment.title}</span>
+            <span className="practice-history-title">{record.label || names.title}</span>
             <span className="practice-history-line">
               <span className={`practice-history-status practice-history-status-${record.status}`}>
                 {status}
               </span>{" "}
-              · {duration}
+              · {progressText(record)} · {duration}
             </span>
             <MiniRail record={record} />
             {record.notes ? <span className="practice-history-note">{record.notes}</span> : null}
           </span>
         </summary>
         <div className="practice-history-body">
-          {record.label ? <p className="coach-hint">{record.assignment.title}</p> : null}
+          {record.label ? <p className="coach-hint">{names.title}</p> : null}
           <p className="practice-history-meta">
             Tempo {record.startingTempo}
             {record.endingTempo !== record.startingTempo ? ` → ${record.endingTempo}` : ""} BPM

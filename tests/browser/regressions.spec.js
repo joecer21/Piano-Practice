@@ -13,15 +13,19 @@ test("B2: an empty custom progression does not kill the app", async ({ page }) =
   // The hint is a transient message with a ~4.2s lifetime, so polling for it
   // races the clock under parallel load. Record every value the status line
   // takes instead, which makes the assertion independent of when we look.
+  // The status line is re-rendered for each message, so watch the page, not one node.
   await page.evaluate(() => {
-    const node = document.getElementById("status-line");
     window.__statusLog = [];
     const record = () => {
-      const text = node.textContent.trim();
+      const text = document.getElementById("status-line")?.textContent.trim();
       if (text && window.__statusLog.at(-1) !== text) window.__statusLog.push(text);
     };
     record();
-    new MutationObserver(record).observe(node, { childList: true, characterData: true, subtree: true });
+    new MutationObserver(record).observe(document.body, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
   });
 
   await openAssignmentDrawer(page);

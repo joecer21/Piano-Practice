@@ -164,16 +164,20 @@
   }
 
   .coach-theory {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--space-1) var(--space-3);
+    display: grid;
+    justify-items: start;
+    gap: var(--space-1);
     margin-top: var(--space-4);
     color: var(--ink-muted);
     font-size: var(--text-sm);
   }
 
+  .coach-theory > p {
+    margin: 0;
+  }
+
   .coach-theory-tag {
+    margin-right: var(--space-2);
     color: var(--ink-faint);
     font-size: var(--text-xs);
     font-weight: 650;
@@ -1135,9 +1139,14 @@
     pointer-events: none;
   }
 
+  /* A small solid tab, so the lane name stays readable over the notes it names. */
   .coach-timeline-lane-label {
     position: absolute;
-    left: var(--space-2);
+    left: 3px;
+    padding: 0 5px;
+    border-radius: 4px;
+    background: var(--bg);
+    line-height: 1.5;
     font-size: 0.62rem;
     font-weight: 700;
     letter-spacing: 0.06em;

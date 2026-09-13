@@ -20,6 +20,8 @@ test("land, start five minutes, then loop bar 3 with the left hand at half speed
   await expect(page.getByTestId("coach-feel")).not.toContainText(/major|minor|pentatonic|blues/);
 
   await waitForPiano(page);
+  // Opening the app is not news: the first assignment is not announced.
+  await expect(page.locator("#status-line")).not.toContainText("Assignment updated");
   const start = page.getByRole("button", { name: "Start 5 minutes" });
   await expect(start).toBeEnabled();
   await start.click();

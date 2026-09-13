@@ -482,6 +482,8 @@ describe("CoachApp", () => {
     render(<CoachApp bridge={bridge} summaryContainer={null} />);
 
     await click(screen.getByRole("button", { name: "Start 5 minutes" }));
+    await click(screen.getByRole("button", { name: /^Bar 3,/ }));
+    await click(screen.getByRole("button", { name: "Half speed" }));
     await act(async () => vi.advanceTimersByTime(20_000));
     for (let step = 0; step < 5; step += 1) await click(screen.getByRole("button", { name: "Next step" }));
     await click(screen.getByRole("button", { name: "Finish" }));
@@ -489,8 +491,14 @@ describe("CoachApp", () => {
     expect(screen.queryByRole("timer")).toBeNull();
     expect(screen.getByRole("heading", { name: "Five minutes, done." })).toBeTruthy();
     expect(
-      within(screen.getByRole("list", { name: "What you covered" })).getByText(/The whole thing/),
+      within(screen.getByRole("list", { name: "What you covered" })).getByText(
+        "The whole thing · looped bar 3 · half speed",
+      ),
     ).toBeTruthy();
+    // Steps that got no time are not listed as if they were played.
+    expect(
+      within(screen.getByRole("list", { name: "What you covered" })).getAllByRole("listitem"),
+    ).toHaveLength(1);
     expect(bridge.audioEngine.sessions.at(-1).stop).toHaveBeenCalled();
 
     expect(bridge.practiceHistory.finish).toHaveBeenCalledWith(

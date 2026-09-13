@@ -13,9 +13,10 @@ type TimelineProps = {
 };
 
 const BAR_UNITS = 100;
+// Each lane leaves a band at its top for its name, so no note is ever drawn under the label.
 const LANE: Record<PartId, { top: number; bottom: number }> = {
-  rh: { top: 4, bottom: 46 },
-  lh: { top: 54, bottom: 96 },
+  rh: { top: 13, bottom: 47 },
+  lh: { top: 62, bottom: 97 },
 };
 
 /**

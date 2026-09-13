@@ -1,5 +1,7 @@
 import { describeMotifParts } from "../domain/describe.js";
 import type { NoteEvent, Score, ScoreEvent } from "../domain/score.js";
+import { decodeShareFragment } from "../domain/share.js";
+import { PRESET_CONFIGS } from "../presets.js";
 
 /**
  * How an assignment feels, in words a player can hear before they can name.
@@ -48,6 +50,36 @@ export const PRESET_FEELS: Readonly<Record<string, string>> = {
   "daft-ponk": "Bouncy, head-nodding",
   "john-legendairy": "Tender and heartfelt",
 };
+
+type PresetInputs = { presetId?: string | null; key: string; mode: string };
+
+/** The curated preset these inputs still are: same preset, key and colour. Anything moved away is not. */
+export function matchingPreset(inputs: PresetInputs) {
+  return (
+    PRESET_CONFIGS.find(
+      (preset) => preset.id === inputs.presetId && preset.key === inputs.key && preset.mode === inputs.mode,
+    ) ?? null
+  );
+}
+
+/** A short feel name for an assignment the player is not looking at, such as a history record. */
+export function feelName(inputs: PresetInputs): string {
+  const preset = matchingPreset(inputs);
+  return (preset && PRESET_FEELS[preset.id]) || MOODS[inputs.mode] || "Warm and unhurried";
+}
+
+/** A practice record's names, read back through the share decoder: its feel and a readable title. */
+export function recordNames(record: { assignment: { fragment: string; title: string } }): {
+  feel: string | null;
+  title: string;
+} {
+  const decoded = decodeShareFragment(record.assignment.fragment);
+  if (!decoded.ok) return { feel: null, title: record.assignment.title };
+  return {
+    feel: feelName(decoded.inputs),
+    title: matchingPreset(decoded.inputs)?.name ?? record.assignment.title,
+  };
+}
 
 export function describeFeel(score: Score): Feel {
   return {

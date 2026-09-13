@@ -4,7 +4,7 @@ import type { PlayRequest, PlaybackSession } from "../audio/playback-engine.js";
 import { describeAssignment } from "../domain/describe.js";
 import { EMPTY_HELD_NOTES, playedNotes, reduceHeldNotes } from "../input/held-notes.js";
 import { AssignmentWorkspace } from "./AssignmentWorkspace.js";
-import { PRESET_FEELS, describeFeel } from "./feel.js";
+import { PRESET_FEELS, describeFeel, matchingPreset } from "./feel.js";
 import type { CoachBridge } from "./bridge.js";
 import { applyKeyboardOverlay, clearKeyboardOverlay } from "./keyboard-overlay.js";
 import type { LabelMode } from "./keyboard-overlay.js";
@@ -27,7 +27,6 @@ import { pianoReadiness } from "./sampler.js";
 import { ScaleReference } from "./ScaleReference.js";
 import { StatusLine } from "./StatusLine.js";
 import { trackBottomSheetHeight, trackStickyHeaderHeight } from "./sticky-offset.js";
-import { PRESET_CONFIGS } from "../presets.js";
 import { ThemeToggle } from "./ThemeToggle.js";
 import { ToolPanel, ToolRail } from "./ToolPanel.js";
 import type { ToolId } from "./ToolPanel.js";
@@ -42,7 +41,7 @@ import {
   sessionSteps,
   visibleTimerDelta,
 } from "./session.js";
-import type { SessionLength, SessionStep } from "./session.js";
+import type { SessionLength, SessionStep, SessionStepId } from "./session.js";
 import {
   activeMotifNoteIndex,
   chordShapeMidis,
@@ -117,6 +116,9 @@ export function CoachApp({
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
   // The record a completed session wrote, so the summary can add a note to it.
   const [finishedRecordId, setFinishedRecordId] = useState<string | null>(null);
+  // What each step of the finished session involved ("looped bar 3 · half speed"), for its summary.
+  const [stepDetails, setStepDetails] = useState<Partial<Record<SessionStepId, string>>>({});
+  const stepUsageRef = useRef(new Map<SessionStepId, { bars: Set<number>; slow: boolean }>());
 
   // Degrees or letters, and the session length, are remembered between visits.
   const setLabelMode = useCallback(
@@ -398,6 +400,7 @@ export function CoachApp({
     async (resumeId?: string) => {
       if (!score) return;
       setFinishedRecordId(null);
+      stepUsageRef.current = new Map();
       dispatch({ type: "start", length: sessionLength, hasMotif: hasMotif(score) });
       appliedStep.current = 0;
       const [firstStep] = sessionSteps(hasMotif(score));
@@ -464,6 +467,18 @@ export function CoachApp({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeStepIndex]);
 
+  // Remember, per step, the bars looped and whether it ran at half speed.
+  useEffect(() => {
+    if (activeStepIndex == null || (session.status !== "running" && session.status !== "paused")) return;
+    const id = session.steps[activeStepIndex].id;
+    const usage = stepUsageRef.current.get(id) ?? { bars: new Set<number>(), slow: false };
+    if (controls.loop && controls.focusBar != null) usage.bars.add(controls.focusBar + 1);
+    if (controls.slow) usage.slow = true;
+    stepUsageRef.current.set(id, usage);
+    // Only these controls and the step matter; the session object changes every tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeStepIndex, controls.focusBar, controls.loop, controls.slow]);
+
   const activityFor = useCallback(
     (state: typeof session) => {
       if (controls.lens === "both" || controls.lens === "lh") practisedHandsRef.current.add("left");
@@ -514,6 +529,7 @@ export function CoachApp({
           setFinishedRecordId(active.id);
           activePracticeRef.current = null;
         }
+        setStepDetails(describeStepUsage(stepUsageRef.current));
       }
     }
   }, [activityFor, bridge.practiceHistory, session, stopPlayback]);
@@ -661,11 +677,7 @@ export function CoachApp({
   );
   // A curated preset, still in its own key and colour, has a hand-written feel and
   // name; anything moved away from it is described from the Score alone.
-  const inputs = editorSnapshot.inputs;
-  const preset = PRESET_CONFIGS.find(
-    (candidate) =>
-      candidate.id === inputs.presetId && candidate.key === inputs.key && candidate.mode === inputs.mode,
-  );
+  const preset = matchingPreset(editorSnapshot.inputs);
   const presetFeel = preset ? (PRESET_FEELS[preset.id] ?? null) : null;
   const presetName = preset?.name ?? null;
 
@@ -676,6 +688,7 @@ export function CoachApp({
       eyebrow={presetName ? `Today · ${presetName}` : "Today"}
       assignmentLabel={presetName ?? bridge.library.currentTitle()}
       tempoBpm={soundSnapshot.tempoBpm}
+      stepDetails={stepDetails}
       readinessNote={readinessNote}
       ready={ready}
       hasMotif={score ? hasMotif(score) : true}
@@ -835,4 +848,21 @@ export function CoachApp({
         : null}
     </>
   );
+}
+
+function describeStepUsage(
+  usage: ReadonlyMap<SessionStepId, { bars: Set<number>; slow: boolean }>,
+): Partial<Record<SessionStepId, string>> {
+  const details: Partial<Record<SessionStepId, string>> = {};
+  usage.forEach(({ bars, slow }, id) => {
+    const sorted = [...bars].sort((a, b) => a - b);
+    const looped = sorted.length
+      ? `looped bar${sorted.length > 1 ? "s" : ""} ${
+          sorted.length > 1 ? `${sorted.slice(0, -1).join(", ")} and ${sorted.at(-1)}` : sorted[0]
+        }`
+      : null;
+    const text = [looped, slow ? "half speed" : null].filter(Boolean).join(" · ");
+    if (text) details[id] = text;
+  });
+  return details;
 }

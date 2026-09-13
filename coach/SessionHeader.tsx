@@ -3,7 +3,7 @@ import type { RefObject } from "react";
 import { createPortal } from "react-dom";
 import type { Feel } from "./feel.js";
 import { Icon } from "./Icon.js";
-import type { ActiveSession, SessionLength, SessionState } from "./session.js";
+import type { ActiveSession, SessionLength, SessionState, SessionStepId } from "./session.js";
 import { SESSION_LENGTHS, remainingMs, startLabel } from "./session.js";
 import { formatClock } from "./practice.js";
 
@@ -17,6 +17,8 @@ type SessionHeaderProps = {
   /** "First Pop Improv in C", for the summary card. */
   assignmentLabel?: string | null;
   tempoBpm?: number;
+  /** Per step of a finished session: "looped bar 3 · half speed". */
+  stepDetails?: Partial<Record<SessionStepId, string>>;
   readinessNote: string | null;
   ready: boolean;
   hasMotif?: boolean;
@@ -118,9 +120,11 @@ function Brief({
         ) : null}
         {hands ? <p className="coach-feel-sub">{hands}</p> : null}
         <div className="coach-theory">
-          <span className="coach-theory-tag">In theory</span>
-          <p className="coach-sentence" data-testid="coach-sentence">
-            {sentence}
+          <p>
+            <span className="coach-theory-tag">In theory</span>{" "}
+            <span className="coach-sentence" data-testid="coach-sentence">
+              {sentence}
+            </span>
           </p>
           {feel ? (
             <details className="coach-why">
@@ -255,6 +259,7 @@ function Summary({
   ready,
   assignmentLabel,
   tempoBpm,
+  stepDetails = {},
   onStart,
   onAgainNewKey,
   onDone,
@@ -304,9 +309,12 @@ function Summary({
 
       <div>
         <ol className="coach-covered" aria-label="What you covered">
-          {session.steps.map((step) => (
+          {covered.map((step) => (
             <li key={step.id}>
-              <span>{step.title}</span>
+              <span>
+                {step.title}
+                {stepDetails[step.id] ? ` · ${stepDetails[step.id]}` : ""}
+              </span>
               <span className="coach-covered-time">
                 {formatClock((session.timeByStep[step.id] ?? 0) / 1000)}
               </span>

@@ -172,10 +172,11 @@ function init(production) {
   const link = shareController.openLocation();
   if (!link.opened && !openInputs(practiceLibrary.lastInputs())) {
     const initialPresetId = state.inputs.presetId || DEFAULT_PRESET_ID;
+    // Opening the app is not news: the first assignment is built without an announcement.
     if (initialPresetId) {
-      applyPreset(initialPresetId);
+      applyPreset(initialPresetId, { announce: false });
     } else {
-      applyAssignmentDraft(state.inputs);
+      applyAssignmentDraft(state.inputs, { announce: false });
     }
   }
   reportLinkError(link);
@@ -691,7 +692,7 @@ function computeDerived() {
 }
 
 /** Commit a complete draft from the React workspace, preserving the last valid assignment on failure. */
-function applyAssignmentDraft(inputs) {
+function applyAssignmentDraft(inputs, { announce = true } = {}) {
   const validation = validateAssignmentInputs(inputs);
   if (!validation.valid) {
     return {
@@ -717,7 +718,7 @@ function applyAssignmentDraft(inputs) {
     ? `${state.inputs.key} ${state.derived.scale.label}`
     : state.inputs.key;
   const message = `Assignment updated for ${scaleLabel} · ${preset?.label || "Custom"} · ${state.derived.leftHand?.name || state.inputs.lhId} · ${state.derived.motif ? state.derived.motif.description : "No motif"}`;
-  status.show(message, { tone: "success", transient: true });
+  if (announce) status.show(message, { tone: "success", transient: true });
   return { ok: true, message };
 }
 
@@ -975,20 +976,23 @@ function handleMixMuteChange(partId, mute) {
   setMixSettings({ [partId]: state.mix[partId] });
 }
 
-function applyPreset(presetId) {
+function applyPreset(presetId, options) {
   const preset = getPresetConfig(presetId) || getPresetConfig(DEFAULT_PRESET_ID);
   if (!preset) return { ok: false, message: "That preset is not available." };
-  return applyAssignmentDraft({
-    ...(state.assignment?.inputs ?? state.inputs),
-    key: preset.key,
-    mode: preset.mode,
-    progressionPresetId: preset.progressionPresetId,
-    styleId: preset.styleId,
-    length: preset.length,
-    lhId: preset.lhId,
-    motifId: preset.motifId,
-    presetId: preset.id,
-  });
+  return applyAssignmentDraft(
+    {
+      ...(state.assignment?.inputs ?? state.inputs),
+      key: preset.key,
+      mode: preset.mode,
+      progressionPresetId: preset.progressionPresetId,
+      styleId: preset.styleId,
+      length: preset.length,
+      lhId: preset.lhId,
+      motifId: preset.motifId,
+      presetId: preset.id,
+    },
+    options,
+  );
 }
 
 function handleHumanizeToggle(enabled) {
