@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/browser",
+  globalSetup: "./tests/browser/pwa/global-setup.js",
   fullyParallel: false,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
@@ -11,7 +12,8 @@ export default defineConfig({
   },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile", use: { ...devices["Pixel 7"] } },
+    // Deploy-to-deploy service-worker behaviour does not depend on the viewport.
+    { name: "mobile", use: { ...devices["Pixel 7"] }, testIgnore: /pwa-lifecycle/ },
   ],
   webServer: {
     // Exercise the production bundle, not the dev server. `npm run check` built

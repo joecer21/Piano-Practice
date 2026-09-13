@@ -75,6 +75,12 @@ body {
 
 /* ---- Top: the sentence and the session ---------------------------------- */
 
+/* Focused and scrolled-to content lands below the sticky header, whose live
+   height coach/sticky-offset.ts publishes. */
+html {
+  scroll-padding-top: calc(var(--coach-top-height, 0px) + var(--space-2));
+}
+
 .coach-top {
   position: sticky;
   top: 0;
@@ -1309,6 +1315,25 @@ body {
   .coach-mix-body {
     grid-template-columns: 1fr;
   }
+}
+
+/* A newer version is waiting. Neutral ink, like every other interface control. */
+.update-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  margin: var(--space-4) 0;
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+
+.update-notice p {
+  flex: 1 1 18rem;
+  margin: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

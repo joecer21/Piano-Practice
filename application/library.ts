@@ -17,6 +17,13 @@ import type { PracticeRecord } from "./practice-record.js";
  * decoder as a shared link. Storage can be edited, corrupted by an older version,
  * or unavailable (private browsing, blocked site data, a full quota), so every read
  * is validated, anything unrecognised is dropped, and every write is best effort.
+ *
+ * Several tabs, or an old tab beside an updated one, share this storage. Every
+ * change is therefore applied to a fresh read rather than to the copy loaded at
+ * startup, so one tab cannot erase what another saved; `reload()` refreshes the
+ * in-memory view when another tab writes. A library written by a newer version is
+ * read as empty and never overwritten, so opening an older build (a rollback, or a
+ * tab that has not updated yet) cannot destroy newer data. See docs/storage.md.
  */
 export const LIBRARY_STORAGE_KEY = "piano-practice:library";
 export const LIBRARY_VERSION = 2;
@@ -60,23 +67,43 @@ export type Library = ReturnType<typeof createLibrary>;
 type StorageLike = Pick<Storage, "getItem" | "setItem">;
 
 export function createLibrary(storage: StorageLike | null, now: () => Date = () => new Date()) {
-  let data = read(storage);
+  let loaded = read(storage);
+  let data = loaded.data;
+  let stored = loaded.raw;
   let starredView = buildStarredView(data);
   let practiceView: readonly PracticeRecord[] = Object.freeze([...data.practiceRecords]);
   const listeners = new Set<() => void>();
 
-  const write = (): boolean => {
+  const rebuildViews = () => {
     starredView = buildStarredView(data);
     practiceView = Object.freeze([...data.practiceRecords]);
-    let stored = storage !== null;
-    try {
-      storage?.setItem(LIBRARY_STORAGE_KEY, JSON.stringify(data));
-    } catch {
-      // Quota or blocked storage: the app keeps working without memory.
-      stored = false;
+  };
+
+  /** Pick up whatever another tab saved, before changing anything. */
+  const sync = (): boolean => {
+    loaded = read(storage);
+    if (loaded.raw === stored) return false;
+    stored = loaded.raw;
+    data = loaded.data;
+    rebuildViews();
+    return true;
+  };
+
+  const write = (): boolean => {
+    rebuildViews();
+    let saved = storage !== null && loaded.writable;
+    if (saved) {
+      try {
+        const raw = JSON.stringify(data);
+        storage?.setItem(LIBRARY_STORAGE_KEY, raw);
+        stored = raw;
+      } catch {
+        // Quota or blocked storage: the app keeps working without memory.
+        saved = false;
+      }
     }
     listeners.forEach((listener) => listener());
-    return stored;
+    return saved;
   };
 
   return {
@@ -85,12 +112,19 @@ export function createLibrary(storage: StorageLike | null, now: () => Date = () 
       return () => listeners.delete(listener);
     },
 
+    /** Refresh from storage after another tab changed it. */
+    reload(): void {
+      if (!sync()) return;
+      listeners.forEach((listener) => listener());
+    },
+
     lastInputs(): AssignmentInputs | null {
       if (!data.last) return null;
       const decoded = decodeShareFragment(data.last);
       return decoded.ok ? decoded.inputs : null;
     },
     rememberInputs(inputs: AssignmentInputs): void {
+      sync();
       const fragment = encodeShareFragment(inputs);
       if (fragment === data.last) return;
       data = { ...data, last: fragment };
@@ -101,6 +135,7 @@ export function createLibrary(storage: StorageLike | null, now: () => Date = () 
       return data.tempo;
     },
     rememberTempo(tempo: number): void {
+      sync();
       const valid = validTempo(tempo);
       if (valid == null || valid === data.tempo) return;
       data = { ...data, tempo: valid };
@@ -117,6 +152,7 @@ export function createLibrary(storage: StorageLike | null, now: () => Date = () 
     },
     /** Star or unstar. Newest first; beyond MAX_STARRED the oldest is dropped. */
     toggleStar(inputs: AssignmentInputs, title: string): boolean {
+      sync();
       const fragment = encodeShareFragment(inputs);
       if (data.starred.some((entry) => entry.fragment === fragment)) {
         data = { ...data, starred: data.starred.filter((entry) => entry.fragment !== fragment) };
@@ -129,6 +165,7 @@ export function createLibrary(storage: StorageLike | null, now: () => Date = () 
       return true;
     },
     unstar(fragment: string): void {
+      sync();
       data = { ...data, starred: data.starred.filter((entry) => entry.fragment !== fragment) };
       write();
     },
@@ -137,6 +174,7 @@ export function createLibrary(storage: StorageLike | null, now: () => Date = () 
       return data.preferences;
     },
     setPreference<K extends keyof Preferences>(name: K, value: Preferences[K]): void {
+      sync();
       const next = validPreferences({ ...data.preferences, [name]: value });
       if (next[name] !== value || data.preferences[name] === value) return;
       data = { ...data, preferences: next };
@@ -150,6 +188,7 @@ export function createLibrary(storage: StorageLike | null, now: () => Date = () 
     savePracticeRecord(record: PracticeRecord): boolean {
       const valid = parsePracticeRecord(record);
       if (!valid) return false;
+      sync();
       const without = data.practiceRecords.filter((entry) => entry.id !== valid.id);
       data = {
         ...data,
@@ -160,6 +199,7 @@ export function createLibrary(storage: StorageLike | null, now: () => Date = () 
       return write();
     },
     deletePracticeRecord(id: string): void {
+      sync();
       const next = data.practiceRecords.filter((entry) => entry.id !== id);
       if (next.length === data.practiceRecords.length) return;
       data = { ...data, practiceRecords: next };
@@ -167,6 +207,7 @@ export function createLibrary(storage: StorageLike | null, now: () => Date = () 
     },
     /** Only history is cleared; stars, tempo and preferences are deliberately preserved. */
     clearPracticeHistory(): void {
+      sync();
       if (!data.practiceRecords.length) return;
       data = { ...data, practiceRecords: [] };
       write();
@@ -177,6 +218,7 @@ export function createLibrary(storage: StorageLike | null, now: () => Date = () 
     importPracticeHistory(source: unknown): { ok: boolean; imported: number; duplicates: number } {
       const imported = parsePracticeHistoryExport(source);
       if (!imported) return { ok: false, imported: 0, duplicates: 0 };
+      sync();
       const existing = new Set(data.practiceRecords.map((record) => record.id));
       const additions = imported.filter((record) => {
         if (existing.has(record.id)) return false;
@@ -206,23 +248,37 @@ function emptyLibrary(): StoredLibrary {
   };
 }
 
-function read(storage: StorageLike | null): StoredLibrary {
+type LoadedLibrary = {
+  data: StoredLibrary;
+  /** The exact stored text, to notice when another tab has written. */
+  raw: string | null;
+  /** False when the stored library comes from a newer version this build must not overwrite. */
+  writable: boolean;
+};
+
+function read(storage: StorageLike | null): LoadedLibrary {
   let raw: string | null;
   try {
     raw = storage?.getItem(LIBRARY_STORAGE_KEY) ?? null;
   } catch {
-    return emptyLibrary();
+    return { data: emptyLibrary(), raw: null, writable: true };
   }
-  if (!raw || raw.length > MAX_STORED_BYTES) return emptyLibrary();
+  const empty = (writable = true): LoadedLibrary => ({ data: emptyLibrary(), raw, writable });
+  if (!raw || raw.length > MAX_STORED_BYTES) return empty();
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    return emptyLibrary();
+    return empty();
   }
-  if (!isRecord(parsed) || (parsed.version !== 1 && parsed.version !== LIBRARY_VERSION))
-    return emptyLibrary();
+  if (isRecord(parsed) && typeof parsed.version === "number" && parsed.version > LIBRARY_VERSION) {
+    return empty(false);
+  }
+  if (!isRecord(parsed) || (parsed.version !== 1 && parsed.version !== LIBRARY_VERSION)) return empty();
+  return { data: validatedLibrary(parsed), raw, writable: true };
+}
 
+function validatedLibrary(parsed: Record<string, unknown>): StoredLibrary {
   const starred = Array.isArray(parsed.starred) ? parsed.starred : [];
   const seen = new Set<string>();
   return {

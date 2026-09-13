@@ -25,6 +25,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Audit production and development dependencies
+        run: npm audit --audit-level=high
       - run: npm run lint
       - run: npm run format:check
       - run: npm run typecheck
@@ -37,6 +39,8 @@ jobs:
       - name: Verify musical audition corpus and listening dispositions
         run: npm run audit:music
       - run: npm run build
+      - name: Check the learner download against its measured budget
+        run: npm run budget
       - name: Upload production bundle
         uses: actions/upload-artifact@v4
         with:
@@ -93,6 +97,8 @@ jobs:
     needs: [quality, browser]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     permissions:
       contents: read
       pages: write
@@ -101,16 +107,44 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # Deploy the exact bundle the quality and browser jobs verified, not a rebuild.
+      - uses: actions/download-artifact@v4
         with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - run: npm run build
+          name: dist
+          path: dist
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  smoke:
+    name: Smoke test the deployed site
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Wait for GitHub Pages to serve this commit
+        run: node scripts/wait-for-deploy.mjs "${{ needs.deploy.outputs.page_url }}" "${{ github.sha }}" 900
+      - name: Run the deployed smoke suite
+        run: npm run test:smoke
+        env:
+          SMOKE_BASE_URL: ${{ needs.deploy.outputs.page_url }}
+          SMOKE_EXPECTED_COMMIT: ${{ github.sha }}
+      - name: Upload smoke report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-smoke-report
+          path: |
+            playwright-smoke-report
+            test-results
+          retention-days: 14

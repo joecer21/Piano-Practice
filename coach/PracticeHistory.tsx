@@ -1,4 +1,4 @@
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { PracticeRecord } from "../application/practice-record.js";
 import type { PracticeHistory as PracticeHistoryService } from "./bridge.js";
 
@@ -18,6 +18,18 @@ export function PracticeHistory({ history, canOpen, onAction }: PracticeHistoryP
   const [message, setMessage] = useState("");
   const [confirmClear, setConfirmClear] = useState(false);
   const importInput = useRef<HTMLInputElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const clearButtonRef = useRef<HTMLButtonElement>(null);
+  const cancelClearRef = useRef<HTMLButtonElement>(null);
+  // Where focus goes after a control that had it disappears.
+  const [focusTarget, setFocusTarget] = useState<"heading" | "clear" | "cancelClear" | null>(null);
+  useEffect(() => {
+    if (!focusTarget) return;
+    const target = { heading: headingRef, clear: clearButtonRef, cancelClear: cancelClearRef }[focusTarget]
+      .current;
+    (target ?? headingRef.current)?.focus();
+    setFocusTarget(null);
+  }, [focusTarget]);
   const byId = (id: string) => records.find((record) => record.id === id) ?? null;
 
   const actOnRecommendation = () => {
@@ -64,7 +76,9 @@ export function PracticeHistory({ history, canOpen, onAction }: PracticeHistoryP
     <section className="practice-history" aria-labelledby="practice-history-title">
       <div className="practice-history-heading">
         <div>
-          <h2 id="practice-history-title">Recent practice</h2>
+          <h2 id="practice-history-title" ref={headingRef} tabIndex={-1}>
+            Recent practice
+          </h2>
           <p>Your records stay on this device. No account or network connection is used.</p>
         </div>
         {records.length ? <span className="practice-history-count">{records.length} saved</span> : null}
@@ -95,6 +109,10 @@ export function PracticeHistory({ history, canOpen, onAction }: PracticeHistoryP
               history={history}
               canOpen={canOpen}
               onAction={onAction}
+              onDeleted={() => {
+                setMessage("Practice record deleted.");
+                setFocusTarget("heading");
+              }}
             />
           ))}
         </ul>
@@ -132,10 +150,14 @@ export function PracticeHistory({ history, canOpen, onAction }: PracticeHistoryP
         />
         {!confirmClear ? (
           <button
+            ref={clearButtonRef}
             type="button"
             className="coach-link"
             disabled={!records.length || !canOpen}
-            onClick={() => setConfirmClear(true)}
+            onClick={() => {
+              setConfirmClear(true);
+              setFocusTarget("cancelClear");
+            }}
           >
             Clear history
           </button>
@@ -150,11 +172,20 @@ export function PracticeHistory({ history, canOpen, onAction }: PracticeHistoryP
                 history.clear();
                 setConfirmClear(false);
                 setMessage("Practice history cleared. Your settings and starred assignments were kept.");
+                setFocusTarget("heading");
               }}
             >
               Yes, clear
             </button>
-            <button type="button" className="coach-link" onClick={() => setConfirmClear(false)}>
+            <button
+              ref={cancelClearRef}
+              type="button"
+              className="coach-link"
+              onClick={() => {
+                setConfirmClear(false);
+                setFocusTarget("clear");
+              }}
+            >
               Cancel
             </button>
           </span>
@@ -172,17 +203,30 @@ function PracticeHistoryItem({
   history,
   canOpen,
   onAction,
+  onDeleted,
 }: {
   record: PracticeRecord;
   history: PracticeHistoryService;
   canOpen: boolean;
   onAction(action: HistoryAction, record: PracticeRecord, bar?: number): void;
+  onDeleted(): void;
 }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [saved, setSaved] = useState("");
+  const deleteButtonRef = useRef<HTMLButtonElement>(null);
+  const cancelDeleteRef = useRef<HTMLButtonElement>(null);
+  const [focusTarget, setFocusTarget] = useState<"delete" | "cancelDelete" | null>(null);
+  useEffect(() => {
+    if (!focusTarget) return;
+    (focusTarget === "delete" ? deleteButtonRef : cancelDeleteRef).current?.focus();
+    setFocusTarget(null);
+  }, [focusTarget]);
   const [label, setLabel] = useState(record.label ?? "");
   const [notes, setNotes] = useState(record.notes ?? "");
   const [bars, setBars] = useState(record.needsWorkBars.join(", "));
   const saveNotes = () => {
     history.annotate(record.id, { label, notes, needsWorkBars: parseBars(bars) });
+    setSaved("Notes saved.");
   };
   const duration = formatDuration(record.activeDurationMs);
   const date = new Date(record.startedAt);
@@ -282,15 +326,50 @@ function PracticeHistoryItem({
             <button type="button" className="coach-secondary" onClick={saveNotes}>
               Save notes
             </button>
+            <span className="coach-library-status" role="status">
+              {saved}
+            </span>
           </div>
-          <button
-            type="button"
-            className="coach-link"
-            disabled={!canOpen}
-            onClick={() => history.delete(record.id)}
-          >
-            Delete this record
-          </button>
+          {!confirmDelete ? (
+            <button
+              ref={deleteButtonRef}
+              type="button"
+              className="coach-link"
+              disabled={!canOpen}
+              onClick={() => {
+                setConfirmDelete(true);
+                setFocusTarget("cancelDelete");
+              }}
+            >
+              Delete this record
+            </button>
+          ) : (
+            <span className="practice-history-confirm">
+              Delete this record permanently?
+              <button
+                type="button"
+                className="coach-secondary"
+                disabled={!canOpen}
+                onClick={() => {
+                  history.delete(record.id);
+                  onDeleted();
+                }}
+              >
+                Yes, delete
+              </button>
+              <button
+                ref={cancelDeleteRef}
+                type="button"
+                className="coach-link"
+                onClick={() => {
+                  setConfirmDelete(false);
+                  setFocusTarget("delete");
+                }}
+              >
+                Cancel
+              </button>
+            </span>
+          )}
         </div>
       </details>
     </li>

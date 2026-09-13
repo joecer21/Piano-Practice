@@ -805,12 +805,12 @@ async function loadLibrary(libraryId, options = {}) {
   const abortController = options.timeoutMs ? new AbortController() : null;
   const task = (async () => {
     emitSamplerStatus({ libraryId, phase: "init", progress: 0, error: null });
-    await prefetchLibrary(library, {
+    const decoded = await prefetchLibrary(library, {
       signal: abortController?.signal,
       onProgress: (progress) => emitSamplerStatus({ libraryId, phase: "progress", progress }),
     });
     emitSamplerStatus({ libraryId, phase: "switching", progress: 1 });
-    await swapSamplersForLibrary(library);
+    await swapSamplersForLibrary(library, decoded);
     setActiveLibrary(libraryId);
     pianoLoaded = true;
     emitSamplerStatus({ libraryId, phase: "ready", progress: 1, active: true, error: null });
@@ -840,31 +840,69 @@ async function loadLibrary(libraryId, options = {}) {
   return libraryLoadPromises[libraryId];
 }
 
+const PREFETCH_CONCURRENCY = 6;
+
+/**
+ * Download and decode every sample of a library exactly once.
+ *
+ * This used to download each file only to report progress and discard it, after
+ * which each part's Tone.Sampler fetched and decoded the same files again: every
+ * sample was requested three times and decoded twice before the piano was ready.
+ * The decoded native AudioBuffers are now handed to every part's samplers. Tone
+ * wraps each in its own ToneAudioBuffer, so disposing one part's sampler drops
+ * only its wrapper, never the shared audio data.
+ *
+ * @returns {Promise<Map<string, AudioBuffer>>} keyed by `${baseUrl}${path}`
+ */
 async function prefetchLibrary(library, { signal, onProgress } = {}) {
-  const urlEntries = library.velocityLayers
-    ? Object.values(library.velocityLayers).flatMap((layer) => {
-        const layerBase = layer.baseUrl ?? library.baseUrl;
-        return Object.values(layer.urls || {}).map((path) => ({ baseUrl: layerBase, path }));
-      })
-    : Object.values(library.urls || {}).map((path) => ({ baseUrl: library.baseUrl, path }));
-  const deduped = Array.from(
-    new Map(urlEntries.map((entry) => [`${entry.baseUrl}|${entry.path}`, entry])).values(),
-  );
-  if (!deduped.length) return;
+  const urls = [
+    ...new Set(libraryLayers(library).flatMap(({ baseUrl, urls: map }) => sampleUrls(baseUrl, map))),
+  ];
+  const decoded = new Map();
   let loaded = 0;
-  for (const entry of deduped) {
-    const url = `${entry.baseUrl}${entry.path}`;
-    const response = await fetch(url, { cache: "force-cache", signal });
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ${entry.path}`);
+  let next = 0;
+  let failed = false;
+  const worker = async () => {
+    while (!failed && next < urls.length) {
+      const url = urls[next++];
+      const response = await fetch(url, { cache: "force-cache", signal });
+      if (!response.ok) {
+        failed = true;
+        throw new Error(`Failed to fetch ${url.slice(url.lastIndexOf("/") + 1)}`);
+      }
+      decoded.set(url, await Tone.getContext().decodeAudioData(await response.arrayBuffer()));
+      loaded += 1;
+      if (onProgress) onProgress(loaded / urls.length);
     }
-    await response.arrayBuffer();
-    loaded += 1;
-    if (onProgress) onProgress(loaded / deduped.length);
-  }
+  };
+  await Promise.all(Array.from({ length: Math.min(PREFETCH_CONCURRENCY, urls.length) }, worker));
+  return decoded;
 }
 
-async function swapSamplersForLibrary(library) {
+/** A library's sampler layers, each with its resolved base URL and note -> path map. */
+function libraryLayers(library) {
+  const layers = Object.entries(library.velocityLayers || {});
+  if (!layers.length) return [{ baseUrl: library.baseUrl, urls: library.urls || {} }];
+  return layers.map(([, layer]) => ({ baseUrl: layer.baseUrl ?? library.baseUrl, urls: layer.urls || {} }));
+}
+
+function sampleUrls(baseUrl, urls) {
+  return Object.values(urls).map((path) => `${baseUrl}${path}`);
+}
+
+/** Replace each note's path with its already-decoded buffer, when there is one. */
+function withDecodedBuffers(baseUrl, urls, decoded) {
+  if (!decoded) return { urls, baseUrl };
+  const resolved = Object.fromEntries(
+    Object.entries(urls).map(([note, path]) => [
+      note,
+      decoded.get(`${baseUrl}${path}`) ?? `${baseUrl}${path}`,
+    ]),
+  );
+  return { urls: resolved, baseUrl: "" };
+}
+
+async function swapSamplersForLibrary(library, decoded) {
   const freshSamplers = {};
   let loadFailed = false;
 
@@ -878,7 +916,7 @@ async function swapSamplersForLibrary(library) {
   try {
     await Promise.all(
       PART_IDS.map((partId) =>
-        createSamplerForPart(partId, library).then(
+        createSamplerForPart(partId, library, decoded).then(
           ({ sampler }) => {
             // Promise.all rejects immediately. A sibling load may still finish
             // afterward, so dispose that late success instead of orphaning it.
@@ -923,18 +961,17 @@ async function swapSamplersForLibrary(library) {
   });
 }
 
-function createSamplerForPart(partId, library) {
+function createSamplerForPart(partId, library, decoded) {
   if (library.velocityLayers) {
-    return createVelocityLayerSampler(partId, library);
+    return createVelocityLayerSampler(partId, library, decoded);
   }
-  return createSingleLayerSampler(partId, library);
+  return createSingleLayerSampler(partId, library, decoded);
 }
 
-function createSingleLayerSampler(partId, library) {
+function createSingleLayerSampler(partId, library, decoded) {
   return new Promise((resolve, reject) => {
     const sampler = new Tone.Sampler({
-      urls: library.urls,
-      baseUrl: library.baseUrl,
+      ...withDecodedBuffers(library.baseUrl, library.urls, decoded),
       release: 1,
       onload: () => resolve({ partId, sampler }),
       onerror: (err) => {
@@ -946,10 +983,10 @@ function createSingleLayerSampler(partId, library) {
   });
 }
 
-function createVelocityLayerSampler(partId, library) {
+function createVelocityLayerSampler(partId, library, decoded) {
   const entries = Object.entries(library.velocityLayers || {});
   if (!entries.length) {
-    return createSingleLayerSampler(partId, library);
+    return createSingleLayerSampler(partId, library, decoded);
   }
   return new Promise((resolve, reject) => {
     // Every sampler constructed here is owned by this promise until it settles.
@@ -969,8 +1006,7 @@ function createVelocityLayerSampler(partId, library) {
 
     entries.forEach(([layerName, layerConfig]) => {
       const sampler = new Tone.Sampler({
-        urls: layerConfig.urls,
-        baseUrl: layerConfig.baseUrl ?? library.baseUrl,
+        ...withDecodedBuffers(layerConfig.baseUrl ?? library.baseUrl, layerConfig.urls, decoded),
         release: 1,
         onload: () => {
           if (settled) {

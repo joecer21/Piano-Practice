@@ -1,4 +1,4 @@
-﻿import {
+import {
   MOTIF_STYLES,
   SCALE_PATTERNS,
   getProgressionPreset,
@@ -15,16 +15,16 @@ import {
 } from "../domain/assignment.js";
 import { getLivePianoChordNotes } from "../domain/live-piano.js";
 import { createAppStore } from "./state.js";
-import { createLibrary } from "./library.ts";
+import { LIBRARY_STORAGE_KEY, createLibrary } from "./library.ts";
 import {
   createPracticeRecord,
   finishPracticeRecord,
   recommendPractice,
   updatePracticeProgress,
 } from "./practice-record.ts";
-import { browserStorage } from "../infrastructure/browser-storage.ts";
+import { browserStorage, subscribeToStorageKey } from "../infrastructure/browser-storage.ts";
 import { createShareLocation } from "../infrastructure/share-location.ts";
-import { registerOfflineSupport } from "../infrastructure/pwa.ts";
+import { createOfflineSupport } from "../infrastructure/pwa.ts";
 import { createRuntimeTestAdapter } from "../infrastructure/test-adapter.ts";
 import { createShareController } from "./share-controller.ts";
 import { createStatusService } from "./status.ts";
@@ -80,6 +80,8 @@ const shareController = createShareController({
 });
 const runtimeDisposers = [];
 let initialized = false;
+/** Offline cache and update lifecycle; inert until init() creates it for this page. */
+let offlineSupport = null;
 
 let samplerSnapshot = getSamplerStatusSnapshot();
 const testAdapter = createRuntimeTestAdapter(window, {
@@ -160,6 +162,8 @@ function init(production) {
   // a star - is remembered and written into the address bar, so the page's own URL
   // is always a share link and a reload comes back to the same music.
   keep(appStore.subscribe(rememberCommittedAssignment));
+  // Stars and practice records saved in another tab appear here too.
+  keep(subscribeToStorageKey(window, LIBRARY_STORAGE_KEY, () => practiceLibrary.reload()));
   keep(shareController.subscribe(reportLinkError));
 
   // First assignment: a shared link, else the last one practised here, else the
@@ -177,20 +181,46 @@ function init(production) {
   reportLinkError(link);
 
   keep(startMidiPlayThrough());
+  offlineSupport = createOfflineSupport({
+    production,
+    document,
+    events: window,
+    serviceWorker: "serviceWorker" in navigator ? navigator.serviceWorker : null,
+    // In the production bundle this is the hashed application chunk, which a
+    // waiting service worker can recognise as already running or not.
+    currentScriptUrl: import.meta.url,
+    reload: () => window.location.reload(),
+  });
+  keep(() => offlineSupport.dispose());
+  keep(announceOfflineReadiness(offlineSupport));
   const bridge = createCoachBridge();
   const unmountCoach = mountCoach(bridge);
   keep(() => {
     unmountCoach();
     bridge.dispose();
   });
-  keep(
-    registerOfflineSupport({
-      production,
-      document,
-      events: window,
-      serviceWorker: "serviceWorker" in navigator ? navigator.serviceWorker : null,
-    }),
-  );
+}
+
+/** Say once, on the visit that installs it, that the coach now opens without a connection. */
+function announceOfflineReadiness(offline) {
+  if (!("serviceWorker" in navigator) || navigator.serviceWorker.controller) return () => {};
+  let announced = false;
+  const announce = () => {
+    if (announced || !offline.getSnapshot().offlineReady) return;
+    // Wait rather than replace a message still being read, such as why a link failed.
+    if (status.getSnapshot().transient) return;
+    announced = true;
+    status.show("Saved for offline use: this coach now opens without a connection.", {
+      tone: "success",
+      transient: true,
+    });
+  };
+  const unsubscribeOffline = offline.subscribe(announce);
+  const unsubscribeStatus = status.subscribe(announce);
+  return () => {
+    unsubscribeOffline();
+    unsubscribeStatus();
+  };
 }
 
 function keep(dispose) {
@@ -264,6 +294,7 @@ function createCoachBridge() {
     scaleAudition: createScaleAudition(),
     library: createCoachLibrary(),
     practiceHistory: createPracticeHistory(),
+    offline: offlineSupport,
     dispose() {
       while (disposers.length) disposers.pop()();
       samplerListeners.clear();

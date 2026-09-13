@@ -7,6 +7,7 @@ import { buildScore } from "../domain/score.js";
 const live = new Set();
 const built = [];
 const samplerOutcomes = [];
+const samplerOptions = [];
 
 class MockNode {
   constructor(kind) {
@@ -49,6 +50,7 @@ vi.mock("tone", () => {
   class Sampler extends MockNode {
     constructor(options) {
       super("Sampler");
+      samplerOptions.push(options);
       // Tone loads asynchronously; resolve on a microtask like the real thing.
       const outcome = samplerOutcomes.shift() || "load";
       queueMicrotask(() => {
@@ -119,6 +121,7 @@ vi.mock("tone", () => {
     Time: () => ({ toSeconds: () => 0.5 }),
     start: async () => {},
     context: { lookAhead: 0.1, state: "running" },
+    getContext: () => ({ decodeAudioData: async (bytes) => ({ decodedFrom: bytes }) }),
   };
 });
 
@@ -127,6 +130,7 @@ beforeEach(async () => {
   live.clear();
   built.length = 0;
   samplerOutcomes.length = 0;
+  samplerOptions.length = 0;
   global.fetch = vi.fn(async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) }));
   vi.resetModules();
   audio = await import("../audio.js");
@@ -174,6 +178,32 @@ describe("audio graph lifecycle", () => {
     }
     expect(live.size).toBe(0);
     expect(built.length).toBeGreaterThan(0);
+  });
+
+  it("downloads and decodes each sample once, and shares the decoded audio with every part", async () => {
+    await audio.audioEngine.init();
+
+    const fetched = global.fetch.mock.calls.map(([url]) => url);
+    expect(new Set(fetched).size).toBe(fetched.length);
+    expect(fetched).toHaveLength(16);
+
+    // Both part samplers receive decoded buffers, not URLs to fetch again.
+    const defaultSamplers = samplerOptions.slice(0, 2);
+    expect(defaultSamplers).toHaveLength(2);
+    for (const options of defaultSamplers) {
+      expect(options.baseUrl).toBe("");
+      expect(Object.values(options.urls).every((buffer) => typeof buffer === "object")).toBe(true);
+    }
+    expect(defaultSamplers[0].urls.A4).toBe(defaultSamplers[1].urls.A4);
+  });
+
+  it("reports a failed sample download without constructing samplers", async () => {
+    global.fetch = vi.fn(async (url) => ({
+      ok: !url.endsWith("c4vl.mp3"),
+      arrayBuffer: async () => new ArrayBuffer(8),
+    }));
+    await expect(audio.requestLibraryLoad("local-soft")).rejects.toThrow("Failed to fetch c4vl.mp3");
+    expect(countLive("Sampler")).toBe(0);
   });
 
   it("disposes a successful part when its sibling sampler load fails", async () => {

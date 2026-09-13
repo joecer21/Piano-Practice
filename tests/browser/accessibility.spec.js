@@ -72,3 +72,37 @@ test("Live Piano exposes accessible controls and a phone-friendly range", async 
     expect(scrollState.scrollLeft).toBeGreaterThan(0);
   }
 });
+
+test("keyboard focus is never hidden under the sticky summary header", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByTestId("coach-sentence")).toBeVisible();
+  await page.locator("#scale-reference > summary").click();
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.locator("#status-line").evaluate((element) => {
+    element.tabIndex = -1;
+    element.focus();
+  });
+
+  // Walk backwards, which is the direction in which the browser scrolls focus up
+  // towards the sticky header.
+  const obscured = [];
+  for (let step = 0; step < 80; step += 1) {
+    await page.keyboard.press("Shift+Tab");
+    const result = await page.evaluate(() => {
+      const focused = document.activeElement;
+      const header = document.querySelector(".coach-top");
+      if (!focused || focused === document.body || header.contains(focused)) return { skip: true };
+      const box = focused.getBoundingClientRect();
+      const headerBottom = header.getBoundingClientRect().bottom;
+      return {
+        skip: false,
+        label: `${focused.tagName.toLowerCase()} "${(focused.textContent || focused.getAttribute("aria-label") || "").trim().slice(0, 30)}"`,
+        hidden: box.height > 0 && box.bottom <= headerBottom + 1,
+        top: window.scrollY,
+      };
+    });
+    if (!result.skip && result.hidden) obscured.push(result.label);
+    if (result.top === 0 && !result.skip) break;
+  }
+  expect(obscured).toEqual([]);
+});

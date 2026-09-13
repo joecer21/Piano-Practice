@@ -25,6 +25,8 @@ import { PracticePanel } from "./PracticePanel.js";
 import { pianoReadiness } from "./sampler.js";
 import { ScaleReference } from "./ScaleReference.js";
 import { StatusLine } from "./StatusLine.js";
+import { trackStickyHeaderHeight } from "./sticky-offset.js";
+import { UpdateNotice } from "./UpdateNotice.js";
 import { SessionHeader } from "./SessionHeader.js";
 import { SoundSettings } from "./SoundSettings.js";
 import {
@@ -546,6 +548,11 @@ export function CoachApp({
     [bridge, session.status],
   );
 
+  useEffect(
+    () => trackStickyHeaderHeight(summaryContainer?.closest<HTMLElement>(".coach-top") ?? null),
+    [summaryContainer],
+  );
+
   // ---- Render --------------------------------------------------------------
 
   const sentence = score
@@ -603,6 +610,7 @@ export function CoachApp({
           )
         : null}
 
+      <UpdateNotice offline={bridge.offline} />
       <AssignmentWorkspace editor={bridge.assignmentEditor} detailsRef={assignmentWorkspaceRef} />
 
       <PracticePanel

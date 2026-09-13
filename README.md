@@ -36,7 +36,10 @@ npm run fingerprint    # Verify generated music and its Score interpretation aga
 npm run audit:music    # Verify the focused audition corpus and human review dispositions
 npm run audit:music:write  # Regenerate corpus/report; never grants approval
 npm run report:outside-collection  # Chord-aware motif compatibility review -> test-results/outside-collection-notes.md
-npm run check          # Everything above, in the order CI runs it
+npm run budget         # Learner download against its measured size budget (after build)
+npm run perf           # Loading milestones on desktop and a throttled phone profile (after build)
+npm run test:smoke     # Smoke suite against a deployed site: SMOKE_BASE_URL=https://.../ npm run test:smoke
+npm run check          # Everything above except perf and smoke, in the order CI runs it
 ```
 
 Install the browser used by the smoke test once on a new machine:
@@ -75,7 +78,17 @@ Sample filenames spell sharps with `s` (`ds3vl.mp3`), because a literal `#` in a
 - `tests/browser/` covers the practice flow and pins previously-shipped defects as user-visible behaviour.
 - `tests/support/fingerprint.js` and `scripts/fingerprint.mjs` implement the musical fingerprint; `tests/support/score-fingerprint.js`, `tests/score-fingerprint.spec.js` and `scripts/score-fingerprint.mjs` implement the Score fingerprint; `tests/support/outside-collection.js` and `scripts/outside-collection-report.mjs` produce the outside-collection compatibility review.
 
-The ownership and dependency rules are documented in [`docs/architecture.md`](docs/architecture.md). The listening workflow and release policy are documented in [`docs/musical-qa.md`](docs/musical-qa.md).
+## Documentation
+
+- [`docs/architecture.md`](docs/architecture.md): ownership and dependency rules.
+- [`docs/authoring-content.md`](docs/authoring-content.md): musical terminology, motif semantics, adding a preset or motif safely.
+- [`docs/musical-qa.md`](docs/musical-qa.md): the listening review procedure and gate.
+- [`docs/storage.md`](docs/storage.md): what is stored locally, and the schema migration policy.
+- [`docs/offline-and-updates.md`](docs/offline-and-updates.md): PWA cache, update behaviour and recovery.
+- [`docs/performance.md`](docs/performance.md): measurements and the size budget.
+- [`docs/accessibility.md`](docs/accessibility.md): automated coverage and the manual screen-reader checklist.
+- [`docs/release.md`](docs/release.md): local development, CI, deployment, releases, rollback and browser support.
+- [`docs/privacy.md`](docs/privacy.md): what the coach does and does not do with your data.
 
 ## Practising
 
@@ -91,7 +104,7 @@ Outside a session the same four views are one click apart. **Hands apart** isola
 
 **Star it, reopen it tomorrow.** Star, Share link and the Starred list sit below the keyboard. Share uses the device's share sheet where there is one, else copies the link. `application/library.ts` keeps starred assignments, the last assignment, the tempo, and the label and session-length preferences in this browser's `localStorage`, stored as share fragments and read back through the same decoder. Opening the app without a link returns to the last assignment.
 
-**Offline after one visit.** The build writes `dist/sw.js` (`scripts/offline-plugin.mjs`), precaching the page, its hashed assets, the icons and the local piano samples under a version derived from their contents. Pages load network-first, so a deploy is picked up at once; everything else comes from the cache. The optional network piano libraries still need a connection. The page is installable (`public/manifest.webmanifest`) and has link-preview metadata; `node scripts/brand-assets.mjs` re-renders the PNG icons and preview image from `public/icons/icon.svg`.
+**Offline after one visit.** The build writes `dist/sw.js` (`scripts/offline-plugin.mjs`), precaching exactly what the learner app reaches — the page, its hashed assets, the icons and the local piano samples — under a version derived from their contents, plus a `version.json` build stamp. Pages load network-first with a four-second fallback to the cache. A new deploy installs alongside the old one and never interrupts practice: it activates silently when the page is already current, otherwise the learner sees _Reload to update_. The optional network piano libraries still need a connection. The page is installable (`public/manifest.webmanifest`) and has link-preview metadata; `node scripts/brand-assets.mjs` re-renders the PNG icons and preview image from `public/icons/icon.svg`. See [`docs/offline-and-updates.md`](docs/offline-and-updates.md).
 
 ## Playing along
 
@@ -163,9 +176,7 @@ Practice history uses the runtime-validated schema in `application/practice-reco
 
 ## Continuous integration
 
-GitHub Actions runs lint, formatting, unit tests, the fingerprint and musical-review gates, the production build,
-and Playwright against that build. Pushes to `main` deploy the bundle to GitHub Pages. The
-build uses a relative base, so the same artifact works at a domain root or under a project path.
+GitHub Actions runs a dependency audit, lint, formatting, type checking, unit tests, the fingerprint and musical-review gates, the production build, the size budget, and Playwright against that build. Pushes to `main` deploy that exact tested bundle to GitHub Pages, then a smoke suite runs against the live site once it serves the commit. Releases are tagged by a workflow only after the deployed build passes that suite. The build uses a relative base, so the same artifact works at a domain root or under a project path. See [`docs/release.md`](docs/release.md).
 
 Assignments are versioned, runtime-validated, and JSON-safe. Seeds reproduce the same input choices and stable assignment ID. The assignment workbench exposes deterministic rerolls, `key`/`harmony`/`groove`/`motif` locks, and bounded undo/redo history without changing the musical engine.
 

@@ -178,6 +178,62 @@ describe("library", () => {
     }
   });
 
+  it("never erases what another tab saved, and refreshes when told storage changed", () => {
+    const storage = memoryStorage();
+    const tabA = createLibrary(storage);
+    const tabB = createLibrary(storage);
+    const record = createPracticeRecord({
+      id: "practice-other-tab",
+      fragment: encodeShareFragment(minorBlues),
+      title: "A minor blues",
+      tempo: 90,
+      startedAt: new Date("2026-09-01T10:00:00Z"),
+    });
+
+    expect(tabB.savePracticeRecord(record)).toBe(true);
+    tabB.toggleStar(minorBlues, "A minor blues");
+    // Tab A still holds the empty copy it loaded, and now changes something unrelated.
+    tabA.rememberTempo(100);
+    tabA.setPreference("labelMode", "letters");
+
+    const reopened = createLibrary(storage);
+    expect(reopened.practiceRecords().map((entry) => entry.id)).toEqual(["practice-other-tab"]);
+    expect(reopened.starred()).toHaveLength(1);
+    expect(reopened.tempo()).toBe(100);
+    expect(reopened.preferences().labelMode).toBe("letters");
+
+    const changed = vi.fn();
+    tabB.subscribe(changed);
+    tabB.reload();
+    expect(changed).toHaveBeenCalledOnce();
+    expect(tabB.tempo()).toBe(100);
+    tabB.reload();
+    expect(changed).toHaveBeenCalledOnce();
+  });
+
+  it("does not overwrite a library written by a newer version", () => {
+    const newer = JSON.stringify({ version: 3, last: "future", practiceRecords: [{ id: "keep-me" }] });
+    const storage = memoryStorage({ [LIBRARY_STORAGE_KEY]: newer });
+    const library = createLibrary(storage);
+
+    library.rememberInputs(minorBlues);
+    library.rememberTempo(100);
+    library.toggleStar(minorBlues, "A minor blues");
+    expect(storage.items.get(LIBRARY_STORAGE_KEY)).toBe(newer);
+    expect(
+      library.savePracticeRecord(
+        createPracticeRecord({
+          id: "practice-old-build",
+          fragment: encodeShareFragment(minorBlues),
+          title: "A minor blues",
+          tempo: 90,
+          startedAt: new Date("2026-09-01T10:00:00Z"),
+        }),
+      ),
+    ).toBe(false);
+    expect(storage.items.get(LIBRARY_STORAGE_KEY)).toBe(newer);
+  });
+
   it("keeps working when the browser refuses storage", () => {
     const hostile = {
       getItem: () => {

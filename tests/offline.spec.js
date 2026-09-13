@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import { precacheManifest, serviceWorkerSource } from "../scripts/offline-plugin.mjs";
+import { nonAppFiles, precacheManifest, serviceWorkerSource } from "../scripts/offline-plugin.mjs";
 
 const publicDir = fileURLToPath(new URL("../public/", import.meta.url));
 const indexHtml = readFileSync(new URL("../index.html", import.meta.url), "utf8");
@@ -33,6 +33,7 @@ describe("offline precache", () => {
       "icons/icon-192.png": "png",
       "og-image.png": "preview",
       "sw.js": "old worker",
+      "version.json": "{}",
     });
     expect(precacheManifest(directory).files).toEqual([
       "assets/index-abc.js",
@@ -40,6 +41,50 @@ describe("offline precache", () => {
       "index.html",
       "samples/a4vl.mp3",
     ]);
+  });
+
+  it("leaves out maintainer pages and whatever only they reach, keeping shared chunks", () => {
+    const chunk = (fileName, facade, imports = [], meta = {}) => ({
+      type: "chunk",
+      fileName,
+      isEntry: Boolean(facade),
+      facadeModuleId: facade ? `D:\\project\\${facade}` : null,
+      imports,
+      dynamicImports: [],
+      viteMetadata: { importedCss: new Set(meta.css ?? []), importedAssets: new Set(meta.assets ?? []) },
+    });
+    const bundle = Object.fromEntries(
+      [
+        chunk("assets/main.js", "index.html", ["assets/shared.js"], { css: ["assets/main.css"] }),
+        chunk("assets/audition.js", "audition.html", ["assets/shared.js", "assets/tool.js"], {
+          css: ["assets/audition.css"],
+          assets: ["assets/corpus.json"],
+        }),
+        chunk("assets/shared.js", null, [], { css: ["assets/shared.css"] }),
+        chunk("assets/tool.js", null),
+      ].map((item) => [item.fileName, item]),
+    );
+    expect([...nonAppFiles(bundle)].sort()).toEqual([
+      "assets/audition.css",
+      "assets/audition.js",
+      "assets/corpus.json",
+      "assets/tool.js",
+      "audition.html",
+    ]);
+
+    const directory = builtDirectory({
+      "index.html": "<html>",
+      "audition.html": "<html>",
+      "assets/shared.js": "js",
+    });
+    expect(precacheManifest(directory, { exclude: nonAppFiles(bundle) }).files).toEqual([
+      "assets/shared.js",
+      "index.html",
+    ]);
+  });
+
+  it("refuses to build a precache without the learner entry", () => {
+    expect(() => nonAppFiles({})).toThrow("index.html");
   });
 
   it("changes version when any cached file's contents change, and only then", () => {

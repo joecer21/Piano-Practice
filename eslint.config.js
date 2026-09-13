@@ -6,7 +6,16 @@ import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
 
 export default [
-  { ignores: ["dist/**", "node_modules/**", "playwright-report/**", "test-results/**"] },
+  {
+    ignores: [
+      "dist/**",
+      "node_modules/**",
+      "playwright-report/**",
+      "playwright-smoke-report/**",
+      "playwright-pwa-builds/**",
+      "test-results/**",
+    ],
+  },
 
   js.configs.recommended,
 

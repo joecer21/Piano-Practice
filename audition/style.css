@@ -175,9 +175,12 @@ pre {
   font-weight: 700;
 }
 .review-fields input,
+.review-fields textarea {
+  width: 100%;
+}
+.review-fields input,
 .review-fields textarea,
 .audit-navigation select {
-  width: 100%;
   border: 1px solid #9f8e7e;
   border-radius: 0.5rem;
   padding: 0.65rem;
@@ -204,8 +207,15 @@ pre {
   background: rgb(243 238 230 / 96%);
   backdrop-filter: blur(10px);
 }
+/* The select shrinks instead of pushing Next past a phone's edge; an overflowing
+   fixed bar widened the layout viewport, so mobile browsers zoomed the page out. */
 .audit-navigation select {
-  width: min(32rem, 50vw);
+  flex: 0 1 32rem;
+  min-width: 0;
+}
+/* Keep focused or scrolled-to controls clear of the fixed navigation bar. */
+html {
+  scroll-padding-bottom: 6rem;
 }
 .audit-status {
   min-height: 1.5rem;

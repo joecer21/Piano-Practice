@@ -63,6 +63,22 @@ export type CoachBridge = {
   library: CoachLibrary;
   /** Durable guided-session records and deterministic next-practice suggestions. */
   practiceHistory: PracticeHistory;
+  /** Offline availability and whether a newer version is waiting for a reload. */
+  offline: OfflineUpdates;
+};
+
+export type OfflineUpdatesSnapshot = {
+  offlineReady: boolean;
+  /** "available": a newer version is installed and applies on reload. */
+  update: "none" | "available" | "applying";
+  cacheVersion: string | null;
+};
+
+export type OfflineUpdates = {
+  /** Must return the same object until offline state changes. */
+  getSnapshot(): OfflineUpdatesSnapshot;
+  subscribe(listener: () => void): () => void;
+  applyUpdate(): void;
 };
 
 export type ScaleAuditionSnapshot = {

@@ -6,3 +6,5 @@ tests/fixtures
 audits/musical/corpus.json
 audits/musical/report.md
 package-lock.json
+playwright-pwa-builds
+playwright-smoke-report

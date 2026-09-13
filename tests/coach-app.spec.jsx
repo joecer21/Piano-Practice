@@ -184,6 +184,8 @@ function createFakeBridge({
     canRedo: false,
   };
   const successfulEdit = { ok: true, message: "Assignment updated" };
+  const offlineListeners = new Set();
+  let offlineSnapshot = { offlineReady: true, update: "none", cacheVersion: "v1" };
   const scaleAuditionSnapshot = { playing: false, activeNote: null };
   const bridge = {
     status: {
@@ -236,6 +238,18 @@ function createFakeBridge({
     },
     library,
     practiceHistory,
+    offline: {
+      getSnapshot: () => offlineSnapshot,
+      subscribe: (listener) => {
+        offlineListeners.add(listener);
+        return () => offlineListeners.delete(listener);
+      },
+      applyUpdate: vi.fn(),
+    },
+    setOffline(patch) {
+      offlineSnapshot = { ...offlineSnapshot, ...patch };
+      offlineListeners.forEach((listener) => listener());
+    },
     setAssignment(nextAssignment) {
       current = nextAssignment;
       assignmentListeners.forEach((listener) => listener());
@@ -702,6 +716,22 @@ describe("CoachApp", () => {
     await click(screen.getByRole("button", { name: "Change the assignment" }));
     expect(document.getElementById("assignment-workspace").open).toBe(true);
     expect(screen.getByRole("heading", { name: "Build the next assignment" })).toBeTruthy();
+  });
+
+  it("offers a waiting version as a reload the learner chooses, never an automatic one", async () => {
+    bridge = createFakeBridge({ assignment: cMajor });
+    render(<CoachApp bridge={bridge} summaryContainer={null} />);
+    expect(screen.queryByTestId("update-notice")).toBeNull();
+
+    await act(async () => bridge.setOffline({ update: "available" }));
+    const notice = screen.getByTestId("update-notice");
+    expect(notice.closest("[role=status]")).toBeTruthy();
+    expect(bridge.offline.applyUpdate).not.toHaveBeenCalled();
+
+    await click(screen.getByRole("button", { name: "Reload to update" }));
+    expect(bridge.offline.applyUpdate).toHaveBeenCalledOnce();
+    await act(async () => bridge.setOffline({ update: "applying" }));
+    expect(screen.getByRole("button", { name: "Updating…" }).disabled).toBe(true);
   });
 
   it("mirrors what the player plays as a ring, never as a hand colour", async () => {
