@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="5-Minute Improv Coach">
+  <rect width="512" height="512" rx="112" fill="#2a1f19"/>
+  <!-- C D E F: black keys at C# and D#, none between E and F; the dot marks home. -->
+  <g transform="translate(96 124)">
+    <rect x="0" y="0" width="320" height="264" rx="28" fill="#f6f1eb"/>
+    <path d="M80 0v264M160 0v264M240 0v264" stroke="#2a1f19" stroke-width="10"/>
+    <rect x="54" y="0" width="52" height="156" rx="10" fill="#2a1f19"/>
+    <rect x="134" y="0" width="52" height="156" rx="10" fill="#2a1f19"/>
+    <circle cx="38" cy="222" r="18" fill="#2a1f19"/>
+  </g>
+</svg>

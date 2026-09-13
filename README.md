@@ -77,6 +77,14 @@ Sample filenames spell sharps with `s` (`ds3vl.mp3`), because a literal `#` in a
 
 Outside a session the same four views are one click apart. **Hands apart** isolates a hand; selecting a bar loops it. **Chord by chord** marks the exact keys of each chord's voicing, dims everything outside the chord, and says why the chord is there ("V — the strongest pull back to home."). That wording comes from the chord's real distance from the key and its intervals, not from how the numeral is spelled. **Note by note** shows the motif as degrees and plays it with the right hand at half speed.
 
+## Coming back, sharing, offline
+
+**The address bar is always a share link.** Every committed assignment is written into the URL fragment (`#v=1&key=A&mode=minorBlues&…`), as readable fields: only the assignment's inputs, which the deterministic engine turns back into the same music. The fragment never reaches a server. `domain/share.ts` encodes and decodes it; a link is untrusted input, so decoding is strict (size limit, character whitelist, exact fields, a pattern per field, own-property catalog lookups, a roman-numeral grammar for custom chords) and ends with the same learner-facing check as the controls, so a link cannot open a motif its mode does not offer. A link that cannot be opened is explained, and the app opens normally.
+
+**Star it, reopen it tomorrow.** Star, Share link and the Starred list sit below the keyboard. Share uses the device's share sheet where there is one, else copies the link. `application/library.ts` keeps starred assignments, the last assignment, the tempo, and the label and session-length preferences in this browser's `localStorage`, stored as share fragments and read back through the same decoder. Opening the app without a link returns to the last assignment.
+
+**Offline after one visit.** The build writes `dist/sw.js` (`scripts/offline-plugin.mjs`), precaching the page, its hashed assets, the icons and the local piano samples under a version derived from their contents. Pages load network-first, so a deploy is picked up at once; everything else comes from the cache. The optional network piano libraries still need a connection. The page is installable (`public/manifest.webmanifest`) and has link-preview metadata; `node scripts/brand-assets.mjs` re-renders the PNG icons and preview image from `public/icons/icon.svg`.
+
 ## Playing along
 
 The keyboard mirrors whatever you play. Mouse, touch, the focused on-screen key and computer keys all feed one note stream, and so does a MIDI keyboard once connected. Computer keys A W S E D F T G Y H U J K play one octave; Z and X move it.

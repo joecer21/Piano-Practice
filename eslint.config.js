@@ -49,6 +49,11 @@ export default [
   },
 
   {
+    files: ["offline/**/*.js"],
+    languageOptions: { ecmaVersion: 2024, sourceType: "script", globals: { ...globals.serviceworker } },
+  },
+
+  {
     // Node-side: build scripts and debug harnesses.
     files: ["scripts/**/*.mjs", "*.config.js", "vite.config.js", "vitest.config.js", "playwright.config.js"],
     languageOptions: { ecmaVersion: 2024, sourceType: "module", globals: { ...globals.node } },

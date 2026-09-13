@@ -260,6 +260,21 @@ function init() {
   startMidiPlayThrough();
   window.addEventListener("pagehide", () => midiInput.disconnect());
   mountCoach(createCoachBridge());
+  registerOfflineSupport();
+}
+
+/**
+ * After one visit the app, its samples included, works offline (see
+ * offline/service-worker.js). Built pages only: the dev server has no worker.
+ */
+function registerOfflineSupport() {
+  if (!import.meta.env.PROD || !("serviceWorker" in navigator)) return;
+  const register = () =>
+    navigator.serviceWorker
+      .register("./sw.js")
+      .catch((error) => console.warn("Offline support is unavailable", error));
+  if (document.readyState === "complete") register();
+  else window.addEventListener("load", register, { once: true });
 }
 
 /**
