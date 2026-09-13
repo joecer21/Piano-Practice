@@ -80,7 +80,7 @@ describe("Score v2", () => {
     expect(buildScore(assignment)).toEqual(scoreFixture);
   });
 
-  it("rejects a v1 Score, whose roles cannot express parent-scale passing tones", () => {
+  it("rejects a v1 Score, whose roles cannot express tones borrowed from the parent scale", () => {
     const v1 = { ...JSON.parse(JSON.stringify(scoreFixture)), schemaVersion: 1 };
     expect(validateScore(v1).errors).toContain("unsupported score schemaVersion");
 

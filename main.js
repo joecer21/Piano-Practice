@@ -9,7 +9,12 @@
 } from "./theory.js";
 import "./style.css";
 
-import { generateAssignment, rerollAssignmentInputs, validateAssignmentInputs } from "./domain/assignment.js";
+import {
+  checkMotifOffer,
+  generateAssignment,
+  rerollAssignmentInputs,
+  validateAssignmentInputs,
+} from "./domain/assignment.js";
 import { getLivePianoChordNotes } from "./domain/live-piano.js";
 import { createAppStore } from "./application/state.js";
 import { createAudioUnlock } from "./application/audio-unlock.js";
@@ -56,6 +61,7 @@ import {
   renderPianoRoll,
   populateProgressionSelector,
   populateMotifSelector,
+  updateMotifOffering,
   populatePresetSelector,
   renderPaletteButtons,
   attachPaletteButtonHandlers,
@@ -143,6 +149,7 @@ function init() {
   populatePresetSelector(dom, PRESET_CONFIGS, state.inputs.presetId || DEFAULT_PRESET_ID);
   if (dom.motif) dom.motif.value = state.inputs.motifId;
   if (dom.mode) dom.mode.value = state.inputs.mode;
+  updateMotifOffering(dom, state.inputs.mode);
   if (dom.tempoSlider) dom.tempoSlider.value = state.tempo;
   updateTempo(state.tempo);
   const initialStyleProfile = getStyleProfile(state.inputs.styleId);
@@ -324,6 +331,15 @@ function computeDerived() {
     return { ok: false, errors };
   }
 
+  // A pattern that undermines the chosen scale is not offered there. Say so and keep
+  // the last assignment, rather than changing the pattern or its notes.
+  const offer = checkMotifOffer(state.inputs);
+  if (!offer.offered) {
+    const variant = offer.variant ? MOTIF_STYLES[offer.variant] : null;
+    showHint(dom, variant ? `${offer.reason} Try ${variant.label}.` : offer.reason);
+    return { ok: false, errors: [offer.reason] };
+  }
+
   try {
     const assignment = generateAssignment(state.inputs);
     appStore.commitAssignment(assignment);
@@ -354,6 +370,7 @@ function syncInputsFromDom() {
     motifId: dom.motif?.value || state.inputs.motifId,
     presetId: dom.presetSelect?.value || state.inputs.presetId,
   };
+  updateMotifOffering(dom, state.inputs.mode);
 
   if (progressionPresetId !== "custom") {
     updateGenerateButtonLabel(dom, false);
@@ -406,6 +423,7 @@ function handleKeyChange(key) {
 
 function handleModeChange(mode) {
   state.inputs.mode = mode || "major";
+  updateMotifOffering(dom, state.inputs.mode);
   const styleProfile = getStyleProfile(state.inputs.styleId);
   state.derived = { ...state.derived, styleProfile };
   renderPaletteButtons(state.inputs.styleId, dom, STYLE_PALETTE_SETS, {
@@ -978,6 +996,7 @@ function syncAssignmentUiFromState() {
   setValue(dom.progressionSelect, inputs.progressionPresetId);
   setValue(dom.leftHand, inputs.lhId);
   setValue(dom.motif, inputs.motifId);
+  updateMotifOffering(dom, inputs.mode);
   setValue(dom.length, inputs.length);
   setValue(dom.styleSelect, inputs.styleId);
 

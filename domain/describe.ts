@@ -20,8 +20,12 @@ export type MotifDescription = {
   /** Per degree: in the selected collection, only in its parent scale, or outside both. */
   memberships: ScaleMembership[];
   contour: string;
-  /** One sentence naming the parent-scale passing tones, or null when there are none. */
-  passingTones: string | null;
+  /**
+   * One sentence naming the notes borrowed from the parent scale, or null when there
+   * are none. Deliberately not "passing tones": whether a borrowed note passes,
+   * neighbours or leans depends on its approach and resolution.
+   */
+  borrowedTones: string | null;
 };
 
 /** The motif's shortest repeating shape, as degree labels and a contour word. */
@@ -41,20 +45,27 @@ export function describeMotifParts(score: Score): MotifDescription | null {
     degrees,
     memberships,
     contour: describeContour(cycle.map((event) => event.midi)),
-    passingTones: describePassingTones(score, degrees, memberships),
+    borrowedTones: describeBorrowedTones(score, degrees, memberships),
   };
 }
 
-function describePassingTones(
+function describeBorrowedTones(
   score: Score,
   degrees: string[],
   memberships: ScaleMembership[],
 ): string | null {
-  const passing = [...new Set(degrees.filter((_, index) => memberships[index] === "parentScale"))];
-  if (!passing.length) return null;
-  const list = passing.length === 1 ? passing[0] : `${passing.slice(0, -1).join(", ")} and ${passing.at(-1)}`;
-  const verb = passing.length === 1 ? "is a passing tone" : "are passing tones";
-  return `${list} ${verb} from the parent scale, outside ${formatMode(score.meta.mode)}.`;
+  const borrowed = [...new Set(degrees.filter((_, index) => memberships[index] === "parentScale"))];
+  if (!borrowed.length) return null;
+  const list =
+    borrowed.length === 1 ? borrowed[0] : `${borrowed.slice(0, -1).join(", ")} and ${borrowed.at(-1)}`;
+  const verb = borrowed.length === 1 ? "is" : "are";
+  return `${list} ${verb} borrowed from ${parentScaleName(score)}, outside ${formatMode(score.meta.mode)}.`;
+}
+
+/** The pentatonic and blues collections are drawn from the major or the natural minor scale. */
+function parentScaleName(score: Score): string {
+  const { rootPitchClass, parentScalePitchClasses } = score.meta;
+  return parentScalePitchClasses.includes(mod12(rootPitchClass + 4)) ? "the major scale" : "natural minor";
 }
 
 export function describeMotif(score: Score): string {

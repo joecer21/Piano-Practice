@@ -24,7 +24,7 @@ const ROLE_TEXT: Record<NoteRole, string> = {
   root: "root",
   chordTone: "chord tone",
   scaleTone: "scale tone",
-  parentScaleTone: "passing tone from the parent scale",
+  parentScaleTone: "borrowed from the parent scale",
   chromatic: "outside the scale",
 };
 

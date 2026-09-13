@@ -359,31 +359,31 @@ describe("CoachApp", () => {
     expect(bridge.audioEngine.requests.at(-1)).toMatchObject({ parts: ["rh"], rate: 0.5, loop: true });
   });
 
-  it("note by note marks a parent-scale passing tone rather than hiding or replacing it", async () => {
+  it("note by note names a borrowed colour tone rather than hiding or replacing it", async () => {
     bridge = createFakeBridge({
       assignment: assignmentFor({
         key: "A",
         mode: "pentatonicMinor",
-        motifId: "harmonic-rise",
-        seed: "passing",
+        motifId: "step-arch",
+        seed: "borrowed",
       }),
     });
     render(<CoachApp bridge={bridge} summaryContainer={null} />);
     await click(screen.getByRole("button", { name: "Note by note" }));
 
     const chips = [...screen.getByRole("list", { name: /Motif degrees/ }).querySelectorAll("li")];
-    expect(chips.map((li) => li.textContent)).toEqual(["1", "2 (passing tone)", "♭3", "♭7", "1", "♭7"]);
-    expect(chips.map((li) => li.dataset.membership)).toEqual([
-      "collection",
-      "parentScale",
-      "collection",
-      "collection",
-      "collection",
-      "collection",
+    expect(chips.map((li) => li.textContent)).toEqual([
+      "1",
+      "2 (borrowed)",
+      "♭3",
+      "♭10",
+      "♭3",
+      "2 (borrowed)",
+      "1",
+      "1",
     ]);
-    expect(
-      screen.getByText("2 is a passing tone from the parent scale, outside pentatonic minor."),
-    ).toBeTruthy();
+    expect(chips.filter((li) => li.dataset.membership === "parentScale")).toHaveLength(2);
+    expect(screen.getByText("2 is borrowed from natural minor, outside pentatonic minor.")).toBeTruthy();
   });
 
   it("says so when there is no motif, and cannot play one", async () => {

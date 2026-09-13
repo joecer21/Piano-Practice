@@ -187,13 +187,13 @@ function ViewDetail(props: PracticePanelProps & { score: Score }) {
             >
               {degree}
               {motif.memberships[index] === "parentScale" ? (
-                <span className="coach-visually-hidden"> (passing tone)</span>
+                <span className="coach-visually-hidden"> (borrowed)</span>
               ) : null}
             </li>
           ))}
         </ol>
         <p className="coach-blurb">The motif {motif.contour}.</p>
-        {motif.passingTones ? <p className="coach-hint">{motif.passingTones}</p> : null}
+        {motif.borrowedTones ? <p className="coach-hint">{motif.borrowedTones}</p> : null}
       </div>
     );
   }

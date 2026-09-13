@@ -15,7 +15,7 @@ import {
   noteStringToMidi,
   parentScaleIntervals,
 } from "../theory.js";
-import { COLLECTION_MODES, outsideCollectionNotes } from "./support/passing-tones.js";
+import { COLLECTION_MODES, outsideCollectionNotes } from "./support/outside-collection.js";
 import { assignmentForSeed, propertySeeds } from "./support/fingerprint.js";
 
 const SEVEN_NOTE_MODES = Object.keys(SCALE_PATTERNS).filter((mode) => !COLLECTION_MODES.includes(mode));
@@ -76,7 +76,7 @@ describe("Motif degrees: acceptance", () => {
     expect(motif.degrees).toEqual(["1", "♭3", "4", "5", "♭7", "8", "♭10", "11"]);
   });
 
-  it("keeps a parent-degree 2 in A minor pentatonic as B, identified as a passing tone", () => {
+  it("keeps a parent-degree 2 in A minor pentatonic as B, identified as borrowed", () => {
     const motif = motifFor({ key: "A", mode: "pentatonicMinor", motifId: "harmonic-rise" });
     const second = motif.events[1];
     expect(mod12(second.midi)).toBe(NOTE_TO_INDEX.B);
@@ -87,8 +87,8 @@ describe("Motif degrees: acceptance", () => {
       role: "parentScaleTone",
       scaleMembership: "parentScale",
     });
-    expect(describeMotifParts(motif.score).passingTones).toBe(
-      "2 is a passing tone from the parent scale, outside pentatonic minor.",
+    expect(describeMotifParts(motif.score).borrowedTones).toBe(
+      "2 is borrowed from natural minor, outside pentatonic minor.",
     );
   });
 
@@ -133,6 +133,7 @@ describe("Motif degrees: every pentatonic and blues mode", () => {
       const collection = collectionIntervals(mode);
       for (const key of NOTE_NAMES) {
         for (const [motifId, style] of Object.entries(MOTIF_STYLES)) {
+          if (!style.modes.includes(mode)) continue;
           const motif = motifFor({ key, mode, motifId });
           const root = NOTE_TO_INDEX[key];
           const label = `${mode} ${key} ${motifId}`;
@@ -192,7 +193,7 @@ describe("Motif degrees: seven-note modes are unchanged", () => {
     }
   });
 
-  it("never marks a note as a parent-scale passing tone", () => {
+  it("never marks a note as borrowed from the parent scale", () => {
     for (const seed of propertySeeds()) {
       const score = buildScore(assignmentForSeed(seed));
       if (!SEVEN_NOTE_MODES.includes(score.meta.mode)) continue;

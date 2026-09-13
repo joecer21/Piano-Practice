@@ -33,7 +33,7 @@ npm test               # Unit and DOM contract specs with Vitest
 npm run test:watch     # Vitest watch mode
 npm run test:browser   # Playwright, against the production bundle
 npm run fingerprint    # Verify generated music and its Score interpretation against frozen baselines
-npm run report:passing-tones  # List motif notes outside a pentatonic/blues collection -> test-results/passing-tones.md
+npm run report:outside-collection  # Chord-aware motif compatibility review -> test-results/outside-collection-notes.md
 npm run check          # Everything above, in the order CI runs it
 ```
 
@@ -69,7 +69,7 @@ Sample filenames spell sharps with `s` (`ds3vl.mp3`), because a literal `#` in a
 - `audio/local-samples.js` is the local sample manifest, free of Tone.js so it can be validated directly.
 - `tests/*.spec.js` contains the Vitest contract suite.
 - `tests/browser/` covers the practice flow and pins previously-shipped defects as user-visible behaviour.
-- `tests/support/fingerprint.js` and `scripts/fingerprint.mjs` implement the musical fingerprint; `tests/support/score-fingerprint.js`, `tests/score-fingerprint.spec.js` and `scripts/score-fingerprint.mjs` implement the Score fingerprint; `tests/support/passing-tones.js` and `scripts/passing-tone-report.mjs` produce the outside-collection note report.
+- `tests/support/fingerprint.js` and `scripts/fingerprint.mjs` implement the musical fingerprint; `tests/support/score-fingerprint.js`, `tests/score-fingerprint.spec.js` and `scripts/score-fingerprint.mjs` implement the Score fingerprint; `tests/support/outside-collection.js` and `scripts/outside-collection-report.mjs` produce the outside-collection compatibility review.
 
 ## Practising
 
@@ -90,7 +90,15 @@ Motif patterns are written in degrees, the way a musician would say them, and re
 - A plain number keeps the pattern's shape in every mode. `1 3 5 1` is C–E–G–C in C major, C–E♭–G–C in C minor (shown as `1 ♭3 5 1`), and A–C–E–A in A minor pentatonic.
 - An altered token such as `♭3` is an absolute interval above home: a minor third in every mode, never a flat applied to a third that is already minor.
 - A pattern marked `degreeInterpretation: "scale-step"` counts through the selected collection instead. Only genuine scalar runs use it: `scalar-run-8ths` in A minor pentatonic is A–C–D–E–G–A–C–D.
-- A degree the collection leaves out (2 in minor pentatonic) is played from the parent scale, not replaced, and Score marks it as a parent-scale passing tone (`scaleMembership: "parentScale"`, role `parentScaleTone`). `npm run report:passing-tones` lists every such note, flagging any that is long, accented, repeated or on a strong beat, so they can be judged by ear.
+- A degree the collection leaves out (2 in minor pentatonic) is played from the parent scale, not replaced, and Score marks it as borrowed (`scaleMembership: "parentScale"`, role `parentScaleTone`). Note by note names it ("2 is borrowed from natural minor"). Whether it is a passing tone depends on how it is approached and left, so the app does not call it one.
+
+Each pattern also declares how it fits each pentatonic and blues collection (`collectionFit` in `theory.js`):
+
+- **strict**: every note is in the collection.
+- **color**: deliberately uses named borrowed or chromatic tones (`colorTones`), which Note by note identifies.
+- **incompatible**: structurally emphasizes a note that undermines the collection (on the downbeat, held, accented, or on a strong beat without resolving by step). It is not offered in that mode: the pattern menu disables it with the reason, rerolls skip it, and choosing it keeps the previous assignment with an explanation. It is never repaired by changing its notes; `variant` names a pattern written for that collection instead (`funk-sync-6`, `blues-riff-major`).
+
+Some patterns exist only for particular collections (`modes`), such as `blues-riff-minor`, which features ♭5. Every collection has an `exemplar` pattern playing its characteristic tone: 6 in major pentatonic, ♭7 in minor pentatonic, ♭3 in major blues, ♭5 in minor blues. The seven-note modes offer the original fifteen patterns, unchanged. `npm run report:outside-collection` writes the review behind these declarations: for every outside-collection note, the chord under it and its role, metric position, duration, accent, the notes before and after, and its melodic function, plus the auditions that chose each variant. `tests/motif-compatibility.spec.js` checks each declaration against what the pattern actually plays, in every key.
 
 Score degrees always name the pitch that sounds, so Note by note, the keyboard, the legacy motif panel and playback agree.
 

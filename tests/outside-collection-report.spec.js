@@ -1,10 +1,10 @@
-// Writes the outside-collection note report for musical review.
-//   npm run report:passing-tones   # -> test-results/passing-tones.md
+// Writes the chord-aware outside-collection review of the motif catalog.
+//   npm run report:outside-collection   # -> test-results/outside-collection-notes.md
 import { mkdirSync, writeFileSync } from "node:fs";
 import { describe, it } from "vitest";
-import { renderOutsideCollectionReport } from "./support/passing-tones.js";
+import { renderOutsideCollectionReport } from "./support/outside-collection.js";
 
-const OUT = process.env.PASSING_TONE_REPORT;
+const OUT = process.env.OUTSIDE_COLLECTION_REPORT;
 
 describe("Outside-collection note report", () => {
   it.runIf(OUT)("writes the report", () => {

@@ -20,7 +20,7 @@
     "check": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run fingerprint && npm run build && npm run test:browser",
     "fingerprint:write-music": "node scripts/fingerprint.mjs --write",
     "fingerprint:write-score": "node scripts/score-fingerprint.mjs --write",
-    "report:passing-tones": "node scripts/passing-tone-report.mjs"
+    "report:outside-collection": "node scripts/outside-collection-report.mjs"
   },
   "dependencies": {
     "react": "^19.3.0",

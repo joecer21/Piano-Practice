@@ -289,7 +289,7 @@ body {
   background: transparent;
 }
 
-/* A passing tone from the parent scale: lighter than a collection tone, and dashed
+/* A tone borrowed from the parent scale: lighter than a collection tone, and dashed
    so it never reads as a note of the pentatonic or blues scale itself. */
 .piano-key[data-role="parentScaleTone"] .key-label {
   border: 1px dashed color-mix(in srgb, var(--mark) 35%, transparent);

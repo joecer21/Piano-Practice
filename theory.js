@@ -479,6 +479,39 @@ export function getProgressionPreset(id) {
   return PROGRESSION_PRESETS.find((p) => p.id === id) || null;
 }
 
+/**
+ * How a motif pattern fits each pentatonic and blues collection, declared per
+ * pattern and checked by tests/motif-compatibility.spec.js against what it plays:
+ *   strict: every note is in the selected collection.
+ *   color: deliberately uses the named colorTones from the parent scale (or an
+ *     explicit chromatic tone); the learner is shown which notes those are.
+ *   incompatible: structurally emphasizes notes that undermine the collection being
+ *     practised (on the downbeat, held, accented or repeated). Not offered in that
+ *     mode, and never repaired by changing its notes; `variant` names a pattern
+ *     written for that collection instead.
+ * exemplar marks a pattern that demonstrates the collection's characteristic tone
+ * (COLLECTION_CHARACTERISTIC_TONES). Seven-note modes are the parent scale itself, so
+ * every pattern fits them unless it lists `modes`.
+ * See `npm run report:outside-collection` for the chord-aware review behind these.
+ */
+const strict = (extra = {}) => ({ fit: "strict", ...extra });
+const color = (colorTones, note, extra = {}) => ({ fit: "color", colorTones, note, ...extra });
+const incompatible = (reason, extra = {}) => ({ fit: "incompatible", reason, ...extra });
+const STRICT_IN_EVERY_COLLECTION = Object.freeze({
+  pentatonicMajor: strict(),
+  pentatonicMinor: strict(),
+  majorBlues: strict(),
+  minorBlues: strict(),
+});
+
+/** The tone that makes each collection sound like itself, as a Score degree label. */
+export const COLLECTION_CHARACTERISTIC_TONES = Object.freeze({
+  pentatonicMajor: "6",
+  pentatonicMinor: "♭7",
+  majorBlues: "♭3",
+  minorBlues: "♭5",
+});
+
 const RAW_MOTIF_STYLES = {
   "pop-hook-1351": {
     label: "Pop Hook - 1 3 5 1",
@@ -497,6 +530,9 @@ const RAW_MOTIF_STYLES = {
       { beats: 1, rest: false },
     ],
     degreePattern: [1, 3, 5, 1, 1, 3, 5, 1],
+    // In major blues the 3 stays major: the collection holds both thirds, and the
+    // hook outlines the major tonic chord.
+    collectionFit: STRICT_IN_EVERY_COLLECTION,
   },
   "pop-offbeat-echo": {
     label: "Pop - Offbeat Echo",
@@ -515,6 +551,18 @@ const RAW_MOTIF_STYLES = {
       { beats: 0.5, rest: false },
     ],
     degreePattern: [1, 1, 6, 5, 3, 2, 1, 1],
+    collectionFit: {
+      pentatonicMajor: strict(),
+      pentatonicMinor: color(
+        ["♭6", "2"],
+        "♭6 (weak beat 2) and 2 (off the beat) are both leapt to and resolve down by step.",
+      ),
+      majorBlues: strict(),
+      minorBlues: color(
+        ["♭6", "2"],
+        "♭6 (weak beat 2) and 2 (off the beat) are both leapt to and resolve down by step.",
+      ),
+    },
   },
   "arpeggio-climb": {
     label: "Pop Arpeggio - 1 3 5 8",
@@ -533,6 +581,7 @@ const RAW_MOTIF_STYLES = {
       { beats: 0.5, rest: false },
     ],
     degreePattern: [1, 3, 5, 8, 5, 3, 1, 1],
+    collectionFit: STRICT_IN_EVERY_COLLECTION,
   },
   "ballad-long": {
     label: "Ballad - Long tones (3-1-5-1)",
@@ -547,6 +596,7 @@ const RAW_MOTIF_STYLES = {
       { beats: 2, rest: false },
     ],
     degreePattern: [3, 1, 5, 1],
+    collectionFit: STRICT_IN_EVERY_COLLECTION,
   },
   "ballad-call-response": {
     label: "Ballad - Call & Response",
@@ -561,6 +611,7 @@ const RAW_MOTIF_STYLES = {
       { beats: 2, rest: false },
     ],
     degreePattern: [1, 3, 5, 3],
+    collectionFit: STRICT_IN_EVERY_COLLECTION,
   },
   "step-arch": {
     label: "Stepwise Arch - gentle climb and fall",
@@ -580,6 +631,12 @@ const RAW_MOTIF_STYLES = {
     ],
     degreePattern: [1, 2, 3, 10, 3, 2, 1, 1],
     peaksPerPhrase: 1,
+    collectionFit: {
+      pentatonicMajor: strict(),
+      pentatonicMinor: color(["2"], "2 is a true passing tone, stepping 1-2-♭3 and back down ♭3-2-1."),
+      majorBlues: strict(),
+      minorBlues: color(["2"], "2 is a true passing tone, stepping 1-2-♭3 and back down ♭3-2-1."),
+    },
   },
   "scalar-run-8ths": {
     label: "Scalar Run - Ascending 8ths",
@@ -600,6 +657,7 @@ const RAW_MOTIF_STYLES = {
     degreePattern: [1, 2, 3, 4, 5, 6, 7, 8],
     // A run means "go up the scale": in a pentatonic it climbs the pentatonic.
     degreeInterpretation: "scale-step",
+    collectionFit: STRICT_IN_EVERY_COLLECTION,
   },
   "funk-sync": {
     label: "Funk Syncopation - root groove with rests",
@@ -618,6 +676,41 @@ const RAW_MOTIF_STYLES = {
       { beats: 3, rest: false },
     ],
     degreePattern: [1, 1, 5, 1, 4, 5, 7, 1],
+    collectionFit: {
+      pentatonicMajor: incompatible("Its major 7 lands on the downbeat of bar 2, accented.", {
+        variant: "funk-sync-6",
+      }),
+      pentatonicMinor: strict({ exemplar: true }),
+      majorBlues: incompatible("Its major 7 lands on the downbeat of bar 2, accented.", {
+        variant: "funk-sync-6",
+      }),
+      minorBlues: strict(),
+    },
+  },
+  "funk-sync-6": {
+    label: "Funk Syncopation - pentatonic 6",
+    description:
+      "The funk-sync groove answered by the 6 instead of the major 7, for major pentatonic and major blues.",
+    category: "groove",
+    difficulty: "intermediate",
+    bars: 2,
+    rhythm: [
+      { beats: 0.5, rest: false },
+      { beats: 0.5, rest: true },
+      { beats: 0.5, rest: false },
+      { beats: 1.5, rest: false },
+      { beats: 0.5, rest: true },
+      { beats: 0.5, rest: false },
+      { beats: 1, rest: false },
+      { beats: 3, rest: false },
+    ],
+    degreePattern: [1, 1, 5, 1, 4, 5, 6, 1],
+    // Written for the major collections. In minor, 6 is ♭6 and funk-sync already fits.
+    modes: ["pentatonicMajor", "majorBlues"],
+    collectionFit: {
+      pentatonicMajor: strict({ exemplar: true }),
+      majorBlues: strict(),
+    },
   },
   "funk-stabs": {
     label: "Funk Stabs - Short hits",
@@ -636,6 +729,16 @@ const RAW_MOTIF_STYLES = {
       { beats: 0.5, rest: true },
     ],
     degreePattern: [1, 5, 7, 5, 4, 5, 1, 1],
+    collectionFit: {
+      pentatonicMajor: incompatible(
+        "Its 4 is stabbed on strong beat 3 and leaps away unresolved; over the tonic chord it rubs against the third.",
+      ),
+      pentatonicMinor: strict(),
+      majorBlues: incompatible(
+        "Its 4 is stabbed on strong beat 3 and leaps away unresolved; over the tonic chord it rubs against the third.",
+      ),
+      minorBlues: strict(),
+    },
   },
   "blues-riff": {
     label: "Blues Riff - Question",
@@ -652,6 +755,56 @@ const RAW_MOTIF_STYLES = {
       { beats: 1, rest: false },
     ],
     degreePattern: [1, 1, 3, 4, 4, 1],
+    collectionFit: {
+      pentatonicMajor: incompatible(
+        "It leans on a repeated 4 from beat 3, a note major pentatonic leaves out.",
+      ),
+      pentatonicMinor: strict(),
+      majorBlues: incompatible("It leans on a repeated 4 from beat 3, a note major blues leaves out.", {
+        variant: "blues-riff-major",
+      }),
+      minorBlues: strict(),
+    },
+  },
+  "blues-riff-minor": {
+    label: "Blues Riff - minor blues ♭5",
+    description: "1-bar minor blues riff that leans on the ♭5 on beat 3 and falls back to 4.",
+    category: "blues",
+    difficulty: "intermediate",
+    bars: 1,
+    rhythm: [
+      { beats: 0.5, rest: false },
+      { beats: 0.5, rest: false },
+      { beats: 1, rest: false },
+      { beats: 0.5, rest: false },
+      { beats: 0.5, rest: false },
+      { beats: 1, rest: false },
+    ],
+    degreePattern: [1, "b3", 4, "b5", 4, 1],
+    modes: ["minorBlues"],
+    collectionFit: {
+      minorBlues: strict({ exemplar: true }),
+    },
+  },
+  "blues-riff-major": {
+    label: "Blues Riff - major blues ♭3 to 3",
+    description: "1-bar major blues riff that curls from ♭3 up to 3, then rocks on 5 and 6.",
+    category: "blues",
+    difficulty: "intermediate",
+    bars: 1,
+    rhythm: [
+      { beats: 0.5, rest: false },
+      { beats: 0.5, rest: false },
+      { beats: 1, rest: false },
+      { beats: 0.5, rest: false },
+      { beats: 0.5, rest: false },
+      { beats: 1, rest: false },
+    ],
+    degreePattern: [1, "b3", 3, 5, 6, 5],
+    modes: ["majorBlues"],
+    collectionFit: {
+      majorBlues: strict({ exemplar: true }),
+    },
   },
   "modal-pedal": {
     label: "Modal Pedal - Tonic + Color",
@@ -666,6 +819,18 @@ const RAW_MOTIF_STYLES = {
       { beats: 1, rest: false },
     ],
     degreePattern: [1, 1, 4, 1],
+    collectionFit: {
+      pentatonicMajor: color(
+        ["4"],
+        "The 4 is the pattern's named colour over the tonic pedal; Note by note names it as borrowed.",
+      ),
+      pentatonicMinor: strict(),
+      majorBlues: color(
+        ["4"],
+        "The 4 is the pattern's named colour over the tonic pedal; Note by note names it as borrowed.",
+      ),
+      minorBlues: strict(),
+    },
   },
   "lofi-sway": {
     label: "Lo-Fi Sway - 1 5 6 5",
@@ -684,6 +849,18 @@ const RAW_MOTIF_STYLES = {
       { beats: 2, rest: false },
     ],
     degreePattern: [1, 1, 5, 6, 5, 1, 6, 5],
+    collectionFit: {
+      pentatonicMajor: strict({ exemplar: true }),
+      pentatonicMinor: color(
+        ["♭6"],
+        "♭6 is an upper neighbour to 5, and later leapt to from 1; always off the beat.",
+      ),
+      majorBlues: strict(),
+      minorBlues: color(
+        ["♭6"],
+        "♭6 is an upper neighbour to 5, and later leapt to from 1; always off the beat.",
+      ),
+    },
   },
   "swing-lick-3579": {
     label: "Swing Lick - 3 5 7 9",
@@ -702,6 +879,15 @@ const RAW_MOTIF_STYLES = {
       { beats: 0.5, rest: false },
     ],
     degreePattern: [3, 5, 7, 9, 5, 3, 2, 1],
+    collectionFit: {
+      pentatonicMajor: color(["7"], "The 7 is an arpeggiated extension on weak beat 2, leaping on to the 9."),
+      pentatonicMinor: color(
+        ["9", "2"],
+        "The 9 is an arpeggiated extension; the 2 passes from ♭3 down to 1.",
+      ),
+      majorBlues: color(["7"], "The 7 is an arpeggiated extension on weak beat 2, leaping on to the 9."),
+      minorBlues: color(["9", "2"], "The 9 is an arpeggiated extension; the 2 passes from ♭3 down to 1."),
+    },
   },
   "harmonic-rise": {
     label: "Harmonic Rise - 1 2 b3 #7",
@@ -718,6 +904,16 @@ const RAW_MOTIF_STYLES = {
       { beats: 2, rest: false },
     ],
     degreePattern: [1, 2, 3, 7, 1, 7],
+    // Built to feature harmonic minor's raised 7; restricted from the pentatonic and
+    // blues collections until a deliberately rewritten variant exists.
+    collectionFit: {
+      pentatonicMajor: incompatible("Its 7 arrives accented on a downbeat and is then held for two beats."),
+      pentatonicMinor: incompatible(
+        "Written to feature a raised 7; here its 2 is held for a beat and a half.",
+      ),
+      majorBlues: incompatible("Its 7 arrives accented on a downbeat and is then held for two beats."),
+      minorBlues: incompatible("Written to feature a raised 7; here its 2 is held for a beat and a half."),
+    },
   },
   "pent-grid": {
     label: "Pentatonic Grid - 1 b3 4 5",
@@ -732,6 +928,14 @@ const RAW_MOTIF_STYLES = {
       { beats: 1, rest: false },
     ],
     degreePattern: [1, "b3", 4, 5],
+    collectionFit: {
+      pentatonicMajor: incompatible(
+        "It drills minor pentatonic: ♭3 and 4 are half its quarter notes, against a major third.",
+      ),
+      pentatonicMinor: strict(),
+      majorBlues: color(["4"], "The 4 passes from ♭3 up to 5, on beat 3."),
+      minorBlues: strict(),
+    },
   },
 };
 
@@ -756,30 +960,81 @@ const MOTIF_DEFAULT_METADATA = {
 };
 
 function withMotifMetadata(base) {
-  return Object.fromEntries(
-    Object.entries(base).map(([id, motif]) => {
-      const categoryDefaults = MOTIF_CATEGORY_DEFAULTS[motif.category] || {};
-      const enriched = {
-        ...MOTIF_DEFAULT_METADATA,
-        ...categoryDefaults,
-        ...motif,
-      };
-      enriched.contour = motif.contour || categoryDefaults.contour || MOTIF_DEFAULT_METADATA.contour;
-      enriched.targetRegister =
-        motif.targetRegister || categoryDefaults.targetRegister || MOTIF_DEFAULT_METADATA.targetRegister;
-      enriched.intervalBias =
-        motif.intervalBias || categoryDefaults.intervalBias || MOTIF_DEFAULT_METADATA.intervalBias;
-      enriched.peaksPerPhrase =
-        motif.peaksPerPhrase || categoryDefaults.peaksPerPhrase || MOTIF_DEFAULT_METADATA.peaksPerPhrase;
-      enriched.degreeInterpretation = motif.degreeInterpretation || DEFAULT_DEGREE_INTERPRETATION;
-      if (!DEGREE_INTERPRETATIONS.includes(enriched.degreeInterpretation)) {
-        throw new TypeError(
-          `Motif ${id} has an unknown degreeInterpretation: ${enriched.degreeInterpretation}`,
-        );
-      }
-      return [id, enriched];
-    }),
-  );
+  return Object.fromEntries(Object.entries(base).map(([id, motif]) => [id, defineMotifStyle(id, motif)]));
+}
+
+/** Modes whose scale is a pentatonic or blues collection rather than a seven-note scale. */
+export const COLLECTION_MODE_IDS = Object.freeze(
+  Object.keys(SCALE_PATTERNS).filter((mode) => SCALE_PATTERNS[mode].intervals.length !== 7),
+);
+const COLLECTION_FITS = ["strict", "color", "incompatible"];
+
+/**
+ * Fill in a motif pattern's defaults and check its declared metadata. Exported so a
+ * candidate pattern can be auditioned exactly as a catalog pattern would be.
+ */
+export function defineMotifStyle(id, motif) {
+  const enriched = enrichMotifStyle(id, motif);
+  const modes = motif.modes ?? Object.keys(SCALE_PATTERNS);
+  if (!modes.every((mode) => mode in SCALE_PATTERNS)) {
+    throw new TypeError(`Motif ${id} lists an unknown mode: ${modes.join(", ")}`);
+  }
+  for (const mode of modes.filter((candidate) => COLLECTION_MODE_IDS.includes(candidate))) {
+    const entry = motif.collectionFit?.[mode];
+    if (!entry || !COLLECTION_FITS.includes(entry.fit)) {
+      throw new TypeError(`Motif ${id} must declare its fit for ${mode}`);
+    }
+    if (entry.fit === "color" && !entry.colorTones?.length) {
+      throw new TypeError(`Motif ${id} is a color pattern in ${mode} but names no colorTones`);
+    }
+    if (entry.fit === "incompatible" && entry.exemplar) {
+      throw new TypeError(`Motif ${id} cannot be an exemplar for ${mode}, where it is incompatible`);
+    }
+    if (entry.variant && !(entry.variant in RAW_MOTIF_STYLES)) {
+      throw new TypeError(`Motif ${id} names an unknown variant for ${mode}: ${entry.variant}`);
+    }
+  }
+  return { ...enriched, modes: [...modes] };
+}
+
+/**
+ * How a pattern fits a mode: its declared collection fit for a pentatonic or blues
+ * mode, { fit: "native" } for a seven-note mode it is written for, or null when the
+ * pattern is not written for that mode at all.
+ */
+export function motifFitForMode(motifId, mode) {
+  const style = MOTIF_STYLES[motifId];
+  if (!style || !style.modes.includes(mode)) return null;
+  if (!COLLECTION_MODE_IDS.includes(mode)) return { fit: "native" };
+  return style.collectionFit[mode];
+}
+
+/** Whether a pattern may be offered, rerolled or generated for a mode. */
+export function isMotifOfferedInMode(motifId, mode) {
+  if (motifId === "none") return true;
+  const fit = motifFitForMode(motifId, mode);
+  return fit != null && fit.fit !== "incompatible";
+}
+
+function enrichMotifStyle(id, motif) {
+  const categoryDefaults = MOTIF_CATEGORY_DEFAULTS[motif.category] || {};
+  const enriched = {
+    ...MOTIF_DEFAULT_METADATA,
+    ...categoryDefaults,
+    ...motif,
+  };
+  enriched.contour = motif.contour || categoryDefaults.contour || MOTIF_DEFAULT_METADATA.contour;
+  enriched.targetRegister =
+    motif.targetRegister || categoryDefaults.targetRegister || MOTIF_DEFAULT_METADATA.targetRegister;
+  enriched.intervalBias =
+    motif.intervalBias || categoryDefaults.intervalBias || MOTIF_DEFAULT_METADATA.intervalBias;
+  enriched.peaksPerPhrase =
+    motif.peaksPerPhrase || categoryDefaults.peaksPerPhrase || MOTIF_DEFAULT_METADATA.peaksPerPhrase;
+  enriched.degreeInterpretation = motif.degreeInterpretation || DEFAULT_DEGREE_INTERPRETATION;
+  if (!DEGREE_INTERPRETATIONS.includes(enriched.degreeInterpretation)) {
+    throw new TypeError(`Motif ${id} has an unknown degreeInterpretation: ${enriched.degreeInterpretation}`);
+  }
+  return enriched;
 }
 
 export const MOTIF_STYLES = withMotifMetadata(RAW_MOTIF_STYLES);

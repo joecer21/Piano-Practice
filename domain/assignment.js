@@ -11,6 +11,8 @@ import {
   STYLE_PROFILES,
   getProgressionPreset,
   getStyleProfile,
+  isMotifOfferedInMode,
+  motifFitForMode,
   noteStringToMidi,
 } from "../theory.js";
 import {
@@ -238,7 +240,12 @@ export function rerollAssignmentInputs(rawInputs, options = {}) {
 
   if (!locks.key) {
     next.key = pickDifferent(catalog.keys, inputs.key, rng);
-    next.mode = pickDifferent(catalog.modes, inputs.mode, rng);
+    // A locked motif keeps the mode choice to modes that offer it. Every motif that
+    // fits all modes leaves this list, and so the reroll, exactly as it was.
+    const modes = locks.motif
+      ? catalog.modes.filter((mode) => isMotifOfferedInMode(inputs.motifId, mode))
+      : catalog.modes;
+    next.mode = pickDifferent(modes.length ? modes : catalog.modes, inputs.mode, rng);
   }
   if (!locks.harmony) {
     next.progressionPresetId = pickDifferent(catalog.progressions, inputs.progressionPresetId, rng);
@@ -249,10 +256,34 @@ export function rerollAssignmentInputs(rawInputs, options = {}) {
     next.lhId = pickDifferent(catalog.leftHands, inputs.lhId, rng);
   }
   if (!locks.motif) {
-    next.motifId = pickDifferent(catalog.motifs, inputs.motifId, rng);
+    // Only patterns offered in the chosen mode. For a seven-note mode that is the
+    // original catalog in its original order, so those rerolls are unchanged.
+    const motifs = catalog.motifs.filter((motifId) => isMotifOfferedInMode(motifId, next.mode));
+    next.motifId = pickDifferent(motifs, inputs.motifId, rng);
   }
 
   return normalizeAssignmentInputs(next);
+}
+
+/**
+ * Whether inputs ask for a pattern the catalog offers in their mode. Generation
+ * itself accepts any pattern, so a mismatch can still be analysed; everything that
+ * offers assignments to a learner checks this first, and never repairs a mismatch
+ * by changing notes.
+ * @param {Partial<AssignmentInputs>} inputs
+ * @returns {{ offered: boolean, reason: string | null, variant: string | null }}
+ */
+export function checkMotifOffer(inputs) {
+  const motifId = String(inputs.motifId);
+  const mode = String(inputs.mode);
+  if (isMotifOfferedInMode(motifId, mode)) return { offered: true, reason: null, variant: null };
+  const fit = motifFitForMode(motifId, mode);
+  const label = MOTIF_STYLES[motifId]?.label ?? motifId;
+  const modeLabel = SCALE_PATTERNS[mode]?.label ?? mode;
+  const reason = fit
+    ? `${label} isn't offered in ${modeLabel}: ${fit.reason ?? "it undermines that scale."}`
+    : `${label} is written for other scales, not ${modeLabel}.`;
+  return { offered: false, reason, variant: fit?.variant ?? null };
 }
 
 /**

@@ -6,7 +6,7 @@
     "styleId": "modal",
     "length": 8,
     "lhId": "alberti",
-    "motifId": "swing-lick-3579",
+    "motifId": "lofi-sway",
     "customProgressionRoman": []
   },
   "scale": {
@@ -758,19 +758,17 @@
       "dur": "8n",
       "rest": false,
       "notes": [
-        "G#4"
+        "E4"
       ],
-      "degree": 3
+      "degree": 1
     },
     {
       "time": 0.5,
       "beats": 0.5,
       "dur": "8n",
-      "rest": false,
-      "notes": [
-        "B4"
-      ],
-      "degree": 5
+      "rest": true,
+      "notes": [],
+      "degree": null
     },
     {
       "time": 1,
@@ -778,9 +776,9 @@
       "dur": "8n",
       "rest": false,
       "notes": [
-        "D#5"
+        "B4"
       ],
-      "degree": 7
+      "degree": 5
     },
     {
       "time": 1.5,
@@ -788,14 +786,14 @@
       "dur": "8n",
       "rest": false,
       "notes": [
-        "F#5"
+        "C#5"
       ],
-      "degree": 9
+      "degree": 6
     },
     {
       "time": 2,
-      "beats": 0.5,
-      "dur": "8n",
+      "beats": 1,
+      "dur": "4n",
       "rest": false,
       "notes": [
         "B4"
@@ -803,27 +801,7 @@
       "degree": 5
     },
     {
-      "time": 2.5,
-      "beats": 0.5,
-      "dur": "8n",
-      "rest": false,
-      "notes": [
-        "G#4"
-      ],
-      "degree": 3
-    },
-    {
       "time": 3,
-      "beats": 0.5,
-      "dur": "8n",
-      "rest": false,
-      "notes": [
-        "F#4"
-      ],
-      "degree": 2
-    },
-    {
-      "time": 3.5,
       "beats": 0.5,
       "dur": "8n",
       "rest": false,
@@ -831,7 +809,27 @@
         "E4"
       ],
       "degree": 1
+    },
+    {
+      "time": 3.5,
+      "beats": 0.5,
+      "dur": "8n",
+      "rest": false,
+      "notes": [
+        "C#5"
+      ],
+      "degree": 6
+    },
+    {
+      "time": 4,
+      "beats": 2,
+      "dur": "2n",
+      "rest": false,
+      "notes": [
+        "B4"
+      ],
+      "degree": 5
     }
   ],
-  "rhTotalBeats": 4
+  "rhTotalBeats": 6
 }

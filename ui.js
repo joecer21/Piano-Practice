@@ -8,6 +8,8 @@ import {
   noteStringToMidi,
   midiToNote,
   getChordTagForSymbol,
+  isMotifOfferedInMode,
+  SCALE_PATTERNS,
 } from "./theory.js";
 import { formatDegreeToken } from "./domain/describe.ts";
 
@@ -1025,6 +1027,24 @@ function formatDb(value, muted) {
   return `${sign}${rounded} dB`;
 }
 
+/**
+ * Disable the motif patterns not offered in a mode, saying why in the option text.
+ * The selected option stays selected even when disabled, so a mode change never
+ * swaps the learner's pattern (or its notes) for another; generation is blocked
+ * with an explanation instead.
+ */
+export function updateMotifOffering(dom, mode) {
+  const select = dom.motif;
+  if (!select) return;
+  const modeLabel = SCALE_PATTERNS[mode]?.label ?? mode;
+  Array.from(select.options).forEach((option) => {
+    if (option.value === "none") return;
+    const offered = isMotifOfferedInMode(option.value, mode);
+    option.disabled = !offered;
+    option.textContent = offered ? option.dataset.label : `${option.dataset.label} - not for ${modeLabel}`;
+  });
+}
+
 export function populateMotifSelector(dom, motifs) {
   const select = dom.motif;
   if (!select) return;
@@ -1048,7 +1068,8 @@ export function populateMotifSelector(dom, motifs) {
     grouped[category].forEach((style) => {
       const option = document.createElement("option");
       option.value = style.id;
-      option.textContent = `${style.label} (${style.difficulty})`;
+      option.dataset.label = `${style.label} (${style.difficulty})`;
+      option.textContent = option.dataset.label;
       groupEl.appendChild(option);
     });
     select.appendChild(groupEl);

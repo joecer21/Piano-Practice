@@ -25,7 +25,7 @@ export type DegreeAlteration = -2 | -1 | 0 | 1 | 2;
 export type Dynamic = "ghost" | "soft" | "normal" | "accent";
 /**
  * What a note does over the bar's chord, most important first: the chord's root, a
- * chord tone, a note of the selected collection, a passing tone from the mode's
+ * chord tone, a note of the selected collection, a tone borrowed from the mode's
  * parent scale that the collection leaves out, or a note outside both.
  */
 export type NoteRole = "root" | "chordTone" | "scaleTone" | "parentScaleTone" | "chromatic";

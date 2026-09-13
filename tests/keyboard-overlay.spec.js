@@ -45,7 +45,7 @@ describe("keyboard overlay", () => {
     expect(key("C#4").querySelector(".key-label")).toBeNull();
   });
 
-  it("labels a parent-scale passing tone, distinct from the collection and from outside notes", () => {
+  it("labels a tone borrowed from the parent scale, distinct from the collection and from outside notes", () => {
     const pentatonic = scoreFor({
       key: "C",
       mode: "pentatonicMinor",
@@ -59,7 +59,7 @@ describe("keyboard overlay", () => {
     expect(key("D4").dataset.role).toBe("parentScaleTone");
     expect(key("D4").querySelector(".key-label")?.textContent).toBe("2");
     expect(key("D4").getAttribute("aria-label")).toBe(
-      "D4 piano key, degree 2, passing tone from the parent scale",
+      "D4 piano key, degree 2, borrowed from the parent scale",
     );
     expect(key("A4").dataset.role).toBe("chromatic");
     expect(key("A4").querySelector(".key-label")).toBeNull();
