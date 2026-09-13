@@ -1,0 +1,11 @@
+version: 2
+updates:
+  # Keep workflow actions on supported majors (and their Node runtimes). One
+  # grouped weekly pull request, so each upgrade runs the full CI and smoke gates.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]
