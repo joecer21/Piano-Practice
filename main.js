@@ -2,6 +2,7 @@
   PROGRESSION_PRESETS,
   STYLE_PALETTE_SETS,
   MOTIF_STYLES,
+  SCALE_PATTERNS,
   getProgressionPreset,
   getStyleProfile,
   midiToNote,
@@ -18,7 +19,12 @@ import {
 import { getLivePianoChordNotes } from "./domain/live-piano.js";
 import { createAppStore } from "./application/state.js";
 import { browserStorage, createLibrary } from "./application/library.ts";
-import { decodeShareFragment, encodeShareFragment, looksLikeShareFragment } from "./domain/share.ts";
+import {
+  decodeShareFragment,
+  encodeShareFragment,
+  looksLikeShareFragment,
+  shareUrl,
+} from "./domain/share.ts";
 import { createAudioUnlock } from "./application/audio-unlock.js";
 import {
   attachPianoNoteListeners,
@@ -307,7 +313,70 @@ function createCoachBridge() {
     midiInput,
     setMidiPlayThrough,
     rerollIntoNewKey,
+    library: createCoachLibrary(),
   };
+}
+
+/** The coach's view of the practice library, tied to the committed assignment. */
+function createCoachLibrary() {
+  let cachedSnapshot = null;
+  let cachedStarred = null;
+  let cachedAssignment = null;
+  const currentInputs = () => state.assignment?.inputs ?? null;
+
+  return {
+    getSnapshot() {
+      const starred = practiceLibrary.starred();
+      if (!cachedSnapshot || starred !== cachedStarred || state.assignment !== cachedAssignment) {
+        cachedStarred = starred;
+        cachedAssignment = state.assignment;
+        const inputs = currentInputs();
+        cachedSnapshot = { starred, currentStarred: inputs ? practiceLibrary.isStarred(inputs) : false };
+      }
+      return cachedSnapshot;
+    },
+    subscribe(listener) {
+      const unsubscribeLibrary = practiceLibrary.subscribe(listener);
+      const unsubscribeStore = appStore.subscribe(listener);
+      return () => {
+        unsubscribeLibrary();
+        unsubscribeStore();
+      };
+    },
+    currentShareUrl() {
+      const inputs = currentInputs();
+      return inputs ? shareUrl(inputs, window.location.href) : null;
+    },
+    currentTitle() {
+      const inputs = currentInputs();
+      return inputs ? assignmentTitle(inputs) : null;
+    },
+    toggleStarCurrent() {
+      const inputs = currentInputs();
+      if (inputs) practiceLibrary.toggleStar(inputs, assignmentTitle(inputs));
+    },
+    open(fragment) {
+      const decoded = decodeShareFragment(fragment);
+      if (!decoded.ok) return false;
+      stopAllPlayback();
+      return openInputs(decoded.inputs);
+    },
+    unstar: (fragment) => practiceLibrary.unstar(fragment),
+    preferences: () => practiceLibrary.preferences(),
+    setPreference: (name, value) => practiceLibrary.setPreference(name, value),
+  };
+}
+
+/** "A minor blues · 12-Bar Minor Blues · Blues Riff - minor blues ♭5" */
+function assignmentTitle(inputs) {
+  const mode = (SCALE_PATTERNS[inputs.mode]?.label ?? inputs.mode).toLowerCase();
+  const progression =
+    inputs.progressionPresetId === "custom"
+      ? "custom progression"
+      : (getProgressionPreset(inputs.progressionPresetId)?.label ?? inputs.progressionPresetId);
+  const motif =
+    inputs.motifId === "none" ? "no motif" : (MOTIF_STYLES[inputs.motifId]?.label ?? inputs.motifId);
+  return `${inputs.key} ${mode} · ${progression} · ${motif}`;
 }
 
 function updateTempo(value) {

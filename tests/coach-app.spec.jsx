@@ -70,7 +70,52 @@ function createFakeMidiAccess() {
   };
 }
 
-function createFakeBridge({ assignment, sampler = READY, unlock = true, midiEnvironment } = {}) {
+const STARRED_ENTRY = {
+  fragment: "v=1&key=A&mode=minorBlues",
+  inputs: {},
+  title: "A minor blues · 12-Bar Minor Blues · Blues Riff - minor blues ♭5",
+  starredAt: "2026-03-01T12:00:00.000Z",
+};
+
+/** A fake practice library: records calls and keeps a stable snapshot. */
+function createFakeLibrary({
+  preferences = { labelMode: "degrees", sessionLength: 300 },
+  starred = [],
+} = {}) {
+  const listeners = new Set();
+  const prefs = { ...preferences };
+  let snapshot = { starred, currentStarred: false };
+  const publish = (next) => {
+    snapshot = next;
+    listeners.forEach((listener) => listener());
+  };
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    currentShareUrl: () => "https://example.test/app/#v=1&key=C&mode=major",
+    currentTitle: () => "C major · Pop 4 · Pop Hook - 1 3 5 1",
+    toggleStarCurrent: vi.fn(() => publish({ ...snapshot, currentStarred: !snapshot.currentStarred })),
+    open: vi.fn(() => true),
+    unstar: vi.fn((fragment) =>
+      publish({ ...snapshot, starred: snapshot.starred.filter((entry) => entry.fragment !== fragment) }),
+    ),
+    preferences: () => ({ ...prefs }),
+    setPreference: vi.fn((name, value) => {
+      prefs[name] = value;
+    }),
+  };
+}
+
+function createFakeBridge({
+  assignment,
+  sampler = READY,
+  unlock = true,
+  midiEnvironment,
+  library = createFakeLibrary(),
+} = {}) {
   const noteInput = createNoteInputHub();
   const fakeMidi = createFakeMidiAccess();
   const midiInput = createMidiInput(
@@ -114,6 +159,7 @@ function createFakeBridge({ assignment, sampler = READY, unlock = true, midiEnvi
     midiInput,
     fakeMidi,
     setMidiPlayThrough: vi.fn(async (enabled) => midiInput.setPlayThrough(enabled)),
+    library,
     setAssignment(nextAssignment) {
       current = nextAssignment;
       assignmentListeners.forEach((listener) => listener());
@@ -384,6 +430,86 @@ describe("CoachApp", () => {
     ]);
     expect(chips.filter((li) => li.dataset.membership === "parentScale")).toHaveLength(2);
     expect(screen.getByText("2 is borrowed from natural minor, outside pentatonic minor.")).toBeTruthy();
+  });
+
+  it("stars the assignment and shares its link, falling back to a copyable field", async () => {
+    bridge = createFakeBridge({ assignment: cMajor });
+    render(<CoachApp bridge={bridge} summaryContainer={null} />);
+
+    const star = screen.getByRole("button", { name: "☆ Star" });
+    expect(star.getAttribute("aria-pressed")).toBe("false");
+    await click(star);
+    expect(bridge.library.toggleStarCurrent).toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "★ Starred" }).getAttribute("aria-pressed")).toBe("true");
+
+    const writeText = vi.fn(async () => {});
+    vi.stubGlobal("navigator", { ...navigator, share: undefined, clipboard: { writeText } });
+    await click(screen.getByRole("button", { name: "Share link" }));
+    expect(writeText).toHaveBeenCalledWith("https://example.test/app/#v=1&key=C&mode=major");
+    expect(screen.getByRole("status").textContent).toBe("Link copied.");
+
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      share: undefined,
+      clipboard: { writeText: vi.fn(async () => Promise.reject(new Error("denied"))) },
+    });
+    await click(screen.getByRole("button", { name: "Share link" }));
+    expect(screen.getByLabelText("Copy this link:").value).toBe(
+      "https://example.test/app/#v=1&key=C&mode=major",
+    );
+  });
+
+  it("uses the share sheet where the device has one", async () => {
+    bridge = createFakeBridge({ assignment: cMajor });
+    render(<CoachApp bridge={bridge} summaryContainer={null} />);
+    const share = vi.fn(async () => {});
+    vi.stubGlobal("navigator", { ...navigator, share });
+    await click(screen.getByRole("button", { name: "Share link" }));
+    expect(share).toHaveBeenCalledWith({
+      title: "C major · Pop 4 · Pop Hook - 1 3 5 1",
+      url: "https://example.test/app/#v=1&key=C&mode=major",
+    });
+  });
+
+  it("reopens and removes starred assignments, but not in the middle of a session", async () => {
+    vi.useFakeTimers();
+    bridge = createFakeBridge({
+      assignment: cMajor,
+      library: createFakeLibrary({ starred: [STARRED_ENTRY] }),
+    });
+    render(<CoachApp bridge={bridge} summaryContainer={null} />);
+
+    const list = screen.getByRole("list", { name: "Starred assignments" });
+    expect(within(list).getByText(STARRED_ENTRY.title)).toBeTruthy();
+    const open = within(list).getByRole("button", { name: `Open ${STARRED_ENTRY.title}` });
+    await click(open);
+    expect(bridge.library.open).toHaveBeenCalledWith(STARRED_ENTRY.fragment);
+
+    await click(screen.getByRole("button", { name: "Start 5 minutes" }));
+    expect(open.disabled).toBe(true);
+    expect(screen.getByText(/Finish or end the session/)).toBeTruthy();
+    await click(screen.getByRole("button", { name: "End session" }));
+    expect(open.disabled).toBe(false);
+
+    await click(within(list).getByRole("button", { name: `Remove ${STARRED_ENTRY.title} from starred` }));
+    expect(bridge.library.unstar).toHaveBeenCalledWith(STARRED_ENTRY.fragment);
+    expect(screen.queryByRole("list", { name: "Starred assignments" })).toBeNull();
+  });
+
+  it("remembers degrees or letters, and the session length", async () => {
+    const library = createFakeLibrary({ preferences: { labelMode: "letters", sessionLength: 600 } });
+    bridge = createFakeBridge({ assignment: cMajor, library });
+    render(<CoachApp bridge={bridge} summaryContainer={null} />);
+
+    expect(screen.getByRole("button", { name: "Letters" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Start 10 minutes" })).toBeTruthy();
+
+    await click(screen.getByRole("button", { name: "Degrees" }));
+    expect(library.setPreference).toHaveBeenCalledWith("labelMode", "degrees");
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("Session length"), { target: { value: "120" } });
+    });
+    expect(library.setPreference).toHaveBeenCalledWith("sessionLength", 120);
   });
 
   it("says so when there is no motif, and cannot play one", async () => {

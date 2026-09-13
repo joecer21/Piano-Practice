@@ -6,6 +6,7 @@ import { EMPTY_HELD_NOTES, playedNotes, reduceHeldNotes } from "../input/held-no
 import type { CoachBridge } from "./bridge.js";
 import { applyKeyboardOverlay, clearKeyboardOverlay } from "./keyboard-overlay.js";
 import type { LabelMode } from "./keyboard-overlay.js";
+import { LibraryControls } from "./LibraryControls.js";
 import { MidiControl } from "./MidiControl.js";
 import { applyPlayedKeys } from "./played-keys.js";
 import type { OffKeyboard } from "./played-keys.js";
@@ -55,14 +56,32 @@ export function CoachApp({ bridge, summaryContainer, inputContainer = null }: Co
 
   const [view, setView] = useState<BreakdownView>("whole");
   const [controls, setControls] = useState<PracticeControls>(DEFAULT_PRACTICE_CONTROLS);
-  const [labelMode, setLabelMode] = useState<LabelMode>("degrees");
+  const [labelMode, setLabelModeState] = useState<LabelMode>(() => bridge.library.preferences().labelMode);
   const [playingRequest, setPlayingRequest] = useState<PlayRequest | null>(null);
   const [countInBeat, setCountInBeat] = useState<number | null>(null);
   const [playheadBar, setPlayheadBar] = useState(0);
   const [activeMotifIndex, setActiveMotifIndex] = useState(-1);
   const [offKeyboard, setOffKeyboard] = useState<OffKeyboard>({ below: 0, above: 0 });
-  const [sessionLength, setSessionLength] = useState<SessionLength>(DEFAULT_SESSION_LENGTH);
+  const [sessionLength, setSessionLengthState] = useState<SessionLength>(
+    () => bridge.library.preferences().sessionLength ?? DEFAULT_SESSION_LENGTH,
+  );
   const [session, dispatch] = useReducer(sessionReducer, IDLE_SESSION);
+
+  // Degrees or letters, and the session length, are remembered between visits.
+  const setLabelMode = useCallback(
+    (mode: LabelMode) => {
+      setLabelModeState(mode);
+      bridge.library.setPreference("labelMode", mode);
+    },
+    [bridge],
+  );
+  const setSessionLength = useCallback(
+    (length: SessionLength) => {
+      setSessionLengthState(length);
+      bridge.library.setPreference("sessionLength", length);
+    },
+    [bridge],
+  );
 
   const sessionRef = useRef<PlaybackSession | null>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
@@ -410,6 +429,18 @@ export function CoachApp({ bridge, summaryContainer, inputContainer = null }: Co
     />
   );
 
+  // Star, share and reopen sit with the other assignment actions, below the
+  // keyboard, so they never add height to the sticky header on a phone.
+  const libraryControls = score ? (
+    <LibraryControls
+      library={bridge.library}
+      canOpen={session.status === "idle" || session.status === "complete"}
+      onOpened={() => {
+        if (session.status === "complete") dispatch({ type: "end" });
+      }}
+    />
+  ) : null;
+
   return (
     <>
       {summaryContainer ? createPortal(header, summaryContainer) : header}
@@ -441,6 +472,7 @@ export function CoachApp({ bridge, summaryContainer, inputContainer = null }: Co
         onTogglePlayback={togglePlayback}
         onStepChord={stepChordBy}
         onChangeAssignment={bridge.openAssignmentDrawer}
+        assignmentActions={libraryControls}
       />
     </>
   );

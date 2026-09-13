@@ -1,4 +1,4 @@
-import type { Ref } from "react";
+import type { ReactNode, Ref } from "react";
 import { describeChordFunction, describeMotifParts } from "../domain/describe.js";
 import type { Score } from "../domain/score.js";
 import type { LabelMode } from "./keyboard-overlay.js";
@@ -25,6 +25,8 @@ type PracticePanelProps = {
   onTogglePlayback: () => void;
   onStepChord: (direction: 1 | -1) => void;
   onChangeAssignment: () => void;
+  /** Star, share and reopen, shown with the other assignment actions. */
+  assignmentActions?: ReactNode;
 };
 
 const HAND_OPTIONS: ReadonlyArray<{ lens: Lens; label: string }> = [
@@ -127,6 +129,8 @@ export function PracticePanel(props: PracticePanelProps) {
           playheadRef={playheadRef}
         />
       ) : null}
+
+      {props.assignmentActions}
 
       <button type="button" className="coach-link coach-change" onClick={props.onChangeAssignment}>
         Change the assignment

@@ -42,6 +42,31 @@ test("a reload comes back to the last assignment and tempo", async ({ page }) =>
   await expect(page.locator("#tempo-slider")).toHaveValue("112");
 });
 
+test("a starred assignment survives a reload and reopens from the list", async ({ page }) => {
+  await page.goto(`/#${MINOR_BLUES}`);
+  const sentence = page.getByTestId("coach-sentence");
+  await expect(sentence).toContainText(/^A minor blues\./);
+  const starredSentence = await sentence.textContent();
+
+  await page.getByRole("button", { name: "☆ Star" }).click();
+  await expect(page.getByRole("button", { name: "★ Starred" })).toHaveAttribute("aria-pressed", "true");
+
+  // Move on to something else, then come back tomorrow.
+  await page.locator("#legacy-drawer summary").click();
+  await page.locator("#assignment-reroll").click();
+  await expect(sentence).not.toHaveText(starredSentence);
+  await expect(page.getByRole("button", { name: "☆ Star" })).toBeVisible();
+  await page.goto("/");
+
+  await page.getByText("Starred (1)").click();
+  const list = page.getByRole("list", { name: "Starred assignments" });
+  await expect(list).toContainText("A minor blues · 12-Bar Minor Blues · Blues Riff - minor blues ♭5");
+  await list.getByRole("button", { name: /^Open A minor blues/ }).click();
+  await expect(sentence).toHaveText(starredSentence);
+  await expect(page.getByRole("button", { name: "★ Starred" })).toBeVisible();
+  expect(new URL(page.url()).hash).toBe(`#${MINOR_BLUES}`);
+});
+
 test("a broken or unsafe link is explained, and the app still opens", async ({ page }) => {
   const pageErrors = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));

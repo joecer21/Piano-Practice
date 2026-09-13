@@ -1,3 +1,4 @@
+import type { Preferences, StarredAssignment } from "../application/library.js";
 import type { AudioEngine } from "../audio/playback-engine.js";
 import type { Score } from "../domain/score.js";
 import type { MidiInput } from "../input/midi.js";
@@ -39,4 +40,28 @@ export type CoachBridge = {
   setMidiPlayThrough(enabled: boolean): Promise<void>;
   /** Same progression, groove, motif and mode in a new key. False if it could not be built. */
   rerollIntoNewKey(): boolean;
+  /** Starred assignments, share links and practice preferences, kept in this browser. */
+  library: CoachLibrary;
+};
+
+export type CoachLibrarySnapshot = {
+  starred: readonly StarredAssignment[];
+  /** Whether the assignment on screen is starred. */
+  currentStarred: boolean;
+};
+
+export type CoachLibrary = {
+  /** Must return the same object until the starred list or the current assignment changes. */
+  getSnapshot(): CoachLibrarySnapshot;
+  subscribe(listener: () => void): () => void;
+  /** The address that reopens the assignment on screen, or null before there is one. */
+  currentShareUrl(): string | null;
+  /** A short name for the assignment on screen, for sharing. */
+  currentTitle(): string | null;
+  toggleStarCurrent(): void;
+  /** Opens through learner-facing generation. False if it could not be opened. */
+  open(fragment: string): boolean;
+  unstar(fragment: string): void;
+  preferences(): Preferences;
+  setPreference<K extends keyof Preferences>(name: K, value: Preferences[K]): void;
 };
