@@ -1,8 +1,13 @@
 import { degreeForInterval } from "./degree.js";
-import type { DegreeToken, NoteRole, PartId, Score, ScoreBar, ScoreEvent } from "./score.js";
+import { classifyPitchClass } from "./score.js";
+import type { DegreeToken, NoteRole, PartId, ScaleMembership, Score, ScoreBar, ScoreEvent } from "./score.js";
 
 export type BeatRange = readonly [startBeat: number, endBeat: number];
-export type PitchClassification = { degree: DegreeToken | null; role: NoteRole };
+export type PitchClassification = {
+  degree: DegreeToken | null;
+  role: NoteRole;
+  scaleMembership: ScaleMembership;
+};
 
 /** Half-open beat range: the end beat belongs to the following bar. */
 export function barBeatRange(score: Score, barIndex: number): BeatRange {
@@ -46,14 +51,9 @@ export function classifyPitch(score: Score, midi: number, beat: number): PitchCl
   if (!Number.isInteger(midi)) throw new TypeError("midi pitch must be an integer");
   const pitchClass = normalizePitchClass(midi);
   const bar = activeChordAt(score, beat);
-  let role: NoteRole = "chromatic";
-  if (bar && pitchClass === bar.rootPitchClass) role = "root";
-  else if (bar?.chordPitchClasses.includes(pitchClass)) role = "chordTone";
-  else if (score.meta.scalePitchClasses.includes(pitchClass)) role = "scaleTone";
-
   return {
     degree: degreeForPitchClass(score, pitchClass),
-    role,
+    ...classifyPitchClass(pitchClass, bar, score.meta),
   };
 }
 

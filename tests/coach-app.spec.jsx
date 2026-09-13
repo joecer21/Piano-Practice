@@ -359,6 +359,33 @@ describe("CoachApp", () => {
     expect(bridge.audioEngine.requests.at(-1)).toMatchObject({ parts: ["rh"], rate: 0.5, loop: true });
   });
 
+  it("note by note marks a parent-scale passing tone rather than hiding or replacing it", async () => {
+    bridge = createFakeBridge({
+      assignment: assignmentFor({
+        key: "A",
+        mode: "pentatonicMinor",
+        motifId: "harmonic-rise",
+        seed: "passing",
+      }),
+    });
+    render(<CoachApp bridge={bridge} summaryContainer={null} />);
+    await click(screen.getByRole("button", { name: "Note by note" }));
+
+    const chips = [...screen.getByRole("list", { name: /Motif degrees/ }).querySelectorAll("li")];
+    expect(chips.map((li) => li.textContent)).toEqual(["1", "2 (passing tone)", "♭3", "♭7", "1", "♭7"]);
+    expect(chips.map((li) => li.dataset.membership)).toEqual([
+      "collection",
+      "parentScale",
+      "collection",
+      "collection",
+      "collection",
+      "collection",
+    ]);
+    expect(
+      screen.getByText("2 is a passing tone from the parent scale, outside pentatonic minor."),
+    ).toBeTruthy();
+  });
+
   it("says so when there is no motif, and cannot play one", async () => {
     bridge = createFakeBridge({ assignment: assignmentFor({ motifId: "none", seed: "no-motif" }) });
     render(<CoachApp bridge={bridge} summaryContainer={null} />);

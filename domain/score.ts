@@ -1,14 +1,41 @@
-import { NOTE_TO_INDEX, analyzeRomanAgainstMode, noteStringToMidi, parseRomanSymbol } from "../theory.js";
+import {
+  DEFAULT_DEGREE_INTERPRETATION,
+  NOTE_TO_INDEX,
+  analyzeRomanAgainstMode,
+  degreeTokenSemitones,
+  noteStringToMidi,
+  parentScaleIntervals,
+  parseRomanSymbol,
+} from "../theory.js";
 import { degreeForInterval } from "./degree.js";
 
-export const SCORE_SCHEMA_VERSION = 1 as const;
+/**
+ * v2: motif numbers are parent-scale degrees, so a note can sit in the mode's
+ * seven-note parent scale without being in the selected pentatonic or blues
+ * collection. v1 called such notes "chromatic"; v2 adds the parentScaleTone role,
+ * each note's scaleMembership, and meta.parentScalePitchClasses. A v1 consumer
+ * switching on role would silently mishandle the new value, hence the bump.
+ */
+export const SCORE_SCHEMA_VERSION = 2 as const;
 export const SCORE_BEATS_PER_BAR = 4 as const;
 
 export type PartId = "lh" | "rh";
 export type DegreeNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 export type DegreeAlteration = -2 | -1 | 0 | 1 | 2;
 export type Dynamic = "ghost" | "soft" | "normal" | "accent";
-export type NoteRole = "root" | "chordTone" | "scaleTone" | "chromatic";
+/**
+ * What a note does over the bar's chord, most important first: the chord's root, a
+ * chord tone, a note of the selected collection, a passing tone from the mode's
+ * parent scale that the collection leaves out, or a note outside both.
+ */
+export type NoteRole = "root" | "chordTone" | "scaleTone" | "parentScaleTone" | "chromatic";
+/**
+ * Where a pitch sits relative to the key, regardless of the chord: in the selected
+ * collection (for seven-note modes, the scale itself), only in its seven-note parent
+ * scale, or in neither. A chord tone can be any of the three.
+ */
+export type ScaleMembership = "collection" | "parentScale" | "chromatic";
+export type DegreeInterpretation = "parent-degree" | "scale-step";
 
 /**
  * A scale degree named against the major scale (see domain/degree.ts): number
@@ -42,6 +69,7 @@ export type NoteEvent = ScoreEventBase & {
   midi: number;
   degree: DegreeToken | null;
   role: NoteRole;
+  scaleMembership: ScaleMembership;
   dynamic: Dynamic;
   expression: NoteExpression;
 };
@@ -81,7 +109,10 @@ export type Score = {
     key: string;
     mode: string;
     rootPitchClass: number;
+    /** The selected collection: five pitch classes for pentatonic, six for blues. */
     scalePitchClasses: number[];
+    /** The seven-note scale the collection is drawn from (the scale itself for seven-note modes). */
+    parentScalePitchClasses: number[];
     rhCycleBeats: number | null;
     totalBeats: number;
   };
@@ -117,7 +148,7 @@ export type ScoreAssignment = {
   scale: { root?: string; key?: string; mode?: string; intervals: number[] };
   progression: { bars: LegacyBar[]; roman: string[]; length: number };
   leftHand: { bars: Array<{ steps: LegacyStep[] }> };
-  motif: { steps: LegacyStep[]; totalBeats: number } | null;
+  motif: { steps: LegacyStep[]; totalBeats: number; degreeInterpretation?: DegreeInterpretation } | null;
 };
 
 export type ScoreValidationResult = { valid: boolean; errors: string[] };
@@ -143,6 +174,7 @@ export function buildScore(assignment: ScoreAssignment): Score {
       mode: assignment.inputs.mode,
       rootPitchClass: scaleContext.rootPitchClass,
       scalePitchClasses: [...scaleContext.scalePitchClasses],
+      parentScalePitchClasses: [...scaleContext.parentScalePitchClasses],
       rhCycleBeats: assignment.motif?.totalBeats ?? null,
       totalBeats,
     },
@@ -188,6 +220,13 @@ export function validateScore(value: unknown): ScoreValidationResult {
       !meta.scalePitchClasses.every(isPitchClass)
     ) {
       errors.push("meta.scalePitchClasses must contain one to seven pitch classes");
+    }
+    if (
+      !Array.isArray(meta.parentScalePitchClasses) ||
+      meta.parentScalePitchClasses.length !== 7 ||
+      !meta.parentScalePitchClasses.every(isPitchClass)
+    ) {
+      errors.push("meta.parentScalePitchClasses must contain seven pitch classes");
     }
   }
 
@@ -271,8 +310,10 @@ function buildProvenance(
 }
 
 type ScaleContext = {
+  mode: string;
   rootPitchClass: number;
   scalePitchClasses: number[];
+  parentScalePitchClasses: number[];
   intervals: number[];
 };
 
@@ -280,11 +321,43 @@ function buildScaleContext(assignment: ScoreAssignment): ScaleContext {
   const rootName = assignment.scale.root ?? assignment.scale.key ?? assignment.inputs.key;
   const rootPitchClass = pitchClassForName(rootName) ?? 0;
   const intervals = [...assignment.scale.intervals];
+  const mode = assignment.inputs.mode;
   return {
+    mode,
     rootPitchClass,
     intervals,
     scalePitchClasses: intervals.map((interval) => pitchClass(rootPitchClass + interval)),
+    parentScalePitchClasses: (parentScaleIntervals(mode) as number[]).map((interval) =>
+      pitchClass(rootPitchClass + interval),
+    ),
   };
+}
+
+/**
+ * Role and membership of a pitch class over a bar. Shared with score-query so the
+ * keyboard classifies a key exactly as the Score classifies a note.
+ */
+export function classifyPitchClass(
+  pc: number,
+  bar: Pick<ScoreBar, "rootPitchClass" | "chordPitchClasses"> | null | undefined,
+  meta: Pick<Score["meta"], "scalePitchClasses" | "parentScalePitchClasses">,
+): { role: NoteRole; scaleMembership: ScaleMembership } {
+  const scaleMembership: ScaleMembership = meta.scalePitchClasses.includes(pc)
+    ? "collection"
+    : meta.parentScalePitchClasses.includes(pc)
+      ? "parentScale"
+      : "chromatic";
+  const role: NoteRole =
+    bar && pc === bar.rootPitchClass
+      ? "root"
+      : bar?.chordPitchClasses.includes(pc)
+        ? "chordTone"
+        : scaleMembership === "collection"
+          ? "scaleTone"
+          : scaleMembership === "parentScale"
+            ? "parentScaleTone"
+            : "chromatic";
+  return { role, scaleMembership };
 }
 
 function buildLeftHandEvents(
@@ -326,6 +399,7 @@ function buildRightHandEvents(
 ): ScoreEvent[] {
   if (!motif?.steps.length || !isFiniteNumber(motif.totalBeats) || motif.totalBeats <= 0) return [];
   const events: ScoreEvent[] = [];
+  const interpretation = motif.degreeInterpretation ?? DEFAULT_DEGREE_INTERPRETATION;
 
   for (let offset = 0, repeatIndex = 0; offset < totalBeats; offset += motif.totalBeats, repeatIndex += 1) {
     motif.steps.forEach((step, stepIndex) => {
@@ -353,10 +427,10 @@ function buildRightHandEvents(
           step: { ...step, time: startBeat },
           part: "rh",
           barIndex,
-          // The motif's own degree numbers count positions within the mode, so
-          // they only tell us which octave the note sits in. The degree itself
-          // is named from the pitch.
-          degree: degreeForPitch(midi, scale, motifOctaveOffset(step.degree, scale.intervals.length)),
+          // The degree is named from the pitch. The pattern token only says which
+          // octave above home the note belongs to (8 and 9 are extensions), read
+          // the way the engine read it to choose the pitch.
+          degree: degreeForPitch(midi, scale, motifOctaveOffset(step.degree, scale.mode, interpretation)),
           bar: bars[barIndex],
           scale,
         }),
@@ -377,6 +451,7 @@ function createNoteEvent(options: {
   scale: ScaleContext;
 }): NoteEvent {
   const expression = expressionForStep(options.step);
+  const { role, scaleMembership } = classifyPitchClass(pitchClass(options.midi), options.bar, options.scale);
   return {
     kind: "note",
     id: options.id,
@@ -386,7 +461,8 @@ function createNoteEvent(options: {
     part: options.part,
     barIndex: options.barIndex,
     degree: options.degree,
-    role: roleForPitch(options.midi, options.bar, options.scale),
+    role,
+    scaleMembership,
     dynamic: dynamicForExpression(expression),
     expression,
   };
@@ -407,26 +483,21 @@ function dynamicForExpression(expression: NoteExpression): Dynamic {
   return "normal";
 }
 
-function roleForPitch(midi: number, bar: ScoreBar | undefined, scale: ScaleContext): NoteRole {
-  const pc = pitchClass(midi);
-  if (bar && pc === bar.rootPitchClass) return "root";
-  if (bar?.chordPitchClasses.includes(pc)) return "chordTone";
-  if (scale.scalePitchClasses.includes(pc)) return "scaleTone";
-  return "chromatic";
-}
-
 /**
- * Octave position encoded by an engine motif degree such as 8 or 10, counted in
- * the mode's own scale steps. Accidentals do not change the octave.
+ * Octaves above home of the pitch an engine motif token asks for ("8" and "9" sit
+ * one octave up). Taken from the token's semitones, so it is the same whether the
+ * pattern counts parent-scale degrees or collection steps: a scale-step "6" in
+ * minor pentatonic is the upper tonic, octave 1, not a sixth.
  */
-function motifOctaveOffset(value: number | string | undefined, scaleSize: number): number {
+function motifOctaveOffset(
+  value: number | string | undefined,
+  mode: string,
+  interpretation: DegreeInterpretation,
+): number {
   if (value == null) return 0;
   const match = /^[b♭#♯]{0,2}(\d+)$/.exec(String(value).trim());
-  if (!match) return 0;
-  const absoluteDegree = Number(match[1]);
-  if (!Number.isInteger(absoluteDegree) || absoluteDegree < 1) return 0;
-  const size = Math.min(7, Math.max(1, Math.trunc(scaleSize)));
-  return Math.floor((absoluteDegree - 1) / size);
+  if (!match || Number(match[1]) < 1) return 0;
+  return Math.floor((degreeTokenSemitones(value, mode, interpretation) as number) / 12);
 }
 
 function degreeForPitch(midi: number, scale: ScaleContext, octaveOffset = 0): DegreeToken {
@@ -548,6 +619,9 @@ function validateEvents(
       if (!isMidi(event.midi)) errors.push(`${String(id)} has an invalid midi pitch`);
       if (!isDegreeTokenOrNull(event.degree)) errors.push(`${String(id)} has an invalid degree`);
       if (!isNoteRole(event.role)) errors.push(`${String(id)} has an invalid note role`);
+      if (!isScaleMembership(event.scaleMembership)) {
+        errors.push(`${String(id)} has an invalid scale membership`);
+      }
       if (!isDynamic(event.dynamic)) errors.push(`${String(id)} has an invalid dynamic`);
       if (!isExpression(event.expression)) errors.push(`${String(id)} requires expression metadata`);
     }
@@ -617,7 +691,17 @@ function isProvenance(value: unknown): value is ChordProvenance {
 }
 
 function isNoteRole(value: unknown): value is NoteRole {
-  return value === "root" || value === "chordTone" || value === "scaleTone" || value === "chromatic";
+  return (
+    value === "root" ||
+    value === "chordTone" ||
+    value === "scaleTone" ||
+    value === "parentScaleTone" ||
+    value === "chromatic"
+  );
+}
+
+function isScaleMembership(value: unknown): value is ScaleMembership {
+  return value === "collection" || value === "parentScale" || value === "chromatic";
 }
 
 function isDynamic(value: unknown): value is Dynamic {

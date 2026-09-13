@@ -9,6 +9,7 @@ import {
   midiToNote,
   getChordTagForSymbol,
 } from "./theory.js";
+import { formatDegreeToken } from "./domain/describe.ts";
 
 const MIX_PARTS = ["left", "lead"];
 
@@ -568,7 +569,7 @@ export function renderMotif(state, dom) {
   }
 
   dom.motifRhythm.textContent = `Style: ${motif.description} | Rhythm: ${motif.rhythmLabels.join(", ")}`;
-  dom.motifPitches.textContent = `Pitches: ${motif.degreeLabels.join(" - ")} -> ${motif.noteLabels.join(" - ")}`;
+  dom.motifPitches.textContent = `Pitches: ${motifDegreeLabels(state).join(" - ")} -> ${motif.noteLabels.join(" - ")}`;
   drawMotifContour(motif, dom);
 }
 
@@ -586,7 +587,8 @@ export function drawMotifContour(motif, dom) {
   const verticalPadding = 12;
   const totalBeats =
     motif.totalBeats || noteSteps[noteSteps.length - 1].time + (noteSteps[noteSteps.length - 1].beats || 0);
-  const degreeValues = noteSteps.map((step) => getDegreeValue(step.degree));
+  // Height is the pitch that sounds; pattern numbers mean different pitches per mode.
+  const degreeValues = noteSteps.map((step) => noteStringToMidi(step.note) ?? 0);
   const maxDegree = Math.max(...degreeValues);
   const minDegree = Math.min(...degreeValues);
   const range = maxDegree === minDegree ? 1 : maxDegree - minDegree;
@@ -622,12 +624,18 @@ export function drawMotifContour(motif, dom) {
   updateMotifPlayhead(dom, null);
 }
 
-function getDegreeValue(degree) {
-  if (typeof degree === "number" && Number.isFinite(degree)) {
-    return degree;
-  }
-  const parsed = parseInt(String(degree ?? "1").replace(/[^0-9-]/g, ""), 10);
-  return Number.isFinite(parsed) ? parsed : 1;
+/**
+ * The motif's degrees as they sound, read from the Score so this panel, Note by note
+ * and the keyboard all say the same thing. Pattern tokens are not labels: a raw "3"
+ * sounds as ♭3 in minor.
+ */
+function motifDegreeLabels(state) {
+  const score = state.derived.score;
+  if (!score) return [];
+  const cycleEnd = score.meta.rhCycleBeats ?? score.meta.totalBeats;
+  return score.parts.rh
+    .filter((event) => event.kind === "note" && event.startBeat < cycleEnd)
+    .map((event) => (event.degree ? formatDegreeToken(event.degree) : "?"));
 }
 
 export function renderPianoRoll(state, dom) {

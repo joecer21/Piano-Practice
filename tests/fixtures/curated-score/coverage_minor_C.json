@@ -14,6 +14,15 @@
       8,
       10
     ],
+    "parentScalePitchClasses": [
+      0,
+      2,
+      3,
+      5,
+      7,
+      8,
+      10
+    ],
     "rhCycleBeats": 8,
     "totalBeats": 32
   },
@@ -237,6 +246,7 @@
         "durationBeats": 0.5,
         "midi": 48,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -258,6 +268,7 @@
         "durationBeats": 0.5,
         "midi": 60,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -279,6 +290,7 @@
         "durationBeats": 0.5,
         "midi": 48,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -300,6 +312,7 @@
         "durationBeats": 0.5,
         "midi": 60,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -321,6 +334,7 @@
         "durationBeats": 0.5,
         "midi": 48,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -342,6 +356,7 @@
         "durationBeats": 0.5,
         "midi": 60,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -363,6 +378,7 @@
         "durationBeats": 0.5,
         "midi": 48,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -384,6 +400,7 @@
         "durationBeats": 0.5,
         "midi": 60,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -405,6 +422,7 @@
         "durationBeats": 0.5,
         "midi": 43,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -426,6 +444,7 @@
         "durationBeats": 0.5,
         "midi": 55,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -447,6 +466,7 @@
         "durationBeats": 0.5,
         "midi": 43,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -468,6 +488,7 @@
         "durationBeats": 0.5,
         "midi": 55,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -489,6 +510,7 @@
         "durationBeats": 0.5,
         "midi": 43,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -510,6 +532,7 @@
         "durationBeats": 0.5,
         "midi": 55,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -531,6 +554,7 @@
         "durationBeats": 0.5,
         "midi": 43,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -552,6 +576,7 @@
         "durationBeats": 0.5,
         "midi": 55,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -573,6 +598,7 @@
         "durationBeats": 0.5,
         "midi": 45,
         "role": "chromatic",
+        "scaleMembership": "chromatic",
         "degree": {
           "number": 6,
           "alteration": 0,
@@ -594,6 +620,7 @@
         "durationBeats": 0.5,
         "midi": 57,
         "role": "chromatic",
+        "scaleMembership": "chromatic",
         "degree": {
           "number": 6,
           "alteration": 0,
@@ -615,6 +642,7 @@
         "durationBeats": 0.5,
         "midi": 45,
         "role": "chromatic",
+        "scaleMembership": "chromatic",
         "degree": {
           "number": 6,
           "alteration": 0,
@@ -636,6 +664,7 @@
         "durationBeats": 0.5,
         "midi": 57,
         "role": "chromatic",
+        "scaleMembership": "chromatic",
         "degree": {
           "number": 6,
           "alteration": 0,
@@ -657,6 +686,7 @@
         "durationBeats": 0.5,
         "midi": 45,
         "role": "chromatic",
+        "scaleMembership": "chromatic",
         "degree": {
           "number": 6,
           "alteration": 0,
@@ -678,6 +708,7 @@
         "durationBeats": 0.5,
         "midi": 57,
         "role": "chromatic",
+        "scaleMembership": "chromatic",
         "degree": {
           "number": 6,
           "alteration": 0,
@@ -699,6 +730,7 @@
         "durationBeats": 0.5,
         "midi": 45,
         "role": "chromatic",
+        "scaleMembership": "chromatic",
         "degree": {
           "number": 6,
           "alteration": 0,
@@ -720,6 +752,7 @@
         "durationBeats": 0.5,
         "midi": 57,
         "role": "chromatic",
+        "scaleMembership": "chromatic",
         "degree": {
           "number": 6,
           "alteration": 0,
@@ -741,6 +774,7 @@
         "durationBeats": 0.5,
         "midi": 41,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 4,
           "alteration": 0,
@@ -762,6 +796,7 @@
         "durationBeats": 0.5,
         "midi": 53,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 4,
           "alteration": 0,
@@ -783,6 +818,7 @@
         "durationBeats": 0.5,
         "midi": 41,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 4,
           "alteration": 0,
@@ -804,6 +840,7 @@
         "durationBeats": 0.5,
         "midi": 53,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 4,
           "alteration": 0,
@@ -825,6 +862,7 @@
         "durationBeats": 0.5,
         "midi": 41,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 4,
           "alteration": 0,
@@ -846,6 +884,7 @@
         "durationBeats": 0.5,
         "midi": 53,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 4,
           "alteration": 0,
@@ -867,6 +906,7 @@
         "durationBeats": 0.5,
         "midi": 41,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 4,
           "alteration": 0,
@@ -888,6 +928,7 @@
         "durationBeats": 0.5,
         "midi": 53,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 4,
           "alteration": 0,
@@ -909,6 +950,7 @@
         "durationBeats": 0.5,
         "midi": 48,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -930,6 +972,7 @@
         "durationBeats": 0.5,
         "midi": 60,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -951,6 +994,7 @@
         "durationBeats": 0.5,
         "midi": 48,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -972,6 +1016,7 @@
         "durationBeats": 0.5,
         "midi": 60,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -993,6 +1038,7 @@
         "durationBeats": 0.5,
         "midi": 48,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -1014,6 +1060,7 @@
         "durationBeats": 0.5,
         "midi": 60,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -1035,6 +1082,7 @@
         "durationBeats": 0.5,
         "midi": 48,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -1056,6 +1104,7 @@
         "durationBeats": 0.5,
         "midi": 60,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -1077,6 +1126,7 @@
         "durationBeats": 0.5,
         "midi": 43,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -1098,6 +1148,7 @@
         "durationBeats": 0.5,
         "midi": 55,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -1119,6 +1170,7 @@
         "durationBeats": 0.5,
         "midi": 43,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -1140,6 +1192,7 @@
         "durationBeats": 0.5,
         "midi": 55,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -1161,6 +1214,7 @@
         "durationBeats": 0.5,
         "midi": 43,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -1182,6 +1236,7 @@
         "durationBeats": 0.5,
         "midi": 55,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -1203,6 +1258,7 @@
         "durationBeats": 0.5,
         "midi": 43,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -1224,6 +1280,7 @@
         "durationBeats": 0.5,
         "midi": 55,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -1245,6 +1302,7 @@
         "durationBeats": 0.5,
         "midi": 45,
         "role": "chromatic",
+        "scaleMembership": "chromatic",
         "degree": {
           "number": 6,
           "alteration": 0,
@@ -1266,6 +1324,7 @@
         "durationBeats": 0.5,
         "midi": 57,
         "role": "chromatic",
+        "scaleMembership": "chromatic",
         "degree": {
           "number": 6,
           "alteration": 0,
@@ -1287,6 +1346,7 @@
         "durationBeats": 0.5,
         "midi": 45,
         "role": "chromatic",
+        "scaleMembership": "chromatic",
         "degree": {
           "number": 6,
           "alteration": 0,
@@ -1308,6 +1368,7 @@
         "durationBeats": 0.5,
         "midi": 57,
         "role": "chromatic",
+        "scaleMembership": "chromatic",
         "degree": {
           "number": 6,
           "alteration": 0,
@@ -1329,6 +1390,7 @@
         "durationBeats": 0.5,
         "midi": 45,
         "role": "chromatic",
+        "scaleMembership": "chromatic",
         "degree": {
           "number": 6,
           "alteration": 0,
@@ -1350,6 +1412,7 @@
         "durationBeats": 0.5,
         "midi": 57,
         "role": "chromatic",
+        "scaleMembership": "chromatic",
         "degree": {
           "number": 6,
           "alteration": 0,
@@ -1371,6 +1434,7 @@
         "durationBeats": 0.5,
         "midi": 45,
         "role": "chromatic",
+        "scaleMembership": "chromatic",
         "degree": {
           "number": 6,
           "alteration": 0,
@@ -1392,6 +1456,7 @@
         "durationBeats": 0.5,
         "midi": 57,
         "role": "chromatic",
+        "scaleMembership": "chromatic",
         "degree": {
           "number": 6,
           "alteration": 0,
@@ -1413,6 +1478,7 @@
         "durationBeats": 0.5,
         "midi": 41,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 4,
           "alteration": 0,
@@ -1434,6 +1500,7 @@
         "durationBeats": 0.5,
         "midi": 53,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 4,
           "alteration": 0,
@@ -1455,6 +1522,7 @@
         "durationBeats": 0.5,
         "midi": 41,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 4,
           "alteration": 0,
@@ -1476,6 +1544,7 @@
         "durationBeats": 0.5,
         "midi": 53,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 4,
           "alteration": 0,
@@ -1497,6 +1566,7 @@
         "durationBeats": 0.5,
         "midi": 41,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 4,
           "alteration": 0,
@@ -1518,6 +1588,7 @@
         "durationBeats": 0.5,
         "midi": 53,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 4,
           "alteration": 0,
@@ -1539,6 +1610,7 @@
         "durationBeats": 0.5,
         "midi": 41,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 4,
           "alteration": 0,
@@ -1560,6 +1632,7 @@
         "durationBeats": 0.5,
         "midi": 53,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 4,
           "alteration": 0,
@@ -1583,6 +1656,7 @@
         "durationBeats": 1,
         "midi": 72,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -1604,6 +1678,7 @@
         "durationBeats": 1,
         "midi": 75,
         "role": "chordTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 3,
           "alteration": -1,
@@ -1625,6 +1700,7 @@
         "durationBeats": 1,
         "midi": 79,
         "role": "chordTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -1646,6 +1722,7 @@
         "durationBeats": 1,
         "midi": 72,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -1667,6 +1744,7 @@
         "durationBeats": 1,
         "midi": 72,
         "role": "scaleTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -1688,6 +1766,7 @@
         "durationBeats": 1,
         "midi": 75,
         "role": "scaleTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 3,
           "alteration": -1,
@@ -1709,6 +1788,7 @@
         "durationBeats": 1,
         "midi": 79,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -1730,6 +1810,7 @@
         "durationBeats": 1,
         "midi": 72,
         "role": "scaleTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -1751,6 +1832,7 @@
         "durationBeats": 1,
         "midi": 72,
         "role": "chordTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -1772,6 +1854,7 @@
         "durationBeats": 1,
         "midi": 75,
         "role": "chordTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 3,
           "alteration": -1,
@@ -1793,6 +1876,7 @@
         "durationBeats": 1,
         "midi": 79,
         "role": "scaleTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -1814,6 +1898,7 @@
         "durationBeats": 1,
         "midi": 72,
         "role": "chordTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -1835,6 +1920,7 @@
         "durationBeats": 1,
         "midi": 72,
         "role": "chordTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -1856,6 +1942,7 @@
         "durationBeats": 1,
         "midi": 75,
         "role": "scaleTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 3,
           "alteration": -1,
@@ -1877,6 +1964,7 @@
         "durationBeats": 1,
         "midi": 79,
         "role": "scaleTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -1898,6 +1986,7 @@
         "durationBeats": 1,
         "midi": 72,
         "role": "chordTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -1919,6 +2008,7 @@
         "durationBeats": 1,
         "midi": 72,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -1940,6 +2030,7 @@
         "durationBeats": 1,
         "midi": 75,
         "role": "chordTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 3,
           "alteration": -1,
@@ -1961,6 +2052,7 @@
         "durationBeats": 1,
         "midi": 79,
         "role": "chordTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -1982,6 +2074,7 @@
         "durationBeats": 1,
         "midi": 72,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -2003,6 +2096,7 @@
         "durationBeats": 1,
         "midi": 72,
         "role": "scaleTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -2024,6 +2118,7 @@
         "durationBeats": 1,
         "midi": 75,
         "role": "scaleTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 3,
           "alteration": -1,
@@ -2045,6 +2140,7 @@
         "durationBeats": 1,
         "midi": 79,
         "role": "root",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -2066,6 +2162,7 @@
         "durationBeats": 1,
         "midi": 72,
         "role": "scaleTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -2087,6 +2184,7 @@
         "durationBeats": 1,
         "midi": 72,
         "role": "chordTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -2108,6 +2206,7 @@
         "durationBeats": 1,
         "midi": 75,
         "role": "chordTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 3,
           "alteration": -1,
@@ -2129,6 +2228,7 @@
         "durationBeats": 1,
         "midi": 79,
         "role": "scaleTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -2150,6 +2250,7 @@
         "durationBeats": 1,
         "midi": 72,
         "role": "chordTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -2171,6 +2272,7 @@
         "durationBeats": 1,
         "midi": 72,
         "role": "chordTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,
@@ -2192,6 +2294,7 @@
         "durationBeats": 1,
         "midi": 75,
         "role": "scaleTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 3,
           "alteration": -1,
@@ -2213,6 +2316,7 @@
         "durationBeats": 1,
         "midi": 79,
         "role": "scaleTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 5,
           "alteration": 0,
@@ -2234,6 +2338,7 @@
         "durationBeats": 1,
         "midi": 72,
         "role": "chordTone",
+        "scaleMembership": "collection",
         "degree": {
           "number": 1,
           "alteration": 0,

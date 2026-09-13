@@ -33,6 +33,7 @@ npm test               # Unit and DOM contract specs with Vitest
 npm run test:watch     # Vitest watch mode
 npm run test:browser   # Playwright, against the production bundle
 npm run fingerprint    # Verify generated music and its Score interpretation against frozen baselines
+npm run report:passing-tones  # List motif notes outside a pentatonic/blues collection -> test-results/passing-tones.md
 npm run check          # Everything above, in the order CI runs it
 ```
 
@@ -68,7 +69,7 @@ Sample filenames spell sharps with `s` (`ds3vl.mp3`), because a literal `#` in a
 - `audio/local-samples.js` is the local sample manifest, free of Tone.js so it can be validated directly.
 - `tests/*.spec.js` contains the Vitest contract suite.
 - `tests/browser/` covers the practice flow and pins previously-shipped defects as user-visible behaviour.
-- `tests/support/fingerprint.js` and `scripts/fingerprint.mjs` implement the musical fingerprint; `tests/support/score-fingerprint.js`, `tests/score-fingerprint.spec.js` and `scripts/score-fingerprint.mjs` implement the Score fingerprint.
+- `tests/support/fingerprint.js` and `scripts/fingerprint.mjs` implement the musical fingerprint; `tests/support/score-fingerprint.js`, `tests/score-fingerprint.spec.js` and `scripts/score-fingerprint.mjs` implement the Score fingerprint; `tests/support/passing-tones.js` and `scripts/passing-tone-report.mjs` produce the outside-collection note report.
 
 ## Practising
 
@@ -82,9 +83,20 @@ The keyboard mirrors whatever you play. Mouse, touch, the focused on-screen key 
 
 **MIDI** is progressive enhancement. Nothing is requested until you press "Connect MIDI keyboard", because browsers prompt for permission. Keyboards plugged in later appear automatically; unplugging one mid-note releases its keys; the sustain pedal is honoured. By default MIDI notes are only mirrored, since most MIDI keyboards make their own sound; "Play through the app" also sounds them on the app's piano. Safari does not implement Web MIDI and pages must be served over https, so in those cases the app says so in one line and everything else keeps working. `tests/browser/midi.spec.js` drives a fake MIDIAccess, because real hardware cannot run in CI.
 
+## Motif degrees
+
+Motif patterns are written in degrees, the way a musician would say them, and read against the mode's seven-note parent scale: the scale itself for major and the minors, natural major for pentatonic major and major blues, natural minor for pentatonic minor and minor blues (the same mapping the chord engine uses).
+
+- A plain number keeps the pattern's shape in every mode. `1 3 5 1` is C–E–G–C in C major, C–E♭–G–C in C minor (shown as `1 ♭3 5 1`), and A–C–E–A in A minor pentatonic.
+- An altered token such as `♭3` is an absolute interval above home: a minor third in every mode, never a flat applied to a third that is already minor.
+- A pattern marked `degreeInterpretation: "scale-step"` counts through the selected collection instead. Only genuine scalar runs use it: `scalar-run-8ths` in A minor pentatonic is A–C–D–E–G–A–C–D.
+- A degree the collection leaves out (2 in minor pentatonic) is played from the parent scale, not replaced, and Score marks it as a parent-scale passing tone (`scaleMembership: "parentScale"`, role `parentScaleTone`). `npm run report:passing-tones` lists every such note, flagging any that is long, accented, repeated or on a strong beat, so they can be judged by ear.
+
+Score degrees always name the pitch that sounds, so Note by note, the keyboard, the legacy motif panel and playback agree.
+
 ## Visual channels
 
-The coach gives each musical fact one visual channel, so none can be mistaken for another. Hue means only which hand is sounding. Note role is fill weight: chord tones and the root are solid marks, scale tones are outlined, and notes outside the scale are unmarked. The root carries a heavier ring. Chord provenance (borrowed, secondary) is a text badge. In chord by chord, an ink bar marks each key of the voicing. What you play is a neutral ring on the key, solid while held and a thin double ring while it rings on the pedal, so your own notes are never mistaken for the assignment sounding. Interface controls use neutral ink, so no button can be read as a hand. `tests/browser/coach.spec.js` asserts this against computed styles.
+The coach gives each musical fact one visual channel, so none can be mistaken for another. Hue means only which hand is sounding. Note role is fill weight: chord tones and the root are solid marks, scale tones are outlined, parent-scale passing tones are lighter and dashed, and notes outside the scale are unmarked. The root carries a heavier ring. Chord provenance (borrowed, secondary) is a text badge. In chord by chord, an ink bar marks each key of the voicing. What you play is a neutral ring on the key, solid while held and a thin double ring while it rings on the pedal, so your own notes are never mistaken for the assignment sounding. Interface controls use neutral ink, so no button can be read as a hand. `tests/browser/coach.spec.js` asserts this against computed styles.
 
 ## Fingerprints
 

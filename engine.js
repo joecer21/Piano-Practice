@@ -262,6 +262,7 @@ export function generateMotif({ motifPatternId, styleId: playbackStyleId, phrase
 
   const rhythm = style.rhythm;
   const degreePattern = style.degreePattern;
+  const degreeInterpretation = style.degreeInterpretation;
 
   const motifRootNote = scale.notes[0];
   const motifTarget = phraseSegment?.anchorNote || style.targetRegister || "C5";
@@ -283,9 +284,9 @@ export function generateMotif({ motifPatternId, styleId: playbackStyleId, phrase
 
     if (!rest) {
       const degree = degreePattern[idx % degreePattern.length];
-      const noteName = degreeToNote(degree, scale?.mode, scale);
+      const noteName = degreeToNote(degree, scale?.mode, scale, degreeInterpretation);
       const rootMidi = noteToMidi(motifRootNote, octaveBase);
-      const expectedMidi = rootMidi + degreeTokenSemitones(degree, scale?.mode);
+      const expectedMidi = rootMidi + degreeTokenSemitones(degree, scale?.mode, degreeInterpretation);
       const noteOctave = findClosestOctave(noteName, expectedMidi);
 
       step.note = `${noteName}${noteOctave}`;
@@ -328,9 +329,11 @@ export function generateMotif({ motifPatternId, styleId: playbackStyleId, phrase
     styleId: patternId,
     description: style.description,
     steps: normalizedSteps,
+    // Pattern tokens as written. What they sound as depends on degreeInterpretation,
+    // so display the pitches (Score degrees), not these.
     degrees: noteSteps.map((s) => s.degree),
+    degreeInterpretation,
     rhythmLabels: steps.map((s) => s.label),
-    degreeLabels: noteSteps.map((s) => `deg ${s.degree}`),
     noteLabels: noteSteps.map((s) => s.note.replace(/\d/g, "")),
     totalBeats,
   };
@@ -1598,9 +1601,10 @@ function estimateMotifRangeForAnchors({ motifStyle, key, mode, rhAnchor }) {
   const startOctave = extractOctaveNumber(reference, 5) + octaveAdjust;
   const midis = motifStyle.degreePattern
     .map((degreeToken) => {
-      const noteName = degreeToNote(degreeToken, mode, scale);
+      const interpretation = motifStyle.degreeInterpretation;
+      const noteName = degreeToNote(degreeToken, mode, scale, interpretation);
       if (!noteName) return null;
-      const octaveShift = Math.floor(degreeTokenSemitones(degreeToken, mode) / 12);
+      const octaveShift = Math.floor(degreeTokenSemitones(degreeToken, mode, interpretation) / 12);
       const finalNote = `${noteName}${startOctave + octaveShift}`;
       return noteStringToMidiSafe(finalNote, finalNote);
     })

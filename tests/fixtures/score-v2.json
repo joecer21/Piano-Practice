@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sourceAssignmentId": "assignment-54be35a1",
   "meta": {
     "bars": 1,
@@ -8,6 +8,7 @@
     "mode": "major",
     "rootPitchClass": 0,
     "scalePitchClasses": [0, 2, 4, 5, 7, 9, 11],
+    "parentScalePitchClasses": [0, 2, 4, 5, 7, 9, 11],
     "rhCycleBeats": null,
     "totalBeats": 4
   },
@@ -39,6 +40,7 @@
         "barIndex": 0,
         "degree": { "number": 1, "alteration": 0, "octaveOffset": 0, "scaleSize": 7 },
         "role": "root",
+        "scaleMembership": "collection",
         "dynamic": "accent",
         "expression": { "accent": 0.18, "ghost": 0, "swingWeight": 0 }
       },
@@ -52,6 +54,7 @@
         "barIndex": 0,
         "degree": { "number": 3, "alteration": 0, "octaveOffset": 0, "scaleSize": 7 },
         "role": "chordTone",
+        "scaleMembership": "collection",
         "dynamic": "accent",
         "expression": { "accent": 0.18, "ghost": 0, "swingWeight": 0 }
       },
@@ -65,6 +68,7 @@
         "barIndex": 0,
         "degree": { "number": 5, "alteration": 0, "octaveOffset": 0, "scaleSize": 7 },
         "role": "chordTone",
+        "scaleMembership": "collection",
         "dynamic": "accent",
         "expression": { "accent": 0.18, "ghost": 0, "swingWeight": 0 }
       }

@@ -3,7 +3,7 @@ import { buildScore, validateScore } from "../domain/score.ts";
 import { formatDegreeToken } from "../domain/describe.ts";
 import { DEFAULT_ASSIGNMENT_INPUTS, generateAssignment } from "../domain/assignment.js";
 import { noteStringToMidi } from "../theory.js";
-import scoreFixture from "./fixtures/score-v1.json";
+import scoreFixture from "./fixtures/score-v2.json";
 import { assignmentForSeed, propertySeeds } from "./support/fingerprint.js";
 
 function eventFact(event) {
@@ -74,10 +74,25 @@ function compareFacts(a, b) {
   );
 }
 
-describe("Score v1", () => {
-  it("matches the readable v1 contract fixture", () => {
+describe("Score v2", () => {
+  it("matches the readable v2 contract fixture", () => {
     const assignment = generateFixtureAssignment();
     expect(buildScore(assignment)).toEqual(scoreFixture);
+  });
+
+  it("rejects a v1 Score, whose roles cannot express parent-scale passing tones", () => {
+    const v1 = { ...JSON.parse(JSON.stringify(scoreFixture)), schemaVersion: 1 };
+    expect(validateScore(v1).errors).toContain("unsupported score schemaVersion");
+
+    const noMembership = JSON.parse(JSON.stringify(scoreFixture));
+    delete noMembership.parts.lh[0].scaleMembership;
+    expect(validateScore(noMembership).errors).toContain("lh:0:0:0 has an invalid scale membership");
+
+    const noParent = JSON.parse(JSON.stringify(scoreFixture));
+    noParent.meta.parentScalePitchClasses = [0, 2, 4, 7, 9];
+    expect(validateScore(noParent).errors).toContain(
+      "meta.parentScalePitchClasses must contain seven pitch classes",
+    );
   });
 
   it("is deterministic, runtime-valid, JSON-safe, and uniquely identified across 96 seeds", () => {

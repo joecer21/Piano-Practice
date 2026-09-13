@@ -45,6 +45,26 @@ describe("keyboard overlay", () => {
     expect(key("C#4").querySelector(".key-label")).toBeNull();
   });
 
+  it("labels a parent-scale passing tone, distinct from the collection and from outside notes", () => {
+    const pentatonic = scoreFor({
+      key: "C",
+      mode: "pentatonicMinor",
+      progressionPresetId: "pop-4",
+      seed: "overlay",
+    });
+    applyKeyboardOverlay(container, { score: pentatonic, barIndex: 0, lens: "both", labelMode: "degrees" });
+
+    // C minor pentatonic is C E♭ F G B♭; its parent, natural minor, adds D and A♭.
+    expect(key("F4").dataset.role).toBe("scaleTone");
+    expect(key("D4").dataset.role).toBe("parentScaleTone");
+    expect(key("D4").querySelector(".key-label")?.textContent).toBe("2");
+    expect(key("D4").getAttribute("aria-label")).toBe(
+      "D4 piano key, degree 2, passing tone from the parent scale",
+    );
+    expect(key("A4").dataset.role).toBe("chromatic");
+    expect(key("A4").querySelector(".key-label")).toBeNull();
+  });
+
   it("follows the bar: a different chord moves the root marker", () => {
     const otherBar = score.bars.findIndex((bar) => bar.rootPitchClass !== 0);
     expect(otherBar).toBeGreaterThan(0);

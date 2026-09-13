@@ -153,6 +153,19 @@ export const ROMAN_TO_DEGREE = {
 
 const DEGREE_TO_ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII"];
 
+/**
+ * How a motif pattern's plain numbers are read (see degreeTokenSemitones).
+ *   parent-degree: a degree of the mode's seven-note parent scale. "3" is the mode's
+ *     own third, so 1-3-5-1 keeps its shape: 1-♭3-5-1 in minor, and A-C-E-A in A
+ *     minor pentatonic, whose parent is natural minor. A degree the pentatonic or
+ *     blues collection leaves out (2 in minor pentatonic) is played from the parent
+ *     scale, never replaced.
+ *   scale-step: the Nth note of the selected collection, cycling up through the
+ *     octave. For scalar runs, where the pattern means "go up the scale".
+ */
+export const DEGREE_INTERPRETATIONS = Object.freeze(["parent-degree", "scale-step"]);
+export const DEFAULT_DEGREE_INTERPRETATION = "parent-degree";
+
 // One source of truth for duration. Every `beats` value the engine can emit must
 // appear here; the three derived views below are generated from it rather than
 // hand-maintained in parallel, which is how 3- and 4-beat notes silently became
@@ -585,6 +598,8 @@ const RAW_MOTIF_STYLES = {
       { beats: 0.5, rest: false },
     ],
     degreePattern: [1, 2, 3, 4, 5, 6, 7, 8],
+    // A run means "go up the scale": in a pentatonic it climbs the pentatonic.
+    degreeInterpretation: "scale-step",
   },
   "funk-sync": {
     label: "Funk Syncopation - root groove with rests",
@@ -756,6 +771,12 @@ function withMotifMetadata(base) {
         motif.intervalBias || categoryDefaults.intervalBias || MOTIF_DEFAULT_METADATA.intervalBias;
       enriched.peaksPerPhrase =
         motif.peaksPerPhrase || categoryDefaults.peaksPerPhrase || MOTIF_DEFAULT_METADATA.peaksPerPhrase;
+      enriched.degreeInterpretation = motif.degreeInterpretation || DEFAULT_DEGREE_INTERPRETATION;
+      if (!DEGREE_INTERPRETATIONS.includes(enriched.degreeInterpretation)) {
+        throw new TypeError(
+          `Motif ${id} has an unknown degreeInterpretation: ${enriched.degreeInterpretation}`,
+        );
+      }
       return [id, enriched];
     }),
   );
@@ -1058,24 +1079,43 @@ function parseDegreeToken(token) {
 }
 
 /**
- * Semitones from the tonic (octaves included) to a motif degree token. A plain
- * degree counts the mode's own scale steps, so "3" in pentatonic minor is its third
- * note. An altered one is measured from the major scale, like a chord numeral:
- * "\u266d3" is a minor third above home in every mode, not a flat applied on top of a
- * scale step that may already be lowered.
+ * The mode's seven-note parent scale: itself for the seven-note modes, and the
+ * major or natural minor scale a pentatonic or blues collection is drawn from. The
+ * same mapping the chord engine uses to build chords in those modes.
  */
-export function degreeTokenSemitones(degreeInput, mode) {
+export function parentScaleIntervals(mode) {
+  return getHarmonicIntervals(mode);
+}
+
+/** The selected collection itself: five notes for pentatonic, six for blues. */
+export function collectionIntervals(mode) {
+  return getModeIntervals(normalizeModeId(mode));
+}
+
+/**
+ * Semitones from the tonic (octaves included) to a motif degree token.
+ *
+ * A plain number is read per the pattern's interpretation (see
+ * DEGREE_INTERPRETATIONS). An altered token is an absolute chromatic degree measured
+ * from the major scale, like a chord numeral: "\u266d3" is a minor third above home in
+ * every mode, never a flat applied on top of a third that is already minor.
+ */
+export function degreeTokenSemitones(degreeInput, mode, interpretation = DEFAULT_DEGREE_INTERPRETATION) {
   const parsed = parseDegreeToken(degreeInput);
-  const intervals = parsed.accidental ? MAJOR_SCALE_STEPS : getModeIntervals(normalizeModeId(mode));
+  const intervals = parsed.accidental
+    ? MAJOR_SCALE_STEPS
+    : interpretation === "scale-step"
+      ? collectionIntervals(mode)
+      : parentScaleIntervals(mode);
   const span = intervals.length || 7;
   const degreeIndex = (((parsed.degree - 1) % span) + span) % span;
   const octaveOffset = Math.floor((parsed.degree - 1) / span);
   return intervals[degreeIndex] + parsed.accidental + octaveOffset * 12;
 }
 
-export function degreeToNote(degreeInput, mode, scale = {}) {
+export function degreeToNote(degreeInput, mode, scale = {}, interpretation = DEFAULT_DEGREE_INTERPRETATION) {
   const parsed = parseDegreeToken(degreeInput);
-  const semitoneOffset = degreeTokenSemitones(degreeInput, mode || scale.mode);
+  const semitoneOffset = degreeTokenSemitones(degreeInput, mode || scale.mode, interpretation);
   const root = scale.key || scale.root || scale.notes?.[0] || "C";
   const rootIndex = NOTE_TO_INDEX[root] ?? NOTE_TO_INDEX.C;
   const absoluteIndex = (rootIndex + semitoneOffset + 1200) % 12;

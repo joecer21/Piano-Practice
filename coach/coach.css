@@ -3,7 +3,7 @@
  *
  * Channel rule - one visual channel per musical fact:
  *   hue           -> which hand is sounding      (--hand-lh / --hand-rh, nothing else)
- *   fill weight   -> note role                   (data-role: root/chordTone solid, scaleTone muted)
+ *   fill weight   -> note role                   (data-role: root/chordTone solid, scaleTone muted, parentScaleTone lighter + dashed)
  *   text label    -> scale degree or letter      (.key-label)
  *   stroke weight -> root                        (ring on the root mark)
  *   badge + label -> chord provenance            (.coach-timeline-badge)
@@ -289,6 +289,14 @@ body {
   background: transparent;
 }
 
+/* A passing tone from the parent scale: lighter than a collection tone, and dashed
+   so it never reads as a note of the pentatonic or blues scale itself. */
+.piano-key[data-role="parentScaleTone"] .key-label {
+  border: 1px dashed color-mix(in srgb, var(--mark) 35%, transparent);
+  color: color-mix(in srgb, var(--mark) 50%, transparent);
+  background: transparent;
+}
+
 .piano-key[data-out-of-lens],
 .piano-key[data-dimmed] {
   opacity: 0.35;
@@ -491,6 +499,10 @@ body {
   fill-opacity: 0.5;
 }
 
+.coach-timeline-note[data-role="parentScaleTone"] {
+  fill-opacity: 0.3;
+}
+
 .coach-timeline-note[data-role="chromatic"] {
   fill-opacity: 0.12;
   stroke: currentColor;
@@ -689,6 +701,10 @@ body {
 }
 
 /* The note sounding now: weight and ink, not a hand colour. */
+.coach-motif-note[data-membership="parentScale"] {
+  border-style: dashed;
+}
+
 .coach-motif-note[aria-current="true"] {
   border-color: var(--ink);
   background: var(--ink);

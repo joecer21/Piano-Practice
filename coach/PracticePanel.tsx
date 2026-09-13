@@ -182,13 +182,18 @@ function ViewDetail(props: PracticePanelProps & { score: Score }) {
             <li
               key={index}
               className="coach-motif-note"
+              data-membership={motif.memberships[index]}
               aria-current={props.activeMotifIndex % motif.degrees.length === index ? "true" : undefined}
             >
               {degree}
+              {motif.memberships[index] === "parentScale" ? (
+                <span className="coach-visually-hidden"> (passing tone)</span>
+              ) : null}
             </li>
           ))}
         </ol>
         <p className="coach-blurb">The motif {motif.contour}.</p>
+        {motif.passingTones ? <p className="coach-hint">{motif.passingTones}</p> : null}
       </div>
     );
   }

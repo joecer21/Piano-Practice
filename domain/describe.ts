@@ -1,4 +1,4 @@
-import type { DegreeToken, NoteEvent, Score, ScoreBar } from "./score.js";
+import type { DegreeToken, NoteEvent, ScaleMembership, Score, ScoreBar } from "./score.js";
 
 export type AssignmentDescriptionContext = {
   leftHand?: { name?: string } | null;
@@ -15,7 +15,14 @@ export function describeAssignment(score: Score, context: AssignmentDescriptionC
   return `${score.meta.key} ${formatMode(score.meta.mode)}. ${progression}. ${leftHand} underneath${upperPart}`;
 }
 
-export type MotifDescription = { degrees: string[]; contour: string };
+export type MotifDescription = {
+  degrees: string[];
+  /** Per degree: in the selected collection, only in its parent scale, or outside both. */
+  memberships: ScaleMembership[];
+  contour: string;
+  /** One sentence naming the parent-scale passing tones, or null when there are none. */
+  passingTones: string | null;
+};
 
 /** The motif's shortest repeating shape, as degree labels and a contour word. */
 export function describeMotifParts(score: Score): MotifDescription | null {
@@ -28,10 +35,26 @@ export function describeMotifParts(score: Score): MotifDescription | null {
     notes,
     (event) => `${event.midi}:${event.degree ? formatDegreeToken(event.degree) : "?"}`,
   );
+  const degrees = cycle.map((event) => (event.degree ? formatDegreeToken(event.degree) : "outside"));
+  const memberships = cycle.map((event) => event.scaleMembership);
   return {
-    degrees: cycle.map((event) => (event.degree ? formatDegreeToken(event.degree) : "outside")),
+    degrees,
+    memberships,
     contour: describeContour(cycle.map((event) => event.midi)),
+    passingTones: describePassingTones(score, degrees, memberships),
   };
+}
+
+function describePassingTones(
+  score: Score,
+  degrees: string[],
+  memberships: ScaleMembership[],
+): string | null {
+  const passing = [...new Set(degrees.filter((_, index) => memberships[index] === "parentScale"))];
+  if (!passing.length) return null;
+  const list = passing.length === 1 ? passing[0] : `${passing.slice(0, -1).join(", ")} and ${passing.at(-1)}`;
+  const verb = passing.length === 1 ? "is a passing tone" : "are passing tones";
+  return `${list} ${verb} from the parent scale, outside ${formatMode(score.meta.mode)}.`;
 }
 
 export function describeMotif(score: Score): string {

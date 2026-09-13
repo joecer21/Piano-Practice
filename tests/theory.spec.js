@@ -71,11 +71,13 @@ function run() {
       expect(degreeToNote("b7", "minor", { mode: "minor", key: "C" })).toBe("Bb");
     });
 
-    it("keeps plain degrees on the mode's own scale steps", () => {
+    it("reads plain degrees from the parent scale, or collection steps when asked", () => {
       expect(degreeTokenSemitones(3, "minor")).toBe(3);
-      expect(degreeTokenSemitones(3, "pentatonicMinor")).toBe(5);
-      expect(degreeTokenSemitones(8, "pentatonicMinor")).toBe(17);
-      expect(degreeToNote(4, "pentatonicMinor", { mode: "pentatonicMinor", key: "A" })).toBe("E");
+      expect(degreeTokenSemitones(3, "pentatonicMinor")).toBe(3);
+      expect(degreeTokenSemitones(8, "pentatonicMinor")).toBe(12);
+      expect(degreeToNote(4, "pentatonicMinor", { mode: "pentatonicMinor", key: "A" })).toBe("D");
+      expect(degreeTokenSemitones(3, "pentatonicMinor", "scale-step")).toBe(5);
+      expect(degreeTokenSemitones(8, "pentatonicMinor", "scale-step")).toBe(17);
     });
 
     it("spells a lowered degree in a sharp key without flats", () => {
