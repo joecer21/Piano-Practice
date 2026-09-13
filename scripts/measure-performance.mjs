@@ -15,9 +15,9 @@
 //   cachedReady - after a reload served by the service worker, "Start" is enabled again
 // plus CDP ScriptDuration (JS evaluation) up to pianoReady and transferred bytes by kind.
 /* global document -- used inside functions evaluated in the browser page */
-import { spawn } from "node:child_process";
 import { existsSync, writeFileSync } from "node:fs";
 import { chromium, devices } from "@playwright/test";
+import { preview } from "vite";
 
 const args = process.argv.slice(2);
 const option = (name, fallback) => {
@@ -43,23 +43,14 @@ const PROFILES = {
   },
 };
 
+/** Serve dist/ in-process with the installed Vite: no shell, no child process. */
 async function startPreview() {
   if (option("url", null)) return null;
   if (!existsSync("dist/index.html")) throw new Error("Run `npm run build` first.");
-  const server = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], {
-    shell: true,
-    stdio: "ignore",
+  return preview({
+    logLevel: "silent",
+    preview: { host: "127.0.0.1", port: PORT, strictPort: true },
   });
-  for (let attempt = 0; attempt < 100; attempt += 1) {
-    try {
-      if ((await fetch(BASE)).ok) return server;
-    } catch {
-      // not listening yet
-    }
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  server.kill();
-  throw new Error("vite preview did not start");
 }
 
 const sinceNavigation = (page) => page.evaluate(() => performance.now());
@@ -170,7 +161,7 @@ try {
   }
 } finally {
   await browser.close();
-  server?.kill();
+  await server?.close();
 }
 
 console.log(`Median of ${RUNS} runs against ${BASE}`);
