@@ -678,13 +678,23 @@
 
   /* ---- Stage and responsive tool rail ------------------------------------------ */
 
-  .coach-stage-intro .coach-sentence {
+  /* The feel headline leads; the theory sentence under it is the "why it works". */
+  .coach-stage-intro .coach-feel {
     max-width: 58rem;
-    margin-top: 0;
+    margin: 0 0 var(--space-2);
     font-family: var(--font-feel);
     font-size: clamp(var(--text-xl), 3vw, var(--text-2xl));
     font-weight: 600;
     line-height: 1.18;
+    text-wrap: balance;
+  }
+
+  .coach-stage-intro .coach-sentence {
+    max-width: 58rem;
+    margin-top: 0;
+    color: var(--ink-muted);
+    font-size: clamp(var(--text-md), 1.6vw, var(--text-lg));
+    font-weight: 500;
   }
 
   .coach-tool-rail {
@@ -1685,6 +1695,10 @@
 
   .coach-shell[data-session-status]:not([data-session-status="idle"]) .coach-stage-intro {
     padding-top: var(--space-4);
+  }
+
+  .coach-shell[data-session-status]:not([data-session-status="idle"]) .coach-feel {
+    display: none;
   }
 
   .coach-shell[data-session-status]:not([data-session-status="idle"]) .coach-stage-intro .coach-sentence {

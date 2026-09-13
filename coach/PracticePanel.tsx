@@ -2,6 +2,7 @@ import type { ReactNode, Ref } from "react";
 import { createPortal } from "react-dom";
 import { describeChordFunction, describeMotifParts } from "../domain/describe.js";
 import type { Score } from "../domain/score.js";
+import type { Feel } from "./feel.js";
 import type { LabelMode } from "./keyboard-overlay.js";
 import type { Lens, PracticeControls } from "./practice.js";
 import { Timeline } from "./Timeline.js";
@@ -10,6 +11,8 @@ import { BREAKDOWN_VIEWS, hasMotif } from "./views.js";
 
 type PracticePanelProps = {
   score: Score | null;
+  /** What each hand does, in feel-first words, for the hands-apart view. */
+  handsFeel?: Feel["hands"] | null;
   view: BreakdownView;
   controls: PracticeControls;
   labelMode: LabelMode;
@@ -217,20 +220,28 @@ function ViewDetail(props: PracticePanelProps & { score: Score }) {
   }
 
   const focusedBar = controls.focusBar != null ? score.bars[controls.focusBar] : null;
+  const hands = props.handsFeel;
+  const handLines =
+    view === "hands" && hands
+      ? [controls.lens !== "rh" ? hands.lh : null, controls.lens !== "lh" ? hands.rh : null].filter(Boolean)
+      : [];
   return (
-    <p className="coach-focus coach-detail" aria-live="polite">
-      {focusedBar ? (
-        <>
-          <span>
-            Bar {focusedBar.barIndex + 1} · {describeChordFunction(focusedBar, score)}
-          </span>{" "}
-          <button type="button" className="coach-link" onClick={() => props.onControls({ focusBar: null })}>
-            Practice the whole piece
-          </button>
-        </>
-      ) : (
-        "Select a bar to practice it on its own."
-      )}
-    </p>
+    <>
+      {handLines.length ? <p className="coach-blurb coach-detail">{handLines.join(" ")}</p> : null}
+      <p className="coach-focus coach-detail" aria-live="polite">
+        {focusedBar ? (
+          <>
+            <span>
+              Bar {focusedBar.barIndex + 1} · {describeChordFunction(focusedBar, score)}
+            </span>{" "}
+            <button type="button" className="coach-link" onClick={() => props.onControls({ focusBar: null })}>
+              Practice the whole piece
+            </button>
+          </>
+        ) : (
+          "Select a bar to practice it on its own."
+        )}
+      </p>
+    </>
   );
 }

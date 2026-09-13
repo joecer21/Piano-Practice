@@ -5,6 +5,8 @@ import { SESSION_LENGTHS, remainingMs, startLabel, stepProgress } from "./sessio
 import { formatClock } from "./practice.js";
 
 type SessionHeaderProps = {
+  /** How the assignment feels, shown large above the theory sentence. */
+  feel?: string | null;
   sentence: string;
   readinessNote: string | null;
   ready: boolean;
@@ -30,12 +32,17 @@ type SessionHeaderProps = {
  * while a session runs, and a calm summary card when it ends.
  */
 export function SessionHeader(props: SessionHeaderProps) {
-  const { sentence, readinessNote, session } = props;
+  const { feel, sentence, readinessNote, session } = props;
   const rootRef = useRef<HTMLDivElement>(null);
   useFocusHandoff(rootRef, session.status);
 
   return (
     <div className="coach-summary-body" ref={rootRef}>
+      {feel ? (
+        <p className="coach-feel" data-testid="coach-feel">
+          {feel}
+        </p>
+      ) : null}
       <p className="coach-sentence" data-testid="coach-sentence">
         {sentence}
       </p>

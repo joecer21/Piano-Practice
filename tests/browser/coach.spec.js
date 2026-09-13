@@ -15,6 +15,9 @@ test("land, start five minutes, then loop bar 3 with the left hand at half speed
   const sentence = page.getByTestId("coach-sentence");
   await expect(sentence).toContainText(/major|minor|pentatonic|blues/);
   await expect(sentence).toContainText("underneath");
+  // The feel headline leads, and never borrows the theory sentence's vocabulary.
+  await expect(page.getByTestId("coach-feel")).toBeVisible();
+  await expect(page.getByTestId("coach-feel")).not.toContainText(/major|minor|pentatonic|blues/);
 
   await waitForPiano(page);
   const start = page.getByRole("button", { name: "Start 5 minutes" });

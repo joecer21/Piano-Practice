@@ -4,6 +4,7 @@ import type { PlayRequest, PlaybackSession } from "../audio/playback-engine.js";
 import { describeAssignment } from "../domain/describe.js";
 import { EMPTY_HELD_NOTES, playedNotes, reduceHeldNotes } from "../input/held-notes.js";
 import { AssignmentWorkspace } from "./AssignmentWorkspace.js";
+import { describeFeel } from "./feel.js";
 import type { CoachBridge } from "./bridge.js";
 import { applyKeyboardOverlay, clearKeyboardOverlay } from "./keyboard-overlay.js";
 import type { LabelMode } from "./keyboard-overlay.js";
@@ -91,6 +92,7 @@ export function CoachApp({
   const samplerSnapshot = useSyncExternalStore(bridge.subscribeSampler, bridge.getSamplerSnapshot);
   const readiness = useMemo(() => pianoReadiness(samplerSnapshot), [samplerSnapshot]);
   const score = assignment?.score ?? null;
+  const feel = useMemo(() => (score ? describeFeel(score) : null), [score]);
 
   const [view, setView] = useState<BreakdownView>("whole");
   const [controls, setControls] = useState<PracticeControls>(DEFAULT_PRACTICE_CONTROLS);
@@ -659,6 +661,7 @@ export function CoachApp({
 
   const header = (
     <SessionHeader
+      feel={feel?.headline}
       sentence={sentence}
       readinessNote={readinessNote}
       ready={ready}
@@ -770,6 +773,7 @@ export function CoachApp({
 
       <PracticePanel
         score={score}
+        handsFeel={feel?.hands ?? null}
         view={view}
         controls={controls}
         labelMode={labelMode}

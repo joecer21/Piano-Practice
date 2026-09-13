@@ -304,6 +304,9 @@ describe("CoachApp", () => {
     render(<CoachApp bridge={bridge} summaryContainer={null} />);
 
     expect(screen.getByTestId("coach-sentence").textContent).toMatch(/^C major\. I–V–vi–IV\./);
+    expect(screen.getByTestId("coach-feel").textContent).toBe(
+      "Bright and open, a loop that circles back to the start.",
+    );
     const start = screen.getByRole("button", { name: "Start 5 minutes" });
     expect(start.disabled).toBe(true);
     expect(screen.getByText("Loading Piano Lite 40%")).toBeTruthy();
