@@ -123,15 +123,19 @@ export function validateAssignmentInputs(value) {
   const input = /** @type {Partial<AssignmentInputs>} */ (value || {});
   const errors = [];
   if (!input || typeof input !== "object") return { valid: false, errors: ["inputs must be an object"] };
-  if (!(String(input.key) in NOTE_TO_INDEX)) errors.push(`unknown key: ${String(input.key)}`);
-  if (!(String(input.mode) in SCALE_PATTERNS)) errors.push(`unknown mode: ${String(input.mode)}`);
+  // Own keys only: inputs can now arrive from a shared link or storage, and `in`
+  // would accept "constructor" or "__proto__" as a key, mode or pattern.
+  const known = (/** @type {object} */ catalog, /** @type {unknown} */ value) =>
+    Object.hasOwn(catalog, String(value));
+  if (!known(NOTE_TO_INDEX, input.key)) errors.push(`unknown key: ${String(input.key)}`);
+  if (!known(SCALE_PATTERNS, input.mode)) errors.push(`unknown mode: ${String(input.mode)}`);
   if (input.progressionPresetId !== "custom" && !getProgressionPreset(String(input.progressionPresetId))) {
     errors.push(`unknown progression: ${String(input.progressionPresetId)}`);
   }
-  if (!(String(input.styleId) in STYLE_PROFILES)) errors.push(`unknown style: ${String(input.styleId)}`);
-  if (!(String(input.lhId) in LEFT_HAND_PATTERN_METADATA))
+  if (!known(STYLE_PROFILES, input.styleId)) errors.push(`unknown style: ${String(input.styleId)}`);
+  if (!known(LEFT_HAND_PATTERN_METADATA, input.lhId))
     errors.push(`unknown left-hand pattern: ${String(input.lhId)}`);
-  if (input.motifId !== "none" && !(String(input.motifId) in MOTIF_STYLES)) {
+  if (input.motifId !== "none" && !known(MOTIF_STYLES, input.motifId)) {
     errors.push(`unknown motif: ${String(input.motifId)}`);
   }
   if (!Number.isInteger(input.length) || Number(input.length) < 1 || Number(input.length) > 32) {
@@ -341,7 +345,9 @@ export function validateAssignment(value) {
   if (assignment.leftHand?.bars?.length !== assignment.progression?.bars?.length) {
     errors.push("left-hand and progression bar counts must match");
   }
-  if (assignment.leftHand?.bars?.some((bar) => !Array.isArray(bar.steps))) {
+  if (
+    assignment.leftHand?.bars?.some((/** @type {{ steps?: unknown }} */ bar) => !Array.isArray(bar.steps))
+  ) {
     errors.push("every left-hand bar must contain steps");
   }
   if (assignment.motif && (!Array.isArray(assignment.motif.steps) || assignment.motif.totalBeats <= 0)) {
@@ -372,13 +378,14 @@ function pickDifferent(values, current, rng) {
   return /** @type {T} */ (pickSeeded(alternatives.length ? alternatives : values, rng) ?? current);
 }
 
-/** @param {unknown} value */
+/** @param {unknown} value @returns {string} */
 function stableStringify(value) {
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
   if (value && typeof value === "object") {
-    return `{${Object.keys(value)
+    const record = /** @type {Record<string, unknown>} */ (value);
+    return `{${Object.keys(record)
       .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
+      .map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`)
       .join(",")}}`;
   }
   return JSON.stringify(value);

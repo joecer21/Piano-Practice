@@ -42,12 +42,17 @@ export function pickSeeded(values, rng) {
 
 /**
  * Derive an independent child seed without consuming a PRNG stream.
+ *
+ * Fixed length, whatever the parent: the child used to embed its parent, so every
+ * reroll grew the seed and a well-practised assignment's share link grew without
+ * bound. Two 32-bit hashes keep chains from colliding in practice.
  * @param {string | number | bigint} seed
  * @param {string} namespace
  * @returns {string}
  */
 export function deriveSeed(seed, namespace) {
-  return `${normalizeSeed(seed)}:${namespace}:${hashString(`${normalizeSeed(seed)}:${namespace}`).toString(16)}`;
+  const source = `${normalizeSeed(seed)}:${namespace}`;
+  return `${namespace}-${hashString(source).toString(36)}${hashString(`${source}#`).toString(36)}`;
 }
 
 /** @param {string} value */
