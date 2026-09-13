@@ -17,6 +17,8 @@ import {
 } from "./domain/assignment.js";
 import { getLivePianoChordNotes } from "./domain/live-piano.js";
 import { createAppStore } from "./application/state.js";
+import { browserStorage, createLibrary } from "./application/library.ts";
+import { decodeShareFragment, encodeShareFragment, looksLikeShareFragment } from "./domain/share.ts";
 import { createAudioUnlock } from "./application/audio-unlock.js";
 import {
   attachPianoNoteListeners,
@@ -99,6 +101,8 @@ const SWING_MAX = 0.2;
 
 const appStore = createAppStore();
 const state = appStore.state;
+/** Starred assignments, the last assignment, tempo and preferences, kept in this browser. */
+const practiceLibrary = createLibrary(browserStorage());
 
 let samplerSnapshot = getSamplerStatusSnapshot();
 if (typeof window !== "undefined") {
@@ -150,6 +154,7 @@ function init() {
   if (dom.motif) dom.motif.value = state.inputs.motifId;
   if (dom.mode) dom.mode.value = state.inputs.mode;
   updateMotifOffering(dom, state.inputs.mode);
+  state.tempo = practiceLibrary.tempo() ?? state.tempo;
   if (dom.tempoSlider) dom.tempoSlider.value = state.tempo;
   updateTempo(state.tempo);
   const initialStyleProfile = getStyleProfile(state.inputs.styleId);
@@ -225,12 +230,26 @@ function init() {
   // gone and the user would be left with a page that silently never plays.
   // The listener removes itself only once the context is actually running.
   window.addEventListener("click", handleUnlockClick);
-  const initialPresetId = state.inputs.presetId || DEFAULT_PRESET_ID;
-  if (initialPresetId) {
-    applyPreset(initialPresetId, { autoGenerate: true });
-  } else {
-    handleGenerate({ auto: true });
+
+  // Every committed assignment - generated, rerolled, undone, opened from a link or
+  // a star - is remembered and written into the address bar, so the page's own URL
+  // is always a share link and a reload comes back to the same music.
+  appStore.subscribe(rememberCommittedAssignment);
+  window.addEventListener("hashchange", () => reportLinkError(openFromLocation()));
+
+  // First assignment: a shared link, else the last one practised here, else the
+  // default preset. A link that cannot be opened is reported after the fallback
+  // has loaded, so its explanation is the last thing said.
+  const link = openFromLocation();
+  if (!link.opened && !openInputs(practiceLibrary.lastInputs())) {
+    const initialPresetId = state.inputs.presetId || DEFAULT_PRESET_ID;
+    if (initialPresetId) {
+      applyPreset(initialPresetId, { autoGenerate: true });
+    } else {
+      handleGenerate({ auto: true });
+    }
   }
+  reportLinkError(link);
 
   startMidiPlayThrough();
   window.addEventListener("pagehide", () => midiInput.disconnect());
@@ -295,6 +314,61 @@ function updateTempo(value) {
   state.tempo = value;
   audioEngine.setTempo(Number(value));
   setTempoValue(dom, value);
+  practiceLibrary.rememberTempo(Number(value));
+}
+
+/**
+ * Open an assignment from its inputs (a share link or a star). It goes through the
+ * same learner-facing generation as the controls; if it cannot be built, the
+ * current assignment stays.
+ * @returns {boolean} whether it was opened
+ */
+function openInputs(inputs) {
+  if (!inputs) return false;
+  const previous = state.inputs;
+  state.inputs = inputs;
+  if (!computeDerived().ok) {
+    state.inputs = previous;
+    return false;
+  }
+  syncAssignmentUiFromState();
+  renderAll();
+  return true;
+}
+
+/**
+ * Open the assignment in the page's URL fragment, if there is one.
+ * @returns {{ opened: boolean, error: string | null }}
+ */
+function openFromLocation() {
+  const fragment = window.location.hash;
+  if (!looksLikeShareFragment(fragment)) return { opened: false, error: null };
+  if (state.assignment && fragment.slice(1) === encodeShareFragment(state.assignment.inputs)) {
+    return { opened: true, error: null };
+  }
+  const decoded = decodeShareFragment(fragment);
+  if (!decoded.ok) return { opened: false, error: `That link couldn't be opened: ${decoded.error}.` };
+  stopAllPlayback();
+  return openInputs(decoded.inputs)
+    ? { opened: true, error: null }
+    : { opened: false, error: "That link couldn't be opened." };
+}
+
+function reportLinkError(result) {
+  // Transient, so the sampler's ambient "ready" status waits its turn instead of
+  // replacing the explanation while it is still being read.
+  if (result.error) setStatusMessage(dom, result.error, { tone: "error", transient: true, duration: 12000 });
+}
+
+function rememberCommittedAssignment() {
+  const inputs = state.assignment?.inputs;
+  if (!inputs) return;
+  practiceLibrary.rememberInputs(inputs);
+  const fragment = `#${encodeShareFragment(inputs)}`;
+  if (window.location.hash !== fragment) {
+    // replaceState: rerolls and undo are not browser navigation, and it fires no hashchange.
+    window.history.replaceState(window.history.state, "", fragment);
+  }
 }
 
 function resolveLength(rawLength, progressionPresetId) {
