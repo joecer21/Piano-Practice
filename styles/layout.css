@@ -140,6 +140,16 @@
       left: 0;
       max-height: 70vh;
     }
+
+    /* The sheet is modeless: focus can stay on the Stage behind it, so scrolling
+       keeps that focus above the sheet, and the page can scroll far enough to. */
+    html {
+      scroll-padding-bottom: calc(var(--coach-sheet-height, 0px) + var(--space-2));
+    }
+
+    .coach-stage-layout {
+      padding-bottom: calc(var(--space-8) + var(--coach-sheet-height, 0px));
+    }
   }
 
   @media (max-width: 600px) {

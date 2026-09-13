@@ -26,7 +26,7 @@ import { PracticePanel } from "./PracticePanel.js";
 import { pianoReadiness } from "./sampler.js";
 import { ScaleReference } from "./ScaleReference.js";
 import { StatusLine } from "./StatusLine.js";
-import { trackStickyHeaderHeight } from "./sticky-offset.js";
+import { trackBottomSheetHeight, trackStickyHeaderHeight } from "./sticky-offset.js";
 import { ThemeToggle } from "./ThemeToggle.js";
 import { ToolPanel, ToolRail } from "./ToolPanel.js";
 import type { ToolId } from "./ToolPanel.js";
@@ -637,6 +637,7 @@ export function CoachApp({
   );
 
   useEffect(() => trackStickyHeaderHeight(headerContainer), [headerContainer]);
+  useEffect(() => trackBottomSheetHeight(panelContainer), [panelContainer]);
 
   useEffect(() => {
     if (!shellContainer) return;

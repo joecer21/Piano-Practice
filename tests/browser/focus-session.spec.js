@@ -120,3 +120,35 @@ test("the focus layout fits a phone without sideways scroll or undersized contro
   expect(layout.overflow).toBeLessThanOrEqual(0);
   expect(layout.undersized).toEqual([]);
 });
+
+test("keyboard focus stays clear of the sticky header in focus mode", async ({ page }) => {
+  await page.goto("/");
+  await waitForPiano(page);
+  await page.getByRole("button", { name: "Start 5 minutes" }).click();
+  await page.getByRole("button", { name: "Pause" }).click();
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.locator("#status-line").evaluate((element) => {
+    element.tabIndex = -1;
+    element.focus();
+  });
+
+  const obscured = [];
+  for (let step = 0; step < 60; step += 1) {
+    await page.keyboard.press("Shift+Tab");
+    const result = await page.evaluate(() => {
+      const focused = document.activeElement;
+      const header = document.querySelector(".coach-top");
+      if (!focused || focused === document.body || header.contains(focused)) return { skip: true };
+      const box = focused.getBoundingClientRect();
+      return {
+        skip: false,
+        label: (focused.textContent || focused.getAttribute("aria-label") || "").trim().slice(0, 30),
+        hidden: box.height > 0 && box.bottom <= header.getBoundingClientRect().bottom + 1,
+        top: window.scrollY,
+      };
+    });
+    if (!result.skip && result.hidden) obscured.push(result.label);
+    if (!result.skip && result.top === 0) break;
+  }
+  expect(obscured).toEqual([]);
+});

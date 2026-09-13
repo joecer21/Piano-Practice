@@ -79,3 +79,38 @@ test("the tablet landscape tool surface is a modeless right overlay", async ({ p
   expect(Math.abs(geometry.bottomGap)).toBeLessThanOrEqual(1);
   expect(geometry.width).toBeLessThanOrEqual(geometry.viewportWidth * 0.46 + 1);
 });
+
+test("keyboard focus behind the open bottom sheet is scrolled clear of it", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/");
+  await openAssignmentDrawer(page);
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.locator("#status-line").evaluate((element) => {
+    element.tabIndex = -1;
+    element.focus();
+  });
+
+  // Walk backwards through the Stage while the modeless sheet stays open.
+  const obscured = [];
+  for (let step = 0; step < 60; step += 1) {
+    await page.keyboard.press("Shift+Tab");
+    const result = await page.evaluate(() => {
+      const focused = document.activeElement;
+      const sheet = document.querySelector("#coach-tool-panel");
+      const header = document.querySelector(".coach-top");
+      if (!focused || focused === document.body || sheet.contains(focused) || header.contains(focused))
+        return { skip: true };
+      const box = focused.getBoundingClientRect();
+      return {
+        skip: false,
+        label: `${focused.tagName.toLowerCase()} "${(focused.textContent || focused.getAttribute("aria-label") || "").trim().slice(0, 30)}"`,
+        hidden: box.height > 0 && box.top >= sheet.getBoundingClientRect().top - 1,
+        top: window.scrollY,
+      };
+    });
+    if (!result.skip && result.hidden) obscured.push(result.label);
+    if (!result.skip && result.top === 0) break;
+  }
+  await expect(page.locator("#coach-tool-panel")).toBeVisible();
+  expect(obscured).toEqual([]);
+});

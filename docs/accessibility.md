@@ -4,21 +4,23 @@ Target: WCAG 2.2 AA. This page records what is verified automatically, what the 
 
 ## Automated checks
 
-| Area                                                      | Where                                                                 |
-| --------------------------------------------------------- | --------------------------------------------------------------------- |
-| axe (WCAG 2.0/2.1 A and AA) on landing and expanded tools | `tests/browser/accessibility-audit.spec.js`, desktop and Pixel 7      |
-| axe (to WCAG 2.2 AA) on expanded practice history         | `tests/browser/practice-history.spec.js`                              |
-| axe on the update notice                                  | `tests/browser/pwa-lifecycle.spec.js`                                 |
-| axe on the audition page                                  | `tests/browser/audition.spec.js`                                      |
-| Live piano roving focus, arrow keys, Space/Enter          | `tests/browser/accessibility.spec.js`                                 |
-| Computer-key shortcuts pause in form controls             | `tests/browser/accessibility.spec.js`                                 |
-| Focus never hidden under the sticky header (2.4.11)       | `tests/browser/accessibility.spec.js`                                 |
-| Modeless tool panel, Escape focus return, 320 px reflow   | `tests/browser/stage-layout.spec.js`                                  |
-| Keyboard-only history annotate, delete, clear with focus  | `tests/browser/practice-history.spec.js`                              |
-| 44 px minimum key width on phones                         | `tests/browser/accessibility.spec.js`                                 |
-| Hand colour reserved for sounding notes (1.4.1)           | `tests/browser/coach.spec.js`                                         |
-| Status, update and history messages are live regions      | component specs and the browser specs above                           |
-| Reduced motion                                            | `styles/base.css`, `styles/components.css`; checked in the pass below |
+| Area                                                       | Where                                                                 |
+| ---------------------------------------------------------- | --------------------------------------------------------------------- |
+| axe (WCAG 2.0/2.1 A and AA) on landing and expanded tools  | `tests/browser/accessibility-audit.spec.js`, desktop and Pixel 7      |
+| axe (to WCAG 2.2 AA) on expanded practice history          | `tests/browser/practice-history.spec.js`                              |
+| axe on the update notice                                   | `tests/browser/pwa-lifecycle.spec.js`                                 |
+| axe on the audition page                                   | `tests/browser/audition.spec.js`                                      |
+| Live piano roving focus, arrow keys, Space/Enter           | `tests/browser/accessibility.spec.js`                                 |
+| Computer-key shortcuts pause in form controls              | `tests/browser/accessibility.spec.js`                                 |
+| Focus never hidden under the sticky header (2.4.11)        | `tests/browser/accessibility.spec.js`                                 |
+| Focus behind the open bottom sheet scrolled clear (2.4.11) | `tests/browser/stage-layout.spec.js`                                  |
+| Focus mode keeps practice controls; focus handed on        | `tests/browser/focus-session.spec.js`                                 |
+| Modeless tool panel, Escape focus return, 320 px reflow    | `tests/browser/stage-layout.spec.js`                                  |
+| Keyboard-only history annotate, delete, clear with focus   | `tests/browser/practice-history.spec.js`                              |
+| 44 px minimum key width on phones                          | `tests/browser/accessibility.spec.js`                                 |
+| Hand colour reserved for sounding notes (1.4.1)            | `tests/browser/coach.spec.js`                                         |
+| Status, update and history messages are live regions       | component specs and the browser specs above                           |
+| Reduced motion                                             | `styles/base.css`, `styles/components.css`; checked in the pass below |
 
 ## Slice 14 pass, 2026-09-13
 
@@ -33,13 +35,22 @@ Found and fixed:
 
 Verified without change: no page-level horizontal scrolling at 320 px (the keyboard and the Score timeline scroll inside their own containers, as two-dimensional content; each contains a labelled group of focusable keys or bars, so it can be scrolled by keyboard); reduced motion removes transitions and animations and smooth scrolling; the update notice is a polite status region that never takes focus or reloads by itself; offline readiness and errors are announced through the one status line.
 
+## Design upgrade pass, 2026-09-13
+
+Found and fixed:
+
+- **Focus obscured by the bottom sheet.** On phones the modeless tool sheet covers up to 70% of the viewport. Shift-tabbing through the Stage behind it left nine controls (Play, Loop, the key-label toggle, Full history…) underneath it. The sheet's live height now sets `scroll-padding-bottom` and matching page padding (`trackBottomSheetHeight` in `coach/sticky-offset.ts`).
+- **Focus lost when the session changes state.** _Start_, _Finish_ and _End session_ disappear when pressed. When focus falls back to the page, it now moves to _Pause_, the summary heading or _Start_. Focus the player has put elsewhere, such as on a timeline bar, is never moved.
+
+Focus mode hides chrome with `display: none`, so hidden controls leave the tab order and the accessibility tree together. The feel headline is a paragraph, not a heading, because its wording changes with every assignment. The theory sentence stays visible and is still read straight after it.
+
 ## Manual screen-reader checklist
 
 Automation cannot judge whether announcements make sense. Run this at each stable release with **NVDA + Firefox or Chrome** on Windows and **VoiceOver + Safari** on iOS, and record the result in the release notes.
 
-1. **Landing:** the heading and the assignment sentence are read; _Start 5 minutes_ is announced as unavailable, then available once the piano loads.
+1. **Landing:** the heading, the feel headline and the assignment sentence are read; _Start 5 minutes_ is announced as unavailable, then available once the piano loads.
 2. **Assignment editing:** open _Change the assignment_; every select, lock toggle and chord-palette button has a name and state; an invalid custom progression is explained; _Apply_ announces the result.
-3. **Guided practice:** starting announces the step and the timer; _Pause_, _Next_, _End session_ are reachable; step changes are announced without flooding.
+3. **Guided practice:** starting announces the step and the timer and lands focus on _Pause_; the hidden tools are not reachable while practising; _Pause_, _Next_, _End session_ are reachable; step changes are announced without flooding. Finishing lands on the summary heading, and _Save note_ announces the result.
 4. **Playback status:** play and stop state is announced; a blocked-audio message is read.
 5. **Live piano:** one tab stop; arrows move between named keys (for example "C sharp 4"); held state is not announced repeatedly.
 6. **MIDI:** connect, device name, disconnect and the unsupported-browser message are read.
