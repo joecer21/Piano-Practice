@@ -42,6 +42,18 @@ test("loads, generates, plays, stops, and switches piano models", async ({ page 
     return snapshot?.libraries?.[snapshot.activeLibraryId]?.phase === "ready";
   });
 
+  await page.getByText("Mix and feel").click();
+  await page.locator("#mix-left-volume").fill("-6");
+  await expect(page.locator("#mix-left-volume")).toHaveValue("-6");
+  await page.locator("#mix-left-mute").check();
+  await expect(page.locator("#mix-left-mute")).toBeChecked();
+  await page.locator("#humanize-toggle").check();
+  await expect(page.locator("#humanize-amount")).toBeEnabled();
+  await page.locator("#humanize-amount").fill("25");
+  await expect(page.locator("#humanize-amount").locator("xpath=preceding-sibling::span/output")).toHaveText(
+    "25%",
+  );
+
   const livePiano = page.locator("#piano-visual");
   await expect(page.getByRole("heading", { name: "Keyboard", exact: true })).toBeVisible();
   await expect(livePiano.locator(".piano-key")).toHaveCount(testInfo.project.name === "mobile" ? 25 : 53);

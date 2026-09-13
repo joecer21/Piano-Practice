@@ -966,8 +966,9 @@ body {
   }
 }
 
-/* ---- The remaining legacy sound controls -------------------------------- */
+/* ---- Sound controls ------------------------------------------------------ */
 
+.coach-settings,
 .legacy-drawer {
   margin-top: var(--space-6);
   border: 1px solid var(--line);
@@ -976,13 +977,129 @@ body {
   color: var(--ink);
 }
 
-.legacy-drawer > summary {
+.coach-settings > summary,
+.legacy-drawer > summary,
+.coach-mix-settings > summary {
   min-height: var(--touch-target);
   display: flex;
   align-items: center;
   padding: 0 var(--space-4);
   cursor: pointer;
   font-weight: 700;
+}
+
+.coach-settings-body {
+  display: grid;
+  gap: var(--space-4);
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.coach-settings-body h2 {
+  margin: 0 0 var(--space-3);
+  font-size: 1rem;
+}
+
+.coach-settings-grid,
+.coach-mix-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.coach-setting {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.coach-setting output {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-setting :is(select, input[type="range"]) {
+  width: 100%;
+}
+
+.coach-setting select {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.coach-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.coach-check {
+  min-height: var(--touch-target);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.coach-sampler-status {
+  display: grid;
+  gap: 2px;
+  margin-top: var(--space-2);
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+}
+
+.coach-sampler-status.error {
+  color: #a0322a;
+}
+
+.coach-mix-settings {
+  border-top: 1px solid var(--line);
+}
+
+.coach-mix-settings > summary {
+  padding: 0;
+}
+
+.coach-mix-body fieldset {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.coach-mix-body legend {
+  padding: 0 var(--space-1);
+  font-weight: 700;
+}
+
+@media (prefers-color-scheme: dark) {
+  .coach-sampler-status.error {
+    color: #ff9d94;
+  }
+}
+
+@media (max-width: 600px) {
+  .coach-settings-grid,
+  .coach-mix-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- The remaining legacy reference controls --------------------------- */
+
+.legacy-drawer {
+  margin-top: var(--space-3);
 }
 
 .legacy-drawer-body {

@@ -55,123 +55,6 @@ body {
   color: #6c5a4f;
 }
 
-.transport-controls {
-  background: #fffefd;
-  border-radius: 16px;
-  padding: 1rem 1.25rem;
-  box-shadow: 0 12px 30px rgba(55, 37, 24, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  min-width: 220px;
-}
-
-.sampler-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  align-items: flex-start;
-}
-
-.sampler-panel label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #5b341f;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-#piano-model {
-  border-radius: 8px;
-  border: 1px solid #e2d2c3;
-  background: #fffefd;
-  padding: 0.35rem 0.5rem;
-  font-weight: 600;
-  color: #2a1f19;
-}
-
-.transport-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.transport-controls label {
-  font-weight: 600;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-#tempo-slider {
-  width: 100%;
-}
-
-#tempo-value {
-  font-size: 0.9rem;
-  color: #8b7567;
-}
-
-.badge {
-  padding: 0.25rem 0.6rem;
-  border-radius: 999px;
-  background: #ffe9d7;
-  color: #5b341f;
-  font-weight: 700;
-  font-size: 0.8rem;
-  display: inline-block;
-}
-
-.badge.active {
-  box-shadow: 0 0 0 2px #f3c8a5;
-}
-
-.badge.inactive {
-  background: #f0e5da;
-  color: #7a6254;
-}
-
-/* Audio status surface. renderSamplerStatus appends one .sampler-row per
-   library; the rows must stack rather than run together inline. */
-#sampler-status {
-  margin-top: 0.4rem;
-  line-height: 1.45;
-  text-align: left;
-  max-width: 22rem;
-}
-#sampler-status:empty {
-  display: none;
-}
-.sampler-row {
-  display: block;
-  font-weight: 600;
-  font-size: 0.75rem;
-}
-.sampler-row.error,
-.sampler-row.timeout {
-  color: #a0382a;
-}
-.sampler-row.ready {
-  color: #1f7a52;
-}
-
-.badge.loading {
-  background: #fff3d4;
-  color: #8b5a1e;
-}
-
-.badge.ready {
-  background: #e0f8ec;
-  color: #1a6b3c;
-}
-
-.badge.error {
-  background: #ffe7e7;
-  color: #8c2727;
-}
-
 #piano-roll {
   margin-top: 0.8rem;
   width: 100%;
@@ -503,27 +386,6 @@ select {
   border-color: #e4c09f;
 }
 
-.mix-card {
-  margin-bottom: 1.5rem;
-}
-
-.mix-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.mix-row {
-  background: #f9f4ef;
-  border-radius: 18px;
-  padding: 1rem;
-  border: 1px solid #eadbd0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
 .lh-row {
   transition:
     background 0.2s ease,
@@ -533,75 +395,6 @@ select {
 .lh-row.active {
   background: #f4e6da;
   box-shadow: inset 0 0 0 2px rgba(227, 173, 125, 0.6);
-}
-
-.mix-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 0.5rem;
-}
-
-.mix-label h4 {
-  margin: 0;
-}
-
-.mix-row label {
-  display: flex;
-  flex-direction: column;
-  font-weight: 600;
-  color: #5f4b42;
-  gap: 0.25rem;
-}
-
-.mute-label {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.4rem;
-  font-weight: 500;
-}
-
-.humanize-controls {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
-  align-items: center;
-}
-
-.humanize-controls label {
-  display: flex;
-  flex-direction: column;
-  font-weight: 600;
-  color: #5f4b42;
-  gap: 0.3rem;
-}
-
-.humanize-controls .toggle {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 700;
-}
-
-.spatial-controls {
-  margin-top: 1rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
-}
-
-.spatial-controls label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  font-weight: 600;
-  color: #5f4b42;
-}
-
-.spatial-controls .toggle {
-  flex-direction: row;
-  align-items: center;
-  font-weight: 700;
 }
 
 .card-head {
@@ -616,12 +409,6 @@ select {
 .card-head h2 {
   margin: 0;
   font-size: 1.25rem;
-}
-
-.mix-card.collapsed .mix-grid,
-.mix-card.collapsed .humanize-controls,
-.mix-card.collapsed .spatial-controls {
-  display: none;
 }
 
 .card .play {

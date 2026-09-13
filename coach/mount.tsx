@@ -19,6 +19,7 @@ export function mountCoach(bridge: CoachBridge, doc: Document = document): () =>
         bridge={bridge}
         summaryContainer={doc.getElementById("coach-summary")}
         inputContainer={doc.getElementById("coach-input")}
+        settingsContainer={doc.getElementById("coach-settings")}
       />
     </StrictMode>,
   );

@@ -109,105 +109,11 @@
 
       <div id="status-line" class="status-line" role="status" aria-live="polite" aria-atomic="true"></div>
 
-      <details id="settings-drawer" class="legacy-drawer">
-        <summary>Sound and playback settings</summary>
+      <div id="coach-settings"></div>
+
+      <details id="reference-drawer" class="legacy-drawer">
+        <summary>Reference and audition tools</summary>
         <div class="legacy-drawer-body">
-          <section class="card legacy-transport-card" aria-labelledby="legacy-transport-title">
-            <h2 id="legacy-transport-title">Sound and playback</h2>
-            <div class="transport-controls">
-              <label>
-                Tempo
-                <input type="range" id="tempo-slider" min="60" max="140" value="90" />
-                <span id="tempo-value">90 BPM</span>
-              </label>
-              <div class="transport-row">
-                <button id="play-all">Play All</button>
-                <label class="loop-toggle" for="play-all-loop" style="margin-left: 8px">
-                  <input type="checkbox" id="play-all-loop" /> Loop
-                </label>
-                <span id="play-all-loop-badge" class="badge"></span>
-              </div>
-              <div class="sampler-panel">
-                <label class="piano-model-select" for="piano-model">
-                  Piano Model
-                  <select id="piano-model">
-                    <option value="local-soft" selected>Piano Lite - Soft (Default)</option>
-                    <option value="fuhton-piano">Fuhton Piano</option>
-                    <option value="local-bright">Piano HL - Bright</option>
-                    <option value="salamander-lite">Salamander Lite</option>
-                  </select>
-                </label>
-                <div id="sampler-status" class="badge" aria-hidden="true"></div>
-              </div>
-              <button id="stop-all">Stop All</button>
-            </div>
-          </section>
-
-          <section class="card mix-card collapsed" id="mix-card">
-            <div class="card-head">
-              <h2>Mix & Feel</h2>
-              <button
-                id="mix-card-toggle"
-                class="ghost small"
-                type="button"
-                aria-expanded="false"
-                aria-controls="mix-card-content"
-              >
-                Show
-              </button>
-            </div>
-            <div class="mix-grid" id="mix-card-content">
-              <div class="mix-row">
-                <div class="mix-label">
-                  <h4>Left Hand</h4>
-                  <span id="mix-left-volume-value">0 dB</span>
-                </div>
-                <label>
-                  Volume
-                  <input type="range" id="mix-left-volume" min="-24" max="6" step="1" value="0" />
-                </label>
-                <label class="mute-label"> <input type="checkbox" id="mix-left-mute" /> Mute </label>
-              </div>
-              <div class="mix-row">
-                <div class="mix-label">
-                  <h4>Motif / Lead</h4>
-                  <span id="mix-lead-volume-value">0 dB</span>
-                </div>
-                <label>
-                  Volume
-                  <input type="range" id="mix-lead-volume" min="-24" max="6" step="1" value="0" />
-                </label>
-                <label class="mute-label"> <input type="checkbox" id="mix-lead-mute" /> Mute </label>
-              </div>
-            </div>
-            <div class="humanize-controls">
-              <label class="toggle"> <input type="checkbox" id="humanize-toggle" /> Humanize & Swing </label>
-              <label>
-                Feel Amount
-                <input type="range" id="humanize-amount" min="0" max="100" step="1" value="0" />
-                <span id="humanize-value">0%</span>
-              </label>
-              <label>
-                Swing Push
-                <input type="range" id="swing-amount" min="0" max="100" step="1" value="0" />
-                <span id="swing-value">0%</span>
-              </label>
-            </div>
-            <div class="spatial-controls">
-              <label>
-                Reverb Mix
-                <input type="range" id="reverb-wet" min="0" max="60" step="1" value="0" />
-                <span id="reverb-wet-value">0%</span>
-              </label>
-              <label class="toggle"> <input type="checkbox" id="room-size-toggle" /> Large Room </label>
-              <label>
-                Motif Width
-                <input type="range" id="motif-width" min="0" max="100" step="1" value="0" />
-                <span id="motif-width-value">0%</span>
-              </label>
-            </div>
-          </section>
-
           <section class="cards">
             <article class="card" id="piano-roll-card">
               <div class="card-head">

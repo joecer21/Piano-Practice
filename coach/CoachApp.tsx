@@ -21,6 +21,7 @@ import type { PracticeControls } from "./practice.js";
 import { PracticePanel } from "./PracticePanel.js";
 import { pianoReadiness } from "./sampler.js";
 import { SessionHeader } from "./SessionHeader.js";
+import { SoundSettings } from "./SoundSettings.js";
 import {
   DEFAULT_SESSION_LENGTH,
   IDLE_SESSION,
@@ -45,11 +46,18 @@ type CoachAppProps = {
   summaryContainer: HTMLElement | null;
   /** Where the MIDI keyboard control renders, beside the keyboard. */
   inputContainer?: HTMLElement | null;
+  /** Static slot that keeps settings below the status line and above reference tools. */
+  settingsContainer?: HTMLElement | null;
 };
 
 const TIMER_TICK_MS = 250;
 
-export function CoachApp({ bridge, summaryContainer, inputContainer = null }: CoachAppProps) {
+export function CoachApp({
+  bridge,
+  summaryContainer,
+  inputContainer = null,
+  settingsContainer = null,
+}: CoachAppProps) {
   const assignment = useSyncExternalStore(bridge.subscribeAssignment, bridge.getAssignment);
   const samplerSnapshot = useSyncExternalStore(bridge.subscribeSampler, bridge.getSamplerSnapshot);
   const readiness = useMemo(() => pianoReadiness(samplerSnapshot), [samplerSnapshot]);
@@ -487,6 +495,12 @@ export function CoachApp({ bridge, summaryContainer, inputContainer = null }: Co
         onChangeAssignment={openAssignmentWorkspace}
         assignmentActions={libraryControls}
       />
+      {settingsContainer
+        ? createPortal(
+            <SoundSettings settings={bridge.soundSettings} sampler={samplerSnapshot} />,
+            settingsContainer,
+          )
+        : null}
     </>
   );
 }

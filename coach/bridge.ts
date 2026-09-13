@@ -42,8 +42,37 @@ export type CoachBridge = {
   rerollIntoNewKey(): boolean;
   /** Edit and regenerate the assignment without exposing the legacy DOM or mutable store. */
   assignmentEditor: AssignmentEditor;
+  /** Reactive sound controls, expressed in the units shown to the player. */
+  soundSettings: SoundSettings;
   /** Starred assignments, share links and practice preferences, kept in this browser. */
   library: CoachLibrary;
+};
+
+export type MixPart = "left" | "lead";
+
+export type SoundSettingsSnapshot = {
+  tempoBpm: number;
+  mix: Record<MixPart, { volumeDb: number; muted: boolean }>;
+  humanize: { enabled: boolean; amountPercent: number; swingPercent: number };
+  effects: { reverbPercent: number; largeRoom: boolean; motifWidthPercent: number };
+};
+
+export type SoundSettings = {
+  /** Must return the same object until one of these settings changes. */
+  getSnapshot(): SoundSettingsSnapshot;
+  subscribe(listener: () => void): () => void;
+  setTempo(tempoBpm: number): void;
+  selectLibrary(libraryId: string): Promise<void>;
+  playAll(loop: boolean): Promise<void>;
+  stopAll(): void;
+  setMixVolume(part: MixPart, volumeDb: number): void;
+  setMixMuted(part: MixPart, muted: boolean): void;
+  setHumanizeEnabled(enabled: boolean): void;
+  setHumanizeAmount(amountPercent: number): void;
+  setSwingAmount(swingPercent: number): void;
+  setReverb(reverbPercent: number): void;
+  setLargeRoom(enabled: boolean): void;
+  setMotifWidth(widthPercent: number): void;
 };
 
 export type AssignmentEditorSnapshot = {

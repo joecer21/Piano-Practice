@@ -1,8 +1,11 @@
 export type SamplerLibraryStatus = {
+  libraryId?: string;
   label?: string;
   phase?: string;
   progress?: number;
   error?: string | null;
+  isDefault?: boolean;
+  active?: boolean;
 };
 
 export type SamplerSnapshot = {

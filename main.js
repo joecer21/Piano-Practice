@@ -65,15 +65,8 @@ import {
   renderMotif,
   renderPianoRoll,
   renderProgressionPresetInfo,
-  setTempoValue,
   setStatusMessage,
   setPlayButtonsEnabled,
-  updateLoopBadge,
-  renderMixControls,
-  renderHumanizeControls,
-  renderSpatialControls,
-  renderSamplerStatus,
-  setMixCardCollapsed,
   updatePianoRollPlayhead,
   updateMotifPlayhead,
   highlightProgressionBar,
@@ -82,7 +75,6 @@ import {
   highlightScaleNote,
   resetPlaybackIndicators,
   runAssignmentPulse,
-  pulseSamplerBadge,
   showHint,
   pulseElement,
 } from "./ui.js";
@@ -137,10 +129,8 @@ function init() {
   if (dom.pianoChordMode) dom.pianoChordMode.value = state.ui.livePianoChordMode;
   buildPianoVisual(dom);
   attachPianoNoteListeners(dom);
-  renderSamplerStatus(dom, samplerSnapshot);
   renderPlaceholders(dom);
   state.tempo = practiceLibrary.tempo() ?? state.tempo;
-  if (dom.tempoSlider) dom.tempoSlider.value = state.tempo;
   updateTempo(state.tempo);
   const initialStyleProfile = getStyleProfile(state.inputs.styleId);
   state.derived.styleProfile = initialStyleProfile;
@@ -154,25 +144,8 @@ function init() {
   setMixSettings(state.mix);
   updateAudioHumanize();
   applyFxSettings();
-  renderMixControls(dom, state.mix);
-  renderHumanizeControls(dom, state.playback);
-  renderSpatialControls(dom, state.fx);
-  setMixCardCollapsed(dom, state.ui.mixCollapsed);
   wireEvents(dom, {
-    onTempoChange: updateTempo,
-    onStopAll: handleStopAll,
-    onPlayAll: handlePlayAll,
     onPlay: handlePlay,
-    onMixChange: handleMixVolumeChange,
-    onMixMute: handleMixMuteChange,
-    onHumanizeToggle: handleHumanizeToggle,
-    onHumanizeAmount: handleHumanizeAmount,
-    onSwingAmount: handleSwingAmount,
-    onReverbWetChange: handleReverbWetChange,
-    onRoomSizeToggle: handleRoomSizeToggle,
-    onMotifWidthChange: handleMotifWidthChange,
-    onLibrarySelect: handleLibrarySelect,
-    onMixCardToggle: handleMixCardToggle,
     onPianoKeyDown: handlePianoKeyDown,
     onPianoKeyUp: handlePianoKeyUp,
     onPianoIndicatorModeChange: handlePianoIndicatorModeChange,
@@ -180,8 +153,6 @@ function init() {
     onPianoComputerKeyboardChange: handlePianoComputerKeyboardChange,
     onPianoChordModeChange: handlePianoChordModeChange,
   });
-  dom.playAllLoop?.addEventListener("change", handlePlayAllLoopToggle);
-  updateLoopBadge(dom, dom.playAllLoop?.checked || false);
 
   // Not { once: true }: if Tone.start() rejects, the listener would already be
   // gone and the user would be left with a page that silently never plays.
@@ -272,7 +243,68 @@ function createCoachBridge() {
     setMidiPlayThrough,
     rerollIntoNewKey,
     assignmentEditor: createAssignmentEditor(),
+    soundSettings: createSoundSettings(),
     library: createCoachLibrary(),
+  };
+}
+
+/** Sound state and commands for the React settings disclosure. */
+function createSoundSettings() {
+  const listeners = new Set();
+  let cachedSignature = "";
+  let cachedSnapshot = null;
+  const publish = () => {
+    cachedSignature = "";
+    listeners.forEach((listener) => listener());
+  };
+  const change =
+    (operation) =>
+    (...args) => {
+      operation(...args);
+      publish();
+    };
+
+  return {
+    getSnapshot() {
+      const signature = JSON.stringify([state.tempo, state.mix, state.playback, state.fx]);
+      if (!cachedSnapshot || signature !== cachedSignature) {
+        cachedSignature = signature;
+        cachedSnapshot = {
+          tempoBpm: Number(state.tempo),
+          mix: {
+            left: { volumeDb: state.mix.left.volume, muted: state.mix.left.mute },
+            lead: { volumeDb: state.mix.lead.volume, muted: state.mix.lead.mute },
+          },
+          humanize: {
+            enabled: state.playback.humanizeEnabled,
+            amountPercent: Math.round(state.playback.humanizeAmount * 100),
+            swingPercent: Math.round(state.playback.swingAmount * 100),
+          },
+          effects: {
+            reverbPercent: Math.round(state.fx.reverbWet * 100),
+            largeRoom: state.fx.roomSizeLarge,
+            motifWidthPercent: Math.round(state.fx.motifWidth * 100),
+          },
+        };
+      }
+      return cachedSnapshot;
+    },
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    setTempo: change(updateTempo),
+    selectLibrary: handleLibrarySelect,
+    playAll: handlePlayAll,
+    stopAll: handleStopAll,
+    setMixVolume: change(handleMixVolumeChange),
+    setMixMuted: change(handleMixMuteChange),
+    setHumanizeEnabled: change(handleHumanizeToggle),
+    setHumanizeAmount: change(handleHumanizeAmount),
+    setSwingAmount: change(handleSwingAmount),
+    setReverb: change(handleReverbWetChange),
+    setLargeRoom: change(handleRoomSizeToggle),
+    setMotifWidth: change(handleMotifWidthChange),
   };
 }
 
@@ -390,7 +422,6 @@ function assignmentTitle(inputs) {
 function updateTempo(value) {
   state.tempo = value;
   audioEngine.setTempo(Number(value));
-  setTempoValue(dom, value);
   practiceLibrary.rememberTempo(Number(value));
 }
 
@@ -545,7 +576,6 @@ function ensureSamplerReady() {
     return true;
   }
   showHint(dom, "Piano samples are still loading. We'll let you know when they're ready.");
-  pulseSamplerBadge(dom);
   return false;
 }
 
@@ -710,14 +740,12 @@ function handlePianoChordModeChange(mode) {
   state.ui.livePianoChordMode = mode || "single";
 }
 
-async function handlePlayAll() {
+async function handlePlayAll(loopEnabled = false) {
   if (!ensureAssignmentReady() || !ensureSamplerReady()) {
     return;
   }
   if (!(await unlockAudio())) return;
   stopAllPlayback();
-  const loopEnabled = dom.playAllLoop?.checked || false;
-  updateLoopBadge(dom, loopEnabled);
   applyPlayAllLoop(loopEnabled);
   playScoreParts(["lh", "rh"], loopEnabled);
   publishTransportState();
@@ -731,12 +759,6 @@ async function handlePlayAll() {
     showMotif: !!state.derived?.motif,
     motifBeats,
   });
-}
-
-function handlePlayAllLoopToggle(event) {
-  const enabled = !!event.target.checked;
-  updateLoopBadge(dom, enabled);
-  applyPlayAllLoop(enabled);
 }
 
 function playScoreParts(parts, loopEnabled, barRange) {
@@ -919,9 +941,6 @@ function renderAll() {
     state.derived.styleProfile || getStyleProfile(state.inputs.styleId),
     state.derived.progression,
   );
-  renderMixControls(dom, state.mix);
-  renderHumanizeControls(dom, state.playback);
-  renderSpatialControls(dom, state.fx);
   syncPlayButtonsAvailability();
 }
 
@@ -991,19 +1010,12 @@ function handleMixVolumeChange(partId, value) {
   const clamped = clampDb(value);
   state.mix[partId] = { ...state.mix[partId], volume: clamped };
   setMixSettings({ [partId]: state.mix[partId] });
-  renderMixControls(dom, state.mix);
 }
 
 function handleMixMuteChange(partId, mute) {
   if (!MIX_PARTS.includes(partId)) return;
   state.mix[partId] = { ...state.mix[partId], mute: !!mute };
   setMixSettings({ [partId]: state.mix[partId] });
-  renderMixControls(dom, state.mix);
-}
-
-function handleMixCardToggle() {
-  state.ui.mixCollapsed = !state.ui.mixCollapsed;
-  setMixCardCollapsed(dom, state.ui.mixCollapsed);
 }
 
 function applyPreset(presetId) {
@@ -1024,38 +1036,32 @@ function applyPreset(presetId) {
 
 function handleHumanizeToggle(enabled) {
   state.playback.humanizeEnabled = !!enabled;
-  renderHumanizeControls(dom, state.playback);
   updateAudioHumanize();
 }
 
 function handleHumanizeAmount(value) {
   state.playback.humanizeAmount = clamp01(value / 100);
-  renderHumanizeControls(dom, state.playback);
   updateAudioHumanize();
 }
 
 function handleSwingAmount(value) {
   state.playback.swingAmount = clamp01(value / 100);
-  renderHumanizeControls(dom, state.playback);
   updateAudioHumanize();
 }
 
 function handleReverbWetChange(value) {
   state.fx.reverbWet = clamp01(value / 100);
   setReverbWet(state.fx.reverbWet);
-  renderSpatialControls(dom, state.fx);
 }
 
 function handleRoomSizeToggle(isLarge) {
   state.fx.roomSizeLarge = !!isLarge;
   setRoomSize(state.fx.roomSizeLarge ? "large" : "small");
-  renderSpatialControls(dom, state.fx);
 }
 
 function handleMotifWidthChange(value) {
   state.fx.motifWidth = clamp01(value / 100);
   setMotifWidth(state.fx.motifWidth);
-  renderSpatialControls(dom, state.fx);
 }
 
 function updateAudioHumanize() {
@@ -1084,8 +1090,6 @@ function handleSamplerStatus(status = {}) {
   if (typeof window !== "undefined") {
     window.__samplerSnapshot = samplerSnapshot;
   }
-  renderSamplerStatus(dom, samplerSnapshot);
-
   if (status.isDefault && status.phase !== "ready") {
     setPlayButtonsEnabled(dom, false);
   }
@@ -1150,7 +1154,6 @@ async function loadLibraryChoice(libraryId, { allowActiveReload, verb } = {}) {
     }
   }
   librarySwitchPending = true;
-  lockPianoModelSelect(true);
   const targetLabel = getSamplerLabelById(libraryId);
   setStatusMessage(dom, `${verb || "Switching"} ${targetLabel} samples…`, {
     ambient: true,
@@ -1163,19 +1166,9 @@ async function loadLibraryChoice(libraryId, { allowActiveReload, verb } = {}) {
     setStatusMessage(dom, `Unable to load ${targetLabel}: ${err?.message || err}`, {
       tone: "error",
     });
-    if (!allowActiveReload && dom.pianoModel && samplerSnapshot?.activeLibraryId) {
-      dom.pianoModel.value = samplerSnapshot.activeLibraryId;
-    }
   } finally {
     librarySwitchPending = false;
-    lockPianoModelSelect(false);
   }
-}
-
-function lockPianoModelSelect(locked) {
-  if (!dom.pianoModel) return;
-  dom.pianoModel.dataset.locked = locked ? "true" : "false";
-  dom.pianoModel.disabled = !!locked;
 }
 
 function getSamplerLabelById(libraryId) {

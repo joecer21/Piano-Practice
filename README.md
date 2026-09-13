@@ -57,15 +57,15 @@ Sample filenames spell sharps with `s` (`ds3vl.mp3`), because a literal `#` in a
 - `domain/describe.ts` turns Score facts into deterministic practice-coach language.
 - `domain/random.js` provides the reproducible pseudo-random stream and derived seeds.
 - `domain/live-piano.js` expands interactive keys into deterministic chord shapes.
-- `coach/` is the React practice surface: the assignment workspace (`AssignmentWorkspace.tsx`), one-sentence summary and five-minute session (`CoachApp.tsx`), Score-drawn timeline (`Timeline.tsx`), degree and note-role overlay on the keyboard (`keyboard-overlay.ts`), and the pure request and playhead logic behind slow, loop and isolate (`practice.ts`). It reaches the rest of the app only through typed services in `bridge.ts`.
+- `coach/` is the React practice surface: the assignment workspace (`AssignmentWorkspace.tsx`), sound and playback settings (`SoundSettings.tsx`), one-sentence summary and five-minute session (`CoachApp.tsx`), Score-drawn timeline (`Timeline.tsx`), degree and note-role overlay on the keyboard (`keyboard-overlay.ts`), and the pure request and playhead logic behind slow, loop and isolate (`practice.ts`). It reaches the rest of the app only through typed services in `bridge.ts`.
 - `input/` is the single stream of notes the player plays, from any source: pointer, on-screen key, computer keys or MIDI (`note-input.ts`), the held and pedal-sustained state derived from it (`held-notes.ts`), and the Web MIDI adapter (`midi.ts`). It imports nothing from the app, UI or audio.
 - `application/state.js` owns assignment commits, bounded undo/redo history, and component locks without imposing a UI framework.
 - `components/piano.js` renders the Live Piano and responds to playback note events.
-- `main.js` composes application services, coordinates the remaining page controls, and requests playback without importing Tone.js.
+- `main.js` composes application services, coordinates the piano and remaining reference tools, and requests playback without importing Tone.js.
 - `audio/playback-engine.ts` owns validated Score playback requests, scheduled-event ownership, count-in, rate conversion, and session lifecycle.
 - `audio.js` adapts that engine to Tone.js instruments, sample loading, transport, mix, and effects.
 - `engine.js`, `theory.js`, and `presets.js` generate the musical material.
-- `ui.js` renders and wires the remaining pre-React sound, playback, mix, piano-roll and reference panels. Assignment editing no longer uses it.
+- `ui.js` wires the framework-independent piano interactions and renders the remaining pre-React reference and audition panels. Assignment editing and sound settings no longer use it.
 - `audio/local-samples.js` is the local sample manifest, free of Tone.js so it can be validated directly.
 - `tests/*.spec.js` contains the Vitest contract suite.
 - `tests/browser/` covers the practice flow and pins previously-shipped defects as user-visible behaviour.

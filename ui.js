@@ -11,8 +11,6 @@ import {
 } from "./theory.js";
 import { formatDegreeToken } from "./domain/describe.ts";
 
-const MIX_PARTS = ["left", "lead"];
-
 const hasWindow = typeof window !== "undefined";
 const scheduleTimeout = hasWindow ? window.setTimeout.bind(window) : setTimeout;
 const clearScheduledTimeout = hasWindow ? window.clearTimeout.bind(window) : clearTimeout;
@@ -80,21 +78,7 @@ let statusResetTimer = null;
 let lastPersistentStatus = "";
 
 export function cacheDom() {
-  const mixControls = MIX_PARTS.reduce((acc, part) => {
-    acc[part] = {
-      volume: document.getElementById(`mix-${part}-volume`),
-      volumeLabel: document.getElementById(`mix-${part}-volume-value`),
-      mute: document.getElementById(`mix-${part}-mute`),
-    };
-    return acc;
-  }, {});
-
   return {
-    tempoSlider: document.getElementById("tempo-slider"),
-    tempoValue: document.getElementById("tempo-value"),
-    stopAll: document.getElementById("stop-all"),
-    playAll: document.getElementById("play-all"),
-    playAllLoop: document.getElementById("play-all-loop"),
     scaleLoop: document.getElementById("scale-loop"),
     lhLoop: document.getElementById("lh-loop"),
     motifLoop: document.getElementById("motif-loop"),
@@ -122,31 +106,11 @@ export function cacheDom() {
     statusLine: document.getElementById("status-line"),
     playButtons: document.querySelectorAll(".play"),
     cards: document.querySelectorAll(".card"),
-    playAllLoopBadge: document.getElementById("play-all-loop-badge"),
-    pianoModel: document.getElementById("piano-model"),
-    samplerStatus: document.getElementById("sampler-status"),
     pianoRollPlayhead: document.getElementById("piano-roll-playhead"),
-    mixControls,
-    mixCard: document.querySelector(".mix-card"),
-    mixCardToggle: document.getElementById("mix-card-toggle"),
-    humanizeToggle: document.getElementById("humanize-toggle"),
-    humanizeAmount: document.getElementById("humanize-amount"),
-    humanizeValue: document.getElementById("humanize-value"),
-    swingAmount: document.getElementById("swing-amount"),
-    swingValue: document.getElementById("swing-value"),
-    reverbWet: document.getElementById("reverb-wet"),
-    reverbWetValue: document.getElementById("reverb-wet-value"),
-    roomSizeToggle: document.getElementById("room-size-toggle"),
-    motifWidth: document.getElementById("motif-width"),
-    motifWidthValue: document.getElementById("motif-width-value"),
   };
 }
 
 export function wireEvents(dom, handlers) {
-  dom.tempoSlider?.addEventListener("input", (e) => handlers.onTempoChange(Number(e.target.value)));
-  dom.stopAll?.addEventListener("click", handlers.onStopAll);
-  dom.playAll?.addEventListener("click", handlers.onPlayAll);
-
   dom.playButtons.forEach((btn) => {
     btn.addEventListener("click", (e) => {
       const target = e.currentTarget.dataset.target;
@@ -155,11 +119,6 @@ export function wireEvents(dom, handlers) {
     });
   });
 
-  dom.mixCardToggle?.addEventListener("click", () => handlers.onMixCardToggle?.());
-  dom.pianoModel?.addEventListener("change", (e) => {
-    const value = e.target.value;
-    handlers.onLibrarySelect?.(value);
-  });
   dom.pianoIndicatorRadios?.forEach((radio) => {
     radio.addEventListener("change", () => {
       if (!radio.checked) return;
@@ -177,38 +136,6 @@ export function wireEvents(dom, handlers) {
   });
 
   wireLivePianoInteractions(dom, handlers);
-
-  if (handlers.onMixChange || handlers.onMixMute) {
-    MIX_PARTS.forEach((part) => {
-      const controls = dom.mixControls?.[part];
-      if (!controls) return;
-      controls.volume?.addEventListener("input", (e) => {
-        handlers.onMixChange?.(part, Number(e.target.value));
-      });
-      controls.mute?.addEventListener("change", (e) => {
-        handlers.onMixMute?.(part, e.target.checked);
-      });
-    });
-  }
-
-  dom.humanizeToggle?.addEventListener("change", (e) => {
-    handlers.onHumanizeToggle?.(e.target.checked);
-  });
-  dom.humanizeAmount?.addEventListener("input", (e) => {
-    handlers.onHumanizeAmount?.(Number(e.target.value));
-  });
-  dom.swingAmount?.addEventListener("input", (e) => {
-    handlers.onSwingAmount?.(Number(e.target.value));
-  });
-  dom.reverbWet?.addEventListener("input", (e) => {
-    handlers.onReverbWetChange?.(Number(e.target.value));
-  });
-  dom.roomSizeToggle?.addEventListener("change", (e) => {
-    handlers.onRoomSizeToggle?.(e.target.checked);
-  });
-  dom.motifWidth?.addEventListener("input", (e) => {
-    handlers.onMotifWidthChange?.(Number(e.target.value));
-  });
 }
 
 function wireLivePianoInteractions(dom, handlers) {
@@ -696,193 +623,6 @@ export function renderPianoRoll(state, dom) {
   updatePianoRollPlayhead(dom, null);
 }
 
-export function renderMixControls(dom, mixState) {
-  if (!dom.mixControls || !mixState) return;
-  MIX_PARTS.forEach((part) => {
-    const controls = dom.mixControls[part];
-    const settings = mixState[part];
-    if (!controls || !settings) return;
-    if (controls.volume && typeof settings.volume === "number") {
-      controls.volume.value = settings.volume;
-      if (controls.volumeLabel) {
-        controls.volumeLabel.textContent = formatDb(settings.volume, settings.mute);
-      }
-    }
-    if (controls.mute) {
-      controls.mute.checked = !!settings.mute;
-    }
-  });
-}
-
-export function renderHumanizeControls(dom, playback) {
-  if (!playback) return;
-  const enabled = !!playback.humanizeEnabled;
-  if (dom.humanizeToggle) dom.humanizeToggle.checked = enabled;
-  const amountPercent = Math.round((playback.humanizeAmount || 0) * 100);
-  const swingPercent = Math.round((playback.swingAmount || 0) * 100);
-  if (dom.humanizeAmount) {
-    dom.humanizeAmount.value = amountPercent;
-    dom.humanizeAmount.disabled = !enabled;
-  }
-  if (dom.swingAmount) {
-    dom.swingAmount.value = swingPercent;
-    dom.swingAmount.disabled = !enabled;
-  }
-  if (dom.humanizeValue) dom.humanizeValue.textContent = `${amountPercent}%`;
-  if (dom.swingValue) dom.swingValue.textContent = `${swingPercent}%`;
-}
-
-export function renderSpatialControls(dom, fx = {}) {
-  if (dom.reverbWet) {
-    const wetPercent = Math.round((fx.reverbWet ?? 0) * 100);
-    dom.reverbWet.value = Math.min(60, wetPercent);
-    if (dom.reverbWetValue) dom.reverbWetValue.textContent = `${wetPercent}%`;
-  }
-  if (dom.roomSizeToggle) {
-    dom.roomSizeToggle.checked = !!fx.roomSizeLarge;
-  }
-  if (dom.motifWidth) {
-    const widthPercent = Math.round((fx.motifWidth ?? 0) * 100);
-    dom.motifWidth.value = widthPercent;
-    if (dom.motifWidthValue) dom.motifWidthValue.textContent = `${widthPercent}%`;
-  }
-}
-
-export function setMixCardCollapsed(dom, collapsed) {
-  if (dom.mixCard) {
-    dom.mixCard.classList.toggle("collapsed", !!collapsed);
-  }
-  if (dom.mixCardToggle) {
-    dom.mixCardToggle.textContent = collapsed ? "Show" : "Hide";
-    dom.mixCardToggle.setAttribute("aria-expanded", String(!collapsed));
-  }
-}
-
-export function renderSamplerStatus(dom, snapshot = {}) {
-  const badge = dom.samplerStatus || null;
-  const libraries = Object.values(snapshot?.libraries || {});
-  if (badge) {
-    badge.classList.remove("loading", "ready", "error");
-    badge.innerHTML = "";
-  }
-
-  if (!libraries.length) {
-    if (badge) {
-      badge.textContent = "Loading piano…";
-      badge.classList.add("loading");
-    }
-    syncPianoModelSelector(dom.pianoModel, [], snapshot.activeLibraryId);
-    return;
-  }
-
-  const sorted = [...libraries].sort((a, b) => {
-    if (a.isDefault === b.isDefault) return a.label.localeCompare(b.label);
-    return a.isDefault ? -1 : 1;
-  });
-
-  if (badge) {
-    sorted.forEach((entry) => {
-      const row = document.createElement("span");
-      row.classList.add("sampler-row", entry.phase || "idle");
-      row.textContent = formatSamplerRow(entry, snapshot.activeLibraryId);
-      badge.appendChild(row);
-    });
-
-    const badgeClass = deriveBadgeClass(sorted);
-    if (badgeClass) badge.classList.add(badgeClass);
-  }
-  syncPianoModelSelector(dom.pianoModel, sorted, snapshot.activeLibraryId);
-}
-
-function formatSamplerRow(entry, activeId) {
-  const activeSuffix = entry.active || entry.libraryId === activeId ? " (active)" : "";
-  switch (entry.phase) {
-    case "ready":
-      return `${entry.label} · Ready${activeSuffix}`.trim();
-    case "progress":
-    case "init":
-    case "switching": {
-      const pct = typeof entry.progress === "number" ? `${Math.round(entry.progress * 100)}%` : "";
-      return `${entry.label} · Loading${pct ? ` ${pct}` : ""}`;
-    }
-    case "timeout":
-      return `${entry.label} · Timeout – reselect to retry`;
-    case "error":
-      return `${entry.label} · Error – ${entry.error || "check connection"}`;
-    case "standby":
-      return `${entry.label} · Pick from menu to load`;
-    case "idle":
-    default:
-      return `${entry.label} · ${entry.phase === "idle" ? "Warming up" : entry.phase || "Idle"}`;
-  }
-}
-
-function deriveBadgeClass(entries) {
-  if (entries.some((entry) => entry.phase === "error" || entry.phase === "timeout")) {
-    return "error";
-  }
-  const defaultEntry = entries.find((entry) => entry.isDefault);
-  if (defaultEntry?.phase === "ready") {
-    return "ready";
-  }
-  return "loading";
-}
-
-function syncPianoModelSelector(selectEl, libraries, activeId) {
-  if (!selectEl) return;
-  if (!libraries.length) {
-    selectEl.innerHTML = "";
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "Loading models…";
-    selectEl.appendChild(placeholder);
-    selectEl.disabled = true;
-    return;
-  }
-
-  const locked = selectEl.dataset.locked === "true";
-  const previousValue = selectEl.value;
-  selectEl.innerHTML = "";
-  libraries.forEach((entry) => {
-    const option = document.createElement("option");
-    option.value = entry.libraryId;
-    let label = entry.label || entry.libraryId;
-    if (entry.isDefault) label = `${label} (Default)`;
-    if (entry.phase === "error") {
-      label = `${label} · Error`;
-    } else if (["progress", "init", "switching"].includes(entry.phase)) {
-      label = `${label} · Loading`;
-    }
-    option.textContent = label;
-    selectEl.appendChild(option);
-  });
-
-  const hasActive = libraries.some((entry) => entry.libraryId === activeId);
-  const hasPrevious = libraries.some((entry) => entry.libraryId === previousValue);
-  const previousIsPending = libraries.some(
-    (entry) => entry.libraryId === previousValue && entry.phase !== "ready",
-  );
-  const nextValue =
-    locked && hasPrevious
-      ? previousValue
-      : previousIsPending
-        ? previousValue
-        : hasActive
-          ? activeId
-          : hasPrevious
-            ? previousValue
-            : libraries[0].libraryId;
-  selectEl.value = nextValue;
-  selectEl.disabled = locked;
-}
-
-function formatDb(value, muted) {
-  if (muted) return "Muted";
-  const rounded = Math.round(value);
-  const sign = rounded > 0 ? "+" : "";
-  return `${sign}${rounded} dB`;
-}
-
 export function renderProgressionPresetInfo(dom, preset, styleProfile, progression) {
   if (!dom.progressionDescription) return;
   const styleText = styleProfile ? `Style: ${styleProfile.label} - ${styleProfile.description}` : "";
@@ -892,10 +632,6 @@ export function renderProgressionPresetInfo(dom, preset, styleProfile, progressi
       : styleText || "Custom progression";
   const borrowedSummary = summarizeBorrowedChords(progression);
   dom.progressionDescription.textContent = borrowedSummary ? `${baseText} | ${borrowedSummary}` : baseText;
-}
-
-export function setTempoValue(dom, value) {
-  if (dom.tempoValue) dom.tempoValue.textContent = `${value} BPM`;
 }
 
 export function setStatusMessage(dom, text, options = {}) {
@@ -945,23 +681,10 @@ export function setStatusMessage(dom, text, options = {}) {
 }
 
 export function setPlayButtonsEnabled(dom, enabled) {
-  const toggles = [dom.playAll, dom.stopAll, ...(dom.playButtons ? Array.from(dom.playButtons) : [])];
-  toggles.forEach((btn) => {
+  const buttons = dom.playButtons ? Array.from(dom.playButtons) : [];
+  buttons.forEach((btn) => {
     if (btn) btn.disabled = !enabled;
   });
-}
-
-export function updateLoopBadge(dom, enabled) {
-  if (!dom.playAllLoopBadge) return;
-  const badge = dom.playAllLoopBadge;
-  const stateValue = enabled ? "on" : "off";
-  badge.textContent = enabled ? "Looping" : "Not looping";
-  badge.classList.toggle("active", enabled);
-  badge.classList.toggle("inactive", !enabled);
-  if (badge.dataset.state !== stateValue) {
-    pulseElement(badge, "badge");
-  }
-  badge.dataset.state = stateValue;
 }
 
 export function highlightScaleNote(dom, noteLabel) {
@@ -1055,12 +778,6 @@ export function runAssignmentPulse(dom, { includeMotif = true } = {}) {
     targets.push(dom.motifCard);
   }
   targets.filter(Boolean).forEach((node) => pulseElement(node, "card"));
-}
-
-export function pulseSamplerBadge(dom) {
-  if (dom.samplerStatus) {
-    pulseElement(dom.samplerStatus, "badge");
-  }
 }
 
 export function showHint(dom, message, options = {}) {
