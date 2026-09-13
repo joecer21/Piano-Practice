@@ -6,12 +6,13 @@ test("loads, generates, plays, stops, and switches piano models", async ({ page 
 
   await expect(page.getByRole("heading", { name: "5-Minute Improv Coach" })).toBeVisible();
   await openAssignmentDrawer(page);
-  await expect(page.locator("#scale-name")).not.toHaveText("--");
+  await page.locator("#scale-reference > summary").click();
+  await expect(page.getByRole("list", { name: "Scale notes" }).locator("li")).toHaveCount(7);
   await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Redo" })).toBeDisabled();
   await expect
     .poll(() =>
-      page.locator("#progression-visual").evaluate((timeline) => ({
+      page.locator(".coach-timeline").evaluate((timeline) => ({
         overflowX: getComputedStyle(timeline).overflowX,
         pageFitsViewport: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
       })),
@@ -41,6 +42,14 @@ test("loads, generates, plays, stops, and switches piano models", async ({ page 
     const snapshot = window.__samplerSnapshot;
     return snapshot?.libraries?.[snapshot.activeLibraryId]?.phase === "ready";
   });
+
+  await page.getByRole("button", { name: "Play scale" }).click();
+  await expect(page.getByRole("button", { name: "Stop scale" })).toBeVisible();
+  await expect
+    .poll(() => page.getByRole("list", { name: "Scale notes" }).locator('[aria-current="true"]').count())
+    .toBeGreaterThan(0);
+  await page.getByRole("button", { name: "Stop scale" }).click();
+  await expect(page.getByRole("button", { name: "Play scale" })).toBeVisible();
 
   await page.getByText("Mix and feel").click();
   await page.locator("#mix-left-volume").fill("-6");

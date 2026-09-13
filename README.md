@@ -57,15 +57,15 @@ Sample filenames spell sharps with `s` (`ds3vl.mp3`), because a literal `#` in a
 - `domain/describe.ts` turns Score facts into deterministic practice-coach language.
 - `domain/random.js` provides the reproducible pseudo-random stream and derived seeds.
 - `domain/live-piano.js` expands interactive keys into deterministic chord shapes.
-- `coach/` is the React practice surface: the assignment workspace (`AssignmentWorkspace.tsx`), sound and playback settings (`SoundSettings.tsx`), one-sentence summary and five-minute session (`CoachApp.tsx`), Score-drawn timeline (`Timeline.tsx`), degree and note-role overlay on the keyboard (`keyboard-overlay.ts`), and the pure request and playhead logic behind slow, loop and isolate (`practice.ts`). It reaches the rest of the app only through typed services in `bridge.ts`.
+- `coach/` is the React practice surface: the assignment workspace (`AssignmentWorkspace.tsx`), sound and playback settings (`SoundSettings.tsx`), scale reference and audition (`ScaleReference.tsx`), one-sentence summary and five-minute session (`CoachApp.tsx`), Score-drawn timeline (`Timeline.tsx`), degree and note-role overlay on the keyboard (`keyboard-overlay.ts`), and the pure request and playhead logic behind slow, loop and isolate (`practice.ts`). It reaches the rest of the app only through typed services in `bridge.ts`.
 - `input/` is the single stream of notes the player plays, from any source: pointer, on-screen key, computer keys or MIDI (`note-input.ts`), the held and pedal-sustained state derived from it (`held-notes.ts`), and the Web MIDI adapter (`midi.ts`). It imports nothing from the app, UI or audio.
 - `application/state.js` owns assignment commits, bounded undo/redo history, and component locks without imposing a UI framework.
 - `components/piano.js` renders the Live Piano and responds to playback note events.
-- `main.js` composes application services, coordinates the piano and remaining reference tools, and requests playback without importing Tone.js.
+- `main.js` composes application services, coordinates the piano, and requests playback without importing Tone.js.
 - `audio/playback-engine.ts` owns validated Score playback requests, scheduled-event ownership, count-in, rate conversion, and session lifecycle.
 - `audio.js` adapts that engine to Tone.js instruments, sample loading, transport, mix, and effects.
 - `engine.js`, `theory.js`, and `presets.js` generate the musical material.
-- `ui.js` wires the framework-independent piano interactions and renders the remaining pre-React reference and audition panels. Assignment editing and sound settings no longer use it.
+- `ui.js` wires the framework-independent piano interactions and shared status feedback. The practice, assignment, reference, and sound surfaces are React-owned.
 - `audio/local-samples.js` is the local sample manifest, free of Tone.js so it can be validated directly.
 - `tests/*.spec.js` contains the Vitest contract suite.
 - `tests/browser/` covers the practice flow and pins previously-shipped defects as user-visible behaviour.
@@ -76,6 +76,8 @@ Sample filenames spell sharps with `s` (`ds3vl.mp3`), because a literal `#` in a
 **Start 5 minutes** runs a guided session: the whole thing, left hand, right hand, chord by chord, note by note, then free improvisation over the loop, with one line of instruction for each step. Time is shared 60/45/45/60/45/45 seconds, and a step whose time is up moves on at the next bar line rather than mid-bar. Sessions can also be 2 or 10 minutes, or untimed. The summary shows what was covered and offers the same assignment again, or the same material in a new key.
 
 Outside a session the same four views are one click apart. **Hands apart** isolates a hand; selecting a bar loops it. **Chord by chord** marks the exact keys of each chord's voicing, dims everything outside the chord, and says why the chord is there ("V — the strongest pull back to home."). That wording comes from the chord's real distance from the key and its intervals, not from how the numeral is spelled. **Note by note** shows the motif as degrees and plays it with the right hand at half speed.
+
+**Scale reference** shows the assignment's collection in note order and can audition it once or on a loop. The progression, left-hand pattern, and motif are already represented by the Score timeline and the focused practice views, so they do not have separate duplicate playback panels.
 
 ## Coming back, sharing, offline
 
@@ -108,7 +110,7 @@ Each pattern also declares how it fits each pentatonic and blues collection (`co
 
 Some patterns exist only for particular collections (`modes`), such as `blues-riff-minor`, which features ♭5. Every collection has an `exemplar` pattern playing its characteristic tone: 6 in major pentatonic, ♭7 in minor pentatonic, ♭3 in major blues, ♭5 in minor blues. The seven-note modes offer the original fifteen patterns, unchanged. `npm run report:outside-collection` writes the review behind these declarations: for every outside-collection note, the chord under it and its role, metric position, duration, accent, the notes before and after, and its melodic function, plus the auditions that chose each variant. `tests/motif-compatibility.spec.js` checks each declaration against what the pattern actually plays, in every key.
 
-Score degrees always name the pitch that sounds, so Note by note, the keyboard, the reference motif panel and playback agree.
+Score degrees always name the pitch that sounds, so Note by note, the keyboard, the timeline and playback agree.
 
 ## Visual channels
 
@@ -149,6 +151,6 @@ build uses a relative base, so the same artifact works at a domain root or under
 
 Assignments are versioned, runtime-validated, and JSON-safe. Seeds reproduce the same input choices and stable assignment ID. The assignment workbench exposes deterministic rerolls, `key`/`harmony`/`groove`/`motif` locks, and bounded undo/redo history without changing the musical engine.
 
-Each committed assignment also produces a derived Score with stable per-note IDs, numeric beat timing, structured degrees, chord roles, and exact expression intent. The piano roll reads this Score directly, so its displayed octaves now match the pitches sent to playback.
+Each committed assignment also produces a derived Score with stable per-note IDs, numeric beat timing, structured degrees, chord roles, and exact expression intent. The timeline reads this Score directly, so its displayed octaves match the pitches sent to playback.
 
 Assignment playback is scheduled from that same Score through owned playback sessions. A session can be stopped without clearing another session's events, count-in sits outside the loop region, and rate changes stretch beat timing and duration without changing MIDI pitch or voicing. Humanization also remains in beat space until Tone schedules it, so tempo changes cannot desynchronize the groove.

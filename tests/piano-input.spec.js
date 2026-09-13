@@ -38,7 +38,6 @@ beforeEach(() => {
     pianoGlissToggle: document.getElementById("piano-gliss-mode"),
     pianoComputerKeyboardToggle: document.getElementById("piano-computer-keyboard"),
     pianoIndicatorRadios: [],
-    playButtons: [],
     __pianoGlissMode: false,
     __pianoComputerKeyboardEnabled: false,
   };

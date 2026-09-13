@@ -20,6 +20,7 @@ import {
 import type { PracticeControls } from "./practice.js";
 import { PracticePanel } from "./PracticePanel.js";
 import { pianoReadiness } from "./sampler.js";
+import { ScaleReference } from "./ScaleReference.js";
 import { SessionHeader } from "./SessionHeader.js";
 import { SoundSettings } from "./SoundSettings.js";
 import {
@@ -134,7 +135,7 @@ export function CoachApp({
     [bridge, readiness.state, score, stopPlayback],
   );
 
-  // A session ending elsewhere (the legacy stop button, or reaching the end of a
+  // A session ending elsewhere (a host stop command, or reaching the end of a
   // non-looping pass) must be reflected here.
   useEffect(
     () =>
@@ -495,6 +496,7 @@ export function CoachApp({
         onChangeAssignment={openAssignmentWorkspace}
         assignmentActions={libraryControls}
       />
+      <ScaleReference scale={assignment?.scale ?? null} audition={bridge.scaleAudition} ready={ready} />
       {settingsContainer
         ? createPortal(
             <SoundSettings settings={bridge.soundSettings} sampler={samplerSnapshot} />,

@@ -55,15 +55,6 @@ body {
   color: #6c5a4f;
 }
 
-#piano-roll {
-  margin-top: 0.8rem;
-  width: 100%;
-  height: 160px;
-  background: #f9f3ed;
-  border-radius: 16px;
-  border: 1px solid #eadbce;
-}
-
 .live-piano-card {
   overflow: hidden;
 }
@@ -251,17 +242,6 @@ button.piano-key:hover {
   box-shadow: 0 0 16px 3px var(--piano-rh-glow);
 }
 
-/* Optional: distinguish LH vs motif by subtle colors */
-.piano-lh {
-  fill: #c2a48a;
-  opacity: 0.9;
-}
-
-.piano-motif {
-  fill: #6b4c9a;
-  opacity: 0.9;
-}
-
 button {
   border: none;
   border-radius: 999px;
@@ -286,26 +266,6 @@ button:disabled {
   box-shadow: none;
 }
 
-button.ghost {
-  background: transparent;
-  color: #43302a;
-  border: 1px solid #d9cfc8;
-  box-shadow: none;
-}
-
-button.ghost:hover:not(:disabled) {
-  background: #f4e6da;
-}
-
-button.small {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.85rem;
-}
-
-#stop-all {
-  background: #a44;
-}
-
 select {
   width: 100%;
   padding: 0.55rem 0.8rem;
@@ -313,12 +273,6 @@ select {
   border: 1px solid #d9cfc8;
   background: #fdfaf6;
   font-size: 0.95rem;
-}
-
-.cards {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
 }
 
 .status-line {
@@ -351,176 +305,8 @@ select {
   opacity: 0.82;
 }
 
-.scale-note {
-  display: inline-block;
-  margin: 0 0.15rem;
-  font-weight: 500;
-  color: #4a352b;
-  transition:
-    color 0.15s ease,
-    font-weight 0.15s ease;
-}
-
-.scale-note-sep {
-  margin: 0 0.25rem;
-  color: #c3b2a5;
-  font-weight: 600;
-}
-
-.scale-note.active {
-  font-weight: 700;
-  color: #b45a1c;
-}
-
-.card {
-  background: #fffefd;
-  border-radius: 28px;
-  padding: 1.5rem;
-  box-shadow: 0 25px 50px rgba(40, 24, 16, 0.08);
-  border: 1px solid #efe3da;
-  position: relative;
-}
-
-.card.playing {
-  box-shadow: 0 30px 55px rgba(67, 48, 42, 0.18);
-  border-color: #e4c09f;
-}
-
-.lh-row {
-  transition:
-    background 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.lh-row.active {
-  background: #f4e6da;
-  box-shadow: inset 0 0 0 2px rgba(227, 173, 125, 0.6);
-}
-
-.card-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.card-head h2 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.card .play {
-  padding: 0.4rem 1rem;
-  font-size: 0.9rem;
-  background: #2e211c;
-}
-
-.card-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.loop-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.85rem;
-  color: #5f4b42;
-}
-
 .muted {
   color: #7c6a5f;
-}
-
-.timeline {
-  margin-top: 1rem;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(70px, 1fr);
-  gap: 0.4rem;
-  max-width: 100%;
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  padding-bottom: 0.35rem;
-  scrollbar-gutter: stable;
-}
-
-.timeline .bar {
-  background: #efe1d6;
-  border-radius: 12px;
-  padding: 0.7rem 0.3rem;
-  text-align: center;
-  font-weight: 600;
-  color: #4a352b;
-  border: 1px solid #e2d2c4;
-}
-
-.progression-bar.active {
-  background: #ffe9d1;
-  border-color: #f3b36b;
-  box-shadow: inset 0 0 0 2px rgba(240, 145, 70, 0.5);
-}
-
-.progression-bar.borrowed {
-  border-color: #c38fff;
-  background: #f4e9ff;
-  box-shadow: inset 0 0 0 2px rgba(146, 99, 192, 0.45);
-}
-
-.progression-bar.borrowed.active {
-  background: #ffe3ff;
-  border-color: #d06fff;
-  box-shadow:
-    inset 0 0 0 2px rgba(187, 94, 255, 0.65),
-    0 0 8px rgba(208, 111, 255, 0.35);
-}
-
-#piano-roll .playhead-line {
-  stroke: #ff784e;
-  stroke-width: 2;
-  opacity: 0;
-  pointer-events: none;
-}
-
-#piano-roll .playhead-line.active {
-  opacity: 0.95;
-}
-
-#motif-visual .motif-playhead-line {
-  stroke: #c45c1b;
-  stroke-width: 2;
-  opacity: 0;
-  pointer-events: none;
-}
-
-#motif-visual .motif-playhead-line.active {
-  opacity: 0.9;
-}
-
-.table-ish {
-  display: grid;
-  gap: 0.4rem;
-}
-
-.table-ish .row {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.6rem 0.8rem;
-  border-radius: 12px;
-  background: #f4ede6;
-  font-size: 0.95rem;
-}
-
-#motif-visual {
-  margin-top: 0.8rem;
-  width: 100%;
-  height: 120px;
-  background: #f9f3ed;
-  border-radius: 16px;
-  border: 1px solid #eadbce;
 }
 
 @media (max-width: 600px) {
@@ -545,15 +331,6 @@ select {
   .piano-hover-toggle {
     min-height: 44px;
   }
-
-  .timeline {
-    grid-auto-columns: minmax(5.25rem, 42vw);
-    scroll-snap-type: inline proximity;
-  }
-
-  .timeline .bar {
-    scroll-snap-align: start;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -567,75 +344,6 @@ select {
   }
 }
 /* Micro-feedback + hint animations */
-@keyframes microSoftPulse {
-  0% {
-    transform: translateY(0) scale(1);
-    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
-  }
-  50% {
-    transform: translateY(-1px) scale(1.02);
-    box-shadow: 0 10px 25px rgba(55, 37, 24, 0.18);
-  }
-  100% {
-    transform: translateY(0) scale(1);
-    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
-  }
-}
-
-@keyframes microAccentGlow {
-  0% {
-    box-shadow: 0 0 0 rgba(179, 90, 28, 0);
-  }
-  50% {
-    box-shadow: 0 0 0 3px rgba(179, 90, 28, 0.3);
-  }
-  100% {
-    box-shadow: 0 0 0 rgba(179, 90, 28, 0);
-  }
-}
-
-@keyframes microCardGlow {
-  0% {
-    box-shadow: 0 25px 50px rgba(40, 24, 16, 0.08);
-    border-color: #efe3da;
-  }
-  50% {
-    box-shadow: 0 32px 60px rgba(179, 90, 28, 0.22);
-    border-color: #f0c097;
-  }
-  100% {
-    box-shadow: 0 25px 50px rgba(40, 24, 16, 0.08);
-    border-color: #efe3da;
-  }
-}
-
-@keyframes microBadgePop {
-  0% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(1.15);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-@keyframes microTapFlash {
-  0% {
-    background: #f8f1ea;
-    color: #4a352b;
-  }
-  50% {
-    background: #ffe1c7;
-    color: #a04915;
-  }
-  100% {
-    background: #f8f1ea;
-    color: #4a352b;
-  }
-}
-
 @keyframes microStatusSweep {
   0% {
     background: linear-gradient(90deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0));
@@ -660,26 +368,6 @@ select {
   100% {
     transform: translateX(0);
   }
-}
-
-.mf-pulse {
-  animation: microSoftPulse 0.45s ease;
-}
-
-.mf-accent {
-  animation: microAccentGlow 0.55s ease;
-}
-
-.mf-card {
-  animation: microCardGlow 0.95s ease;
-}
-
-.mf-badge {
-  animation: microBadgePop 0.6s ease;
-}
-
-.mf-tap {
-  animation: microTapFlash 0.35s ease;
 }
 
 .mf-status {

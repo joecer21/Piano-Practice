@@ -55,29 +55,7 @@ import {
   requestLibraryLoad,
   getSamplerStatusSnapshot,
 } from "./audio.js";
-import {
-  cacheDom,
-  wireEvents,
-  renderPlaceholders,
-  renderScale,
-  renderProgression,
-  renderLeftHand,
-  renderMotif,
-  renderPianoRoll,
-  renderProgressionPresetInfo,
-  setStatusMessage,
-  setPlayButtonsEnabled,
-  updatePianoRollPlayhead,
-  updateMotifPlayhead,
-  highlightProgressionBar,
-  highlightLeftHandBar,
-  highlightMotifCard,
-  highlightScaleNote,
-  resetPlaybackIndicators,
-  runAssignmentPulse,
-  showHint,
-  pulseElement,
-} from "./ui.js";
+import { cacheDom, wireEvents, setStatusMessage, showHint } from "./ui.js";
 
 const MIX_PARTS = ["left", "lead"];
 const SWING_MAX = 0.2;
@@ -93,8 +71,7 @@ if (typeof window !== "undefined") {
   window.__transportState = getTransportSnapshot().state;
 }
 let librarySwitchPending = false;
-let playbackSession = null;
-let playbackRafId = null;
+let resetScaleAudition = () => {};
 /** rootNote -> { notes, source } for keys the player is holding on the page. */
 const activeLivePianoNotes = new Map();
 const pressedLivePianoRoots = new Set();
@@ -129,12 +106,10 @@ function init() {
   if (dom.pianoChordMode) dom.pianoChordMode.value = state.ui.livePianoChordMode;
   buildPianoVisual(dom);
   attachPianoNoteListeners(dom);
-  renderPlaceholders(dom);
   state.tempo = practiceLibrary.tempo() ?? state.tempo;
   updateTempo(state.tempo);
   const initialStyleProfile = getStyleProfile(state.inputs.styleId);
   state.derived.styleProfile = initialStyleProfile;
-  setPlayButtonsEnabled(dom, false);
 
   onSamplerStatus(handleSamplerStatus);
   audioEngine.init().catch((err) => {
@@ -145,7 +120,6 @@ function init() {
   updateAudioHumanize();
   applyFxSettings();
   wireEvents(dom, {
-    onPlay: handlePlay,
     onPianoKeyDown: handlePianoKeyDown,
     onPianoKeyUp: handlePianoKeyUp,
     onPianoIndicatorModeChange: handlePianoIndicatorModeChange,
@@ -222,7 +196,12 @@ function createCoachBridge() {
       if (state.derived !== cachedDerived) {
         cachedDerived = state.derived;
         cachedAssignment = state.derived?.score
-          ? { score: state.derived.score, leftHand: state.derived.leftHand, motif: state.derived.motif }
+          ? {
+              score: state.derived.score,
+              scale: state.derived.scale,
+              leftHand: state.derived.leftHand,
+              motif: state.derived.motif,
+            }
           : null;
       }
       return cachedAssignment;
@@ -244,7 +223,41 @@ function createCoachBridge() {
     rerollIntoNewKey,
     assignmentEditor: createAssignmentEditor(),
     soundSettings: createSoundSettings(),
+    scaleAudition: createScaleAudition(),
     library: createCoachLibrary(),
+  };
+}
+
+/** Reactive state for the scale preview, which deliberately sits outside Score. */
+function createScaleAudition() {
+  const listeners = new Set();
+  let snapshot = { playing: false, activeNote: null };
+  const publish = (next) => {
+    if (snapshot.playing === next.playing && snapshot.activeNote === next.activeNote) return;
+    snapshot = next;
+    listeners.forEach((listener) => listener());
+  };
+  const reset = () => publish({ playing: false, activeNote: null });
+  resetScaleAudition = reset;
+
+  return {
+    getSnapshot: () => snapshot,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    async play(loop) {
+      if (!ensureAssignmentReady() || !ensureSamplerReady()) return;
+      if (!(await unlockAudio())) return;
+      stopAllPlayback();
+      publish({ playing: true, activeNote: null });
+      await playScale(state.derived.scale, loop, {
+        onNote: (note) => publish({ playing: true, activeNote: note }),
+        onComplete: stopAllPlayback,
+      });
+      publishTransportState();
+    },
+    stop: stopAllPlayback,
   };
 }
 
@@ -555,7 +568,6 @@ function applyAssignmentDraft(inputs) {
     : state.inputs.key;
   const message = `Assignment updated for ${scaleLabel} · ${preset?.label || "Custom"} · ${state.derived.leftHand?.name || state.inputs.lhId} · ${state.derived.motif ? state.derived.motif.description : "No motif"}`;
   setStatusMessage(dom, message, { tone: "success", transient: true });
-  runAssignmentPulse(dom, { includeMotif: !!state.derived.motif });
   return { ok: true, message };
 }
 
@@ -577,65 +589,6 @@ function ensureSamplerReady() {
   }
   showHint(dom, "Piano samples are still loading. We'll let you know when they're ready.");
   return false;
-}
-
-async function handlePlay(target) {
-  if (!ensureAssignmentReady() || !ensureSamplerReady()) {
-    return;
-  }
-  if (!(await unlockAudio())) return;
-  stopAllPlayback();
-
-  switch (target) {
-    case "scale": {
-      const loopEnabled = dom.scaleLoop?.checked || false;
-      playScale(state.derived.scale, loopEnabled, {
-        onNote: (note) => highlightScaleNote(dom, note),
-        onComplete: () => highlightScaleNote(dom, null),
-      });
-      break;
-    }
-    case "progression": {
-      const totalBeats = getLeftHandBeats();
-      const loopEnabled = dom.loopToggle?.checked || false;
-      playScoreParts(["lh"], loopEnabled);
-      startPlaybackVisuals({
-        totalBeats,
-        loopEnabled,
-        showProgression: true,
-      });
-      break;
-    }
-    case "left-hand": {
-      const totalBeats = getLeftHandBeats();
-      const loopEnabled = dom.lhLoop?.checked || false;
-      playScoreParts(["lh"], loopEnabled);
-      startPlaybackVisuals({
-        totalBeats,
-        loopEnabled,
-        showLeftHand: true,
-      });
-      break;
-    }
-    case "motif": {
-      const motif = state.derived.motif;
-      if (!motif) {
-        showHint(dom, "Pick a motif style to hear a lead idea, or leave it set to None.");
-        pulseElement(dom.motifCard, "card");
-        return;
-      }
-      const loopEnabled = dom.motifLoop?.checked || false;
-      const motifBeats = Math.min(motif.totalBeats || 0, state.derived.score.meta.totalBeats);
-      playScoreParts(["rh"], loopEnabled, [0, Math.ceil(motifBeats / 4) - 1]);
-      startPlaybackVisuals({
-        totalBeats: motifBeats,
-        loopEnabled,
-        showMotif: true,
-        motifBeats,
-      });
-      break;
-    }
-  }
 }
 
 function handleStopAll() {
@@ -749,16 +702,6 @@ async function handlePlayAll(loopEnabled = false) {
   applyPlayAllLoop(loopEnabled);
   playScoreParts(["lh", "rh"], loopEnabled);
   publishTransportState();
-  const motifBeats = state.derived?.motif?.totalBeats || 0;
-  startPlaybackVisuals({
-    totalBeats: getPlayAllBeats(),
-    loopEnabled,
-    showPianoRoll: true,
-    showProgression: true,
-    showLeftHand: true,
-    showMotif: !!state.derived?.motif,
-    motifBeats,
-  });
 }
 
 function playScoreParts(parts, loopEnabled, barRange) {
@@ -773,13 +716,6 @@ function playScoreParts(parts, loopEnabled, barRange) {
     countIn: false,
     tempoBpm: Number(state.tempo),
   });
-}
-
-function getLeftHandBeats() {
-  const progressionBars = state.derived.progression?.length;
-  const lhBars = state.derived.leftHand?.bars?.length;
-  const bars = progressionBars || lhBars || 1;
-  return bars * 4;
 }
 
 function getPlayAllBeats() {
@@ -797,9 +733,8 @@ function applyPlayAllLoop(enabled) {
 function stopAllPlayback() {
   stopTransport();
   releaseAllLivePianoRoots();
+  resetScaleAudition();
   publishTransportState();
-  stopPlaybackVisuals();
-  highlightScaleNote(dom, null);
 }
 
 function publishTransportState() {
@@ -808,140 +743,8 @@ function publishTransportState() {
   }
 }
 
-function startPlaybackVisuals(options = {}) {
-  const totalBeats = options.totalBeats ?? getPlayAllBeats();
-  if (!totalBeats || !Number.isFinite(totalBeats)) {
-    resetPlaybackIndicators(dom);
-    return;
-  }
-  teardownPlaybackSession({ resetIndicators: false });
-  const motifBeats = options.motifBeats ?? (state.derived?.motif?.totalBeats || 0);
-  playbackSession = {
-    totalBeats,
-    loopEnabled: !!options.loopEnabled,
-    showPianoRoll: !!options.showPianoRoll,
-    showProgression: !!options.showProgression,
-    showLeftHand: !!options.showLeftHand,
-    showMotif: !!options.showMotif && motifBeats > 0,
-    motifBeats,
-  };
-  schedulePlaybackVisualTick();
-}
-
-function stopPlaybackVisuals(options) {
-  teardownPlaybackSession(options);
-}
-
-function teardownPlaybackSession({ resetIndicators = true } = {}) {
-  if (playbackRafId != null) {
-    cancelVisualTick(playbackRafId);
-    playbackRafId = null;
-  }
-  playbackSession = null;
-  if (resetIndicators) {
-    resetPlaybackIndicators(dom);
-  }
-}
-
-function schedulePlaybackVisualTick() {
-  if (!playbackSession) return;
-  if (playbackRafId != null) {
-    cancelVisualTick(playbackRafId);
-  }
-  const raf =
-    typeof window !== "undefined" && typeof window.requestAnimationFrame === "function"
-      ? window.requestAnimationFrame.bind(window)
-      : (cb) => setTimeout(cb, 1000 / 60);
-  playbackRafId = raf(() => updatePlaybackVisuals());
-}
-
-function updatePlaybackVisuals() {
-  if (!playbackSession) return;
-  const isRunning = getTransportSnapshot().state === "started";
-  if (!isRunning) {
-    stopPlaybackVisuals();
-    return;
-  }
-
-  const beatsElapsed = getTransportBeats();
-  const { totalBeats, loopEnabled, showPianoRoll, showProgression, showLeftHand, showMotif, motifBeats } =
-    playbackSession;
-  if (!totalBeats || !Number.isFinite(beatsElapsed)) {
-    resetPlaybackIndicators(dom);
-    schedulePlaybackVisualTick();
-    return;
-  }
-
-  const normalizedBeats = loopEnabled ? beatsElapsed % totalBeats : Math.min(beatsElapsed, totalBeats);
-  const ratio = totalBeats ? normalizedBeats / totalBeats : 0;
-  if (showPianoRoll) {
-    updatePianoRollPlayhead(dom, ratio);
-  } else {
-    updatePianoRollPlayhead(dom, null);
-  }
-
-  const currentBar = totalBeats ? Math.floor(normalizedBeats / 4) : null;
-  if (showProgression) {
-    highlightProgressionBar(dom, currentBar);
-  } else {
-    highlightProgressionBar(dom, null);
-  }
-
-  if (showLeftHand) {
-    highlightLeftHandBar(dom, currentBar);
-  } else {
-    highlightLeftHandBar(dom, null);
-  }
-
-  if (showMotif) {
-    highlightMotifCard(dom, currentBar);
-    if (motifBeats > 0) {
-      const motifPosition = normalizedBeats % motifBeats;
-      const motifRatio = motifBeats ? motifPosition / motifBeats : null;
-      updateMotifPlayhead(dom, motifRatio);
-    } else {
-      updateMotifPlayhead(dom, null);
-    }
-  } else {
-    highlightMotifCard(dom, null);
-    updateMotifPlayhead(dom, null);
-  }
-
-  const playbackComplete = !loopEnabled && beatsElapsed >= totalBeats;
-  if (playbackComplete) {
-    stopPlaybackVisuals();
-    return;
-  }
-
-  schedulePlaybackVisualTick();
-}
-
-function getTransportBeats() {
-  return getTransportSnapshot().positionBeats;
-}
-
-function cancelVisualTick(id) {
-  if (typeof window !== "undefined" && typeof window.cancelAnimationFrame === "function") {
-    window.cancelAnimationFrame(id);
-  } else {
-    clearTimeout(id);
-  }
-}
-
 function renderAll() {
-  renderScale(state, dom);
   renderPianoDiatonic(dom, state.derived.scale);
-  renderProgression(state, dom, getProgressionPreset);
-  renderLeftHand(state, dom);
-  renderMotif(state, dom);
-  renderPianoRoll(state, dom);
-  renderProgressionPresetInfo(
-    dom,
-    getProgressionPreset(state.inputs.progressionPresetId),
-    state.derived.styleProfile || getStyleProfile(state.inputs.styleId),
-    state.derived.progression,
-  );
-  syncPlayButtonsAvailability();
 }
 
 /**
@@ -1090,10 +893,6 @@ function handleSamplerStatus(status = {}) {
   if (typeof window !== "undefined") {
     window.__samplerSnapshot = samplerSnapshot;
   }
-  if (status.isDefault && status.phase !== "ready") {
-    setPlayButtonsEnabled(dom, false);
-  }
-
   if (status.phase === "error" || status.phase === "timeout") {
     const scope = status.label || (status.isDefault ? "Primary piano" : "Selected piano");
     const hint = status.isDefault ? "Trying backup piano" : "Select it again to retry";
@@ -1111,7 +910,6 @@ function handleSamplerStatus(status = {}) {
       ambient: true,
       tone: "success",
     });
-    syncPlayButtonsAvailability();
     return;
   }
 
@@ -1120,15 +918,8 @@ function handleSamplerStatus(status = {}) {
       ambient: true,
       tone: "success",
     });
-    syncPlayButtonsAvailability();
     return;
   }
-}
-
-function syncPlayButtonsAvailability() {
-  const hasMusic = Boolean(state.derived?.progression && state.derived?.leftHand);
-  const ready = isPianoLoaded();
-  setPlayButtonsEnabled(dom, hasMusic && ready);
 }
 
 function clampDb(value) {

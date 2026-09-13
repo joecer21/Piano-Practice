@@ -6,9 +6,6 @@ import { cacheDom } from "../ui.js";
 
 const html = readFileSync(fileURLToPath(new URL("../index.html", import.meta.url)), "utf8");
 
-// Slots intentionally empty at cache time: both are created later by their renderer.
-const CREATED_AT_RENDER_TIME = new Set(["motifPlayhead", "pianoRollPlayhead"]);
-
 let dom;
 beforeEach(() => {
   dom = new JSDOM(html);
@@ -23,11 +20,11 @@ afterEach(() => {
 
 describe("index.html / cacheDom contract", () => {
   it("resolves every element cacheDom looks up", () => {
-    // The remaining reference renderer is still ID-based. Any drift between its
-    // cache and the static reference markup should fail here, not in the browser.
+    // Piano interactions remain ID-based. Catch drift between that small host
+    // contract and the static keyboard markup before reaching the browser.
     const cached = cacheDom();
     const missing = Object.entries(cached)
-      .filter(([key, value]) => value === null && !CREATED_AT_RENDER_TIME.has(key))
+      .filter(([, value]) => value === null)
       .map(([key]) => key);
     expect(missing, `cacheDom keys with no matching element: ${missing.join(", ")}`).toEqual([]);
   });

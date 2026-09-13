@@ -35,7 +35,8 @@ test("B2: an empty custom progression does not kill the app", async ({ page }) =
   expect(pageErrors, `uncaught page errors: ${pageErrors.join("; ")}`).toEqual([]);
 
   // The last valid assignment is preserved rather than blanked.
-  await expect(page.locator("#scale-name")).not.toHaveText("--");
+  await expect(page.getByTestId("coach-sentence")).toBeVisible();
+  await expect(page.getByRole("group", { name: "Bars" }).getByRole("button")).not.toHaveCount(0);
   await expect(page.getByRole("alert")).toContainText("Add at least one chord");
 
   // And the app is still live: adding a chord recovers.
@@ -72,7 +73,7 @@ test("B11: no debug logging on the console", async ({ page }) => {
   });
 
   await page.goto("/");
-  await expect(page.locator("#scale-name")).not.toHaveText("--");
+  await expect(page.getByTestId("coach-sentence")).toBeVisible();
   await page.waitForTimeout(1500); // let sampler progress ticks fire
 
   expect(noisy, `unexpected console.log output: ${noisy.join(" | ")}`).toEqual([]);

@@ -1,36 +1,18 @@
 // ui.js
-// DOM caching, events, rendering.
+// Framework-independent Live Piano events and shared status feedback.
 
-import {
-  parseRomanSymbol,
-  labelRomanWithTag,
-  stripOctave,
-  noteStringToMidi,
-  midiToNote,
-  getChordTagForSymbol,
-} from "./theory.js";
-import { formatDegreeToken } from "./domain/describe.ts";
+import { noteStringToMidi } from "./theory.js";
 
 const hasWindow = typeof window !== "undefined";
 const scheduleTimeout = hasWindow ? window.setTimeout.bind(window) : setTimeout;
 const clearScheduledTimeout = hasWindow ? window.clearTimeout.bind(window) : clearTimeout;
 
 const FEEDBACK_CLASS_MAP = {
-  soft: "mf-pulse",
-  accent: "mf-accent",
-  card: "mf-card",
-  badge: "mf-badge",
-  tap: "mf-tap",
   status: "mf-status",
   alert: "mf-alert",
 };
 
 const FEEDBACK_DURATION_MAP = {
-  soft: 450,
-  accent: 550,
-  card: 950,
-  badge: 600,
-  tap: 350,
   status: 800,
   alert: 450,
 };
@@ -79,46 +61,16 @@ let lastPersistentStatus = "";
 
 export function cacheDom() {
   return {
-    scaleLoop: document.getElementById("scale-loop"),
-    lhLoop: document.getElementById("lh-loop"),
-    motifLoop: document.getElementById("motif-loop"),
-    loopToggle: document.getElementById("progression-loop"),
-    scaleName: document.getElementById("scale-name"),
-    scaleNotes: document.getElementById("scale-notes"),
     pianoVisual: document.getElementById("piano-visual"),
     pianoIndicatorRadios: document.querySelectorAll('input[name="piano-indicator-mode"]'),
     pianoGlissToggle: document.getElementById("piano-gliss-mode"),
     pianoComputerKeyboardToggle: document.getElementById("piano-computer-keyboard"),
     pianoChordMode: document.getElementById("piano-chord-mode"),
-    pianoRoll: document.getElementById("piano-roll"),
-    progressionRoman: document.getElementById("progression-roman"),
-    progressionChords: document.getElementById("progression-chords"),
-    progressionVisual: document.getElementById("progression-visual"),
-    progressionDescription: document.getElementById("progression-description"),
-    lhName: document.getElementById("lh-name"),
-    lhDetails: document.getElementById("lh-details"),
-    leftHandCard: document.getElementById("lh-card"),
-    motifRhythm: document.getElementById("motif-rhythm"),
-    motifPitches: document.getElementById("motif-pitches"),
-    motifVisual: document.getElementById("motif-visual"),
-    motifCard: document.getElementById("motif-card"),
-    motifPlayhead: null,
     statusLine: document.getElementById("status-line"),
-    playButtons: document.querySelectorAll(".play"),
-    cards: document.querySelectorAll(".card"),
-    pianoRollPlayhead: document.getElementById("piano-roll-playhead"),
   };
 }
 
 export function wireEvents(dom, handlers) {
-  dom.playButtons.forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      const target = e.currentTarget.dataset.target;
-      if (!target) return;
-      handlers.onPlay(target);
-    });
-  });
-
   dom.pianoIndicatorRadios?.forEach((radio) => {
     radio.addEventListener("change", () => {
       if (!radio.checked) return;
@@ -317,323 +269,6 @@ function wireLivePianoInteractions(dom, handlers) {
   });
 }
 
-export function renderPlaceholders(dom) {
-  if (!dom) return;
-  dom.scaleName.textContent = "--";
-  dom.scaleNotes.textContent = "Select options and generate to begin.";
-  dom.progressionRoman.textContent = "--";
-  dom.progressionChords.textContent = "--";
-  if (dom.progressionDescription) dom.progressionDescription.textContent = "Select a progression preset.";
-  dom.progressionVisual.innerHTML = "";
-  dom.lhName.textContent = "--";
-  dom.lhDetails.innerHTML = "";
-  dom.motifRhythm.textContent = "--";
-  dom.motifPitches.textContent = "--";
-  dom.motifVisual.innerHTML = "";
-}
-
-export function renderScale(state, dom) {
-  if (!state.derived.scale) return;
-  dom.scaleName.textContent = state.derived.scale.name;
-  if (!dom.scaleNotes) return;
-  const notes = state.derived.scale.notes || [];
-  dom.scaleNotes.innerHTML = notes
-    .map((note) => `<span class="scale-note" data-note-label="${note}">${note}</span>`)
-    .join('<span class="scale-note-sep">|</span>');
-}
-
-export function renderProgression(state, dom, getPreset) {
-  if (!state.derived.progression) return;
-  const { roman, bars } = state.derived.progression;
-  const mode = state.inputs?.mode || state.derived.scale?.mode;
-
-  const romanLabeled = roman.map((symbol) => {
-    const parsed = parseRomanSymbol(symbol);
-    const tag = getChordTagForSymbol(symbol, {
-      mode,
-      parsed,
-      preferModeQuality: true,
-      styleProfile: state.derived.styleProfile,
-      applyStyleOverrides: true,
-    });
-    return labelRomanWithTag(symbol, tag, parsed);
-  });
-  dom.progressionRoman.textContent = romanLabeled.join(" - ");
-
-  dom.progressionChords.textContent = bars.map((bar) => bar.label).join(" | ");
-
-  const preset = getPreset(state.inputs.progressionPresetId);
-  if (dom.progressionDescription) {
-    dom.progressionDescription.textContent =
-      preset && preset.id !== "custom" ? preset.description : "Custom progression";
-  }
-
-  dom.progressionVisual.innerHTML = bars
-    .map((bar, idx) => {
-      const borrowed = bar?.isDiatonic === false;
-      const reason = borrowed ? escapeHtmlAttr(getBorrowedReasonLabel(bar?.diatonicReason)) : "";
-      const borrowedClass = borrowed ? " borrowed" : "";
-      const titleAttr = borrowed && reason ? ` title="${reason}"` : "";
-      return `<div class="bar progression-bar${borrowedClass}" data-bar-index="${idx}"${titleAttr}>${idx + 1}. ${bar.label}</div>`;
-    })
-    .join("");
-}
-
-export function renderLeftHand(state, dom) {
-  if (!state.derived.leftHand) return;
-  dom.lhName.textContent = state.derived.leftHand.name;
-  dom.lhDetails.innerHTML = state.derived.leftHand.bars
-    .map(
-      (bar, idx) => `
-        <div class="row lh-row" data-bar-index="${idx}">
-          <span>${bar.title}</span>
-          <span>${bar.description}</span>
-        </div>
-      `,
-    )
-    .join("");
-}
-
-export function renderMotif(state, dom) {
-  const motif = state.derived.motif;
-  if (!motif) {
-    dom.motifRhythm.textContent = "No motif selected.";
-    dom.motifPitches.textContent = "--";
-    if (dom.motifVisual) dom.motifVisual.innerHTML = "";
-    dom.motifPlayhead = null;
-    return;
-  }
-
-  dom.motifRhythm.textContent = `Style: ${motif.description} | Rhythm: ${motif.rhythmLabels.join(", ")}`;
-  dom.motifPitches.textContent = `Pitches: ${motifDegreeLabels(state).join(" - ")} -> ${motif.noteLabels.join(" - ")}`;
-  drawMotifContour(motif, dom);
-}
-
-export function drawMotifContour(motif, dom) {
-  const svg = dom.motifVisual;
-  svg.innerHTML = "";
-  dom.motifPlayhead = null;
-  if (!motif || !motif.steps?.length) return;
-
-  const noteSteps = motif.steps.filter((step) => !step.rest && typeof step.degree !== "undefined");
-  if (!noteSteps.length) return;
-
-  const width = 200;
-  const height = 120;
-  const verticalPadding = 12;
-  const totalBeats =
-    motif.totalBeats || noteSteps[noteSteps.length - 1].time + (noteSteps[noteSteps.length - 1].beats || 0);
-  // Height is the pitch that sounds; pattern numbers mean different pitches per mode.
-  const degreeValues = noteSteps.map((step) => noteStringToMidi(step.note) ?? 0);
-  const maxDegree = Math.max(...degreeValues);
-  const minDegree = Math.min(...degreeValues);
-  const range = maxDegree === minDegree ? 1 : maxDegree - minDegree;
-
-  const points = noteSteps
-    .map((step, idx) => {
-      const degreeValue = degreeValues[idx];
-      const midpointBeat = step.time + (step.beats || 0) / 2;
-      const normalizedTime = totalBeats ? Math.min(1, Math.max(0, midpointBeat / totalBeats)) : 0;
-      const x = normalizedTime * width;
-      const normalizedDegree = (degreeValue - minDegree) / range;
-      const y = height - normalizedDegree * (height - 2 * verticalPadding) - verticalPadding;
-      return `${x},${y}`;
-    })
-    .join(" ");
-
-  const polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-  polyline.setAttribute("points", points);
-  polyline.setAttribute("fill", "none");
-  polyline.setAttribute("stroke", "#9c6c51");
-  polyline.setAttribute("stroke-width", "3");
-  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  svg.appendChild(polyline);
-
-  const playhead = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  playhead.setAttribute("x1", 0);
-  playhead.setAttribute("x2", 0);
-  playhead.setAttribute("y1", 0);
-  playhead.setAttribute("y2", height);
-  playhead.classList.add("playhead-line", "motif-playhead-line");
-  svg.appendChild(playhead);
-  dom.motifPlayhead = playhead;
-  updateMotifPlayhead(dom, null);
-}
-
-/**
- * The motif's degrees as they sound, read from the Score so this panel, Note by note
- * and the keyboard all say the same thing. Pattern tokens are not labels: a raw "3"
- * sounds as ♭3 in minor.
- */
-function motifDegreeLabels(state) {
-  const score = state.derived.score;
-  if (!score) return [];
-  const cycleEnd = score.meta.rhCycleBeats ?? score.meta.totalBeats;
-  return score.parts.rh
-    .filter((event) => event.kind === "note" && event.startBeat < cycleEnd)
-    .map((event) => (event.degree ? formatDegreeToken(event.degree) : "?"));
-}
-
-export function renderPianoRoll(state, dom) {
-  const svg = dom.pianoRoll || document.getElementById("piano-roll");
-  const score = state.derived.score;
-  if (!svg || !score) return;
-
-  svg.innerHTML = "";
-
-  // Score is now the single event source for both parts. The legacy renderer
-  // shifted some left-hand notes down an octave for display only, so the roll
-  // could disagree with what playback actually sounded. Render the true MIDI
-  // pitches and reserve presentation transforms for geometry alone.
-  const events = [
-    ...score.parts.lh
-      .filter((event) => event.kind === "note")
-      .map((event) => ({
-        id: event.id,
-        track: "lh",
-        start: event.startBeat,
-        end: Math.min(event.startBeat + event.durationBeats, score.meta.totalBeats),
-        midi: event.midi,
-        label: stripOctave(midiToNote(event.midi)),
-      })),
-    ...score.parts.rh.map((event) =>
-      event.kind === "rest"
-        ? {
-            id: event.id,
-            track: "motif-rest",
-            start: event.startBeat,
-            end: Math.min(event.startBeat + event.durationBeats, score.meta.totalBeats),
-          }
-        : {
-            id: event.id,
-            track: "motif",
-            start: event.startBeat,
-            end: Math.min(event.startBeat + event.durationBeats, score.meta.totalBeats),
-            midi: event.midi,
-            label: stripOctave(midiToNote(event.midi)),
-          },
-    ),
-  ].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
-
-  if (!events.length) return;
-
-  const minBeat = 0;
-  const maxBeat = Math.max(score.meta.totalBeats, 1);
-
-  const minMidi = 36;
-  const maxMidi = 84;
-  const midiSpan = maxMidi - minMidi || 1;
-
-  const restMidi = 65;
-
-  const beatSpan = Math.max(maxBeat - minBeat, 1);
-
-  const width = 800;
-  const height = 200;
-  const verticalPadding = 10;
-
-  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-
-  const beatToX = (beat) => ((beat - minBeat) / beatSpan) * width;
-
-  const midiToY = (midi) => {
-    const totalHeight = height - 2 * verticalPadding;
-    const clamped = Math.min(maxMidi, Math.max(minMidi, midi));
-    const normalized = (clamped - minMidi) / midiSpan;
-    return height - normalized * totalHeight - verticalPadding;
-  };
-
-  const totalBars = score.meta.bars;
-
-  for (let b = 0; b <= totalBars; b++) {
-    const x = beatToX(minBeat + b * 4);
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("x1", x);
-    line.setAttribute("y1", 0);
-    line.setAttribute("x2", x);
-    line.setAttribute("y2", height);
-    line.setAttribute("stroke", b === 0 ? "#555" : "#777");
-    line.setAttribute("stroke-width", b === 0 ? "1.5" : "1");
-    line.setAttribute("stroke-dasharray", b === 0 ? "0" : "4 4");
-    svg.appendChild(line);
-  }
-
-  const NS = "http://www.w3.org/2000/svg";
-
-  events.forEach((e) => {
-    const x = beatToX(e.start);
-    const xEnd = beatToX(e.end);
-    const w = Math.max(4, xEnd - x);
-    const y = midiToY(e.track === "motif-rest" ? restMidi : e.midi);
-
-    const rect = document.createElementNS(NS, "rect");
-
-    let rectHeight = 12;
-    let rectWidth = w;
-    let rectX = x;
-    let fill = "#222";
-
-    if (e.track === "lh") {
-      fill = "#8cb4ff";
-    } else if (e.track === "motif") {
-      fill = "#f7a76c";
-    } else if (e.track === "motif-rest") {
-      fill = "#b0b0b0";
-      rectHeight = 16;
-      rectWidth = Math.max(4, w * 0.5);
-      rectX = x + (w - rectWidth) / 2;
-    }
-
-    rect.setAttribute("x", rectX);
-    rect.setAttribute("y", y - rectHeight / 2);
-    rect.setAttribute("width", rectWidth);
-    rect.setAttribute("height", rectHeight);
-    rect.setAttribute("rx", 3);
-    rect.setAttribute("ry", 3);
-    rect.setAttribute("fill", fill);
-    rect.setAttribute("stroke", "#222");
-    rect.setAttribute("stroke-width", "0.5");
-    rect.setAttribute("data-event-id", e.id);
-    rect.setAttribute("data-track", e.track);
-    if (Number.isInteger(e.midi)) rect.setAttribute("data-midi", String(e.midi));
-    svg.appendChild(rect);
-
-    if (e.track !== "motif-rest") {
-      const text = document.createElementNS(NS, "text");
-      text.setAttribute("x", x + w / 2);
-      text.setAttribute("y", y);
-      text.setAttribute("text-anchor", "middle");
-      text.setAttribute("dominant-baseline", "central");
-      text.setAttribute("font-size", "8");
-      text.setAttribute("fill", "#111");
-      text.textContent = e.label;
-      svg.appendChild(text);
-    }
-  });
-
-  const playhead = document.createElementNS(NS, "line");
-  playhead.setAttribute("id", "piano-roll-playhead");
-  playhead.setAttribute("x1", 0);
-  playhead.setAttribute("x2", 0);
-  playhead.setAttribute("y1", 0);
-  playhead.setAttribute("y2", height);
-  playhead.classList.add("playhead-line");
-  svg.appendChild(playhead);
-  dom.pianoRollPlayhead = playhead;
-  updatePianoRollPlayhead(dom, null);
-}
-
-export function renderProgressionPresetInfo(dom, preset, styleProfile, progression) {
-  if (!dom.progressionDescription) return;
-  const styleText = styleProfile ? `Style: ${styleProfile.label} - ${styleProfile.description}` : "";
-  const baseText =
-    preset && preset.id !== "custom"
-      ? `${preset.description}${styleText ? ` | ${styleText}` : ""}`
-      : styleText || "Custom progression";
-  const borrowedSummary = summarizeBorrowedChords(progression);
-  dom.progressionDescription.textContent = borrowedSummary ? `${baseText} | ${borrowedSummary}` : baseText;
-}
-
 export function setStatusMessage(dom, text, options = {}) {
   if (!dom.statusLine) return;
   const node = dom.statusLine;
@@ -680,106 +315,6 @@ export function setStatusMessage(dom, text, options = {}) {
   }
 }
 
-export function setPlayButtonsEnabled(dom, enabled) {
-  const buttons = dom.playButtons ? Array.from(dom.playButtons) : [];
-  buttons.forEach((btn) => {
-    if (btn) btn.disabled = !enabled;
-  });
-}
-
-export function highlightScaleNote(dom, noteLabel) {
-  const container = dom.scaleNotes;
-  if (!container) return;
-  const normalized = noteLabel ? String(noteLabel).replace(/[0-9]/g, "").toUpperCase() : "";
-  const nodes = container.querySelectorAll(".scale-note");
-  nodes.forEach((node) => {
-    const label = node.dataset.noteLabel ? node.dataset.noteLabel.toUpperCase() : "";
-    node.classList.toggle("active", normalized && label === normalized);
-  });
-}
-
-export function updatePianoRollPlayhead(dom, ratio) {
-  const line = dom.pianoRollPlayhead;
-  const svg = dom.pianoRoll || document.getElementById("piano-roll");
-  if (!line || !svg) return;
-  if (ratio == null || Number.isNaN(ratio)) {
-    line.classList.remove("active");
-    return;
-  }
-  const viewBox = svg.viewBox?.baseVal;
-  const width = viewBox?.width || svg.clientWidth || 0;
-  const height = viewBox?.height || svg.clientHeight || 0;
-  const clamped = Math.max(0, Math.min(1, ratio));
-  const x = width * clamped;
-  line.setAttribute("x1", x);
-  line.setAttribute("x2", x);
-  line.setAttribute("y1", 0);
-  line.setAttribute("y2", height || 160);
-  line.classList.add("active");
-}
-
-export function updateMotifPlayhead(dom, ratio) {
-  const line = dom.motifPlayhead;
-  const svg = dom.motifVisual;
-  if (!line || !svg) return;
-  if (ratio == null || Number.isNaN(ratio)) {
-    line.classList.remove("active");
-    return;
-  }
-  const viewBox = svg.viewBox?.baseVal;
-  const width = viewBox?.width || svg.clientWidth || 0;
-  const height = viewBox?.height || svg.clientHeight || 0;
-  const clamped = Math.max(0, Math.min(1, ratio));
-  const x = width * clamped;
-  line.setAttribute("x1", x);
-  line.setAttribute("x2", x);
-  line.setAttribute("y1", 0);
-  line.setAttribute("y2", height || 120);
-  line.classList.add("active");
-}
-
-export function highlightProgressionBar(dom, index) {
-  const bars = dom.progressionVisual?.querySelectorAll(".progression-bar") || [];
-  const isValid = typeof index === "number" && index >= 0;
-  bars.forEach((bar, idx) => {
-    bar.classList.toggle("active", isValid && idx === index);
-  });
-}
-
-export function highlightLeftHandBar(dom, index) {
-  const rows = dom.lhDetails?.querySelectorAll(".lh-row") || [];
-  const isValid = typeof index === "number" && index >= 0;
-  rows.forEach((row, idx) => {
-    row.classList.toggle("active", isValid && idx === index);
-  });
-  if (dom.leftHandCard) {
-    dom.leftHandCard.classList.toggle("playing", isValid);
-  }
-}
-
-export function highlightMotifCard(dom, index) {
-  if (!dom.motifCard) return;
-  const isValid = typeof index === "number" && index >= 0;
-  dom.motifCard.classList.toggle("playing", isValid);
-}
-
-export function resetPlaybackIndicators(dom) {
-  updatePianoRollPlayhead(dom, null);
-  updateMotifPlayhead(dom, null);
-  highlightProgressionBar(dom, null);
-  highlightLeftHandBar(dom, null);
-  highlightMotifCard(dom, null);
-  highlightScaleNote(dom, null);
-}
-
-export function runAssignmentPulse(dom, { includeMotif = true } = {}) {
-  const targets = [findCardNode(dom.scaleNotes), findCardNode(dom.progressionVisual), dom.leftHandCard];
-  if (includeMotif) {
-    targets.push(dom.motifCard);
-  }
-  targets.filter(Boolean).forEach((node) => pulseElement(node, "card"));
-}
-
 export function showHint(dom, message, options = {}) {
   setStatusMessage(dom, message, {
     tone: "hint",
@@ -788,9 +323,9 @@ export function showHint(dom, message, options = {}) {
   });
 }
 
-export function pulseElement(element, variant = "soft") {
+function pulseElement(element, variant = "status") {
   if (!element) return;
-  const className = FEEDBACK_CLASS_MAP[variant] || FEEDBACK_CLASS_MAP.soft;
+  const className = FEEDBACK_CLASS_MAP[variant] || FEEDBACK_CLASS_MAP.status;
   const duration = FEEDBACK_DURATION_MAP[variant] || 600;
   if (feedbackTimers.has(element)) {
     clearScheduledTimeout(feedbackTimers.get(element));
@@ -804,48 +339,4 @@ export function pulseElement(element, variant = "soft") {
     feedbackTimers.delete(element);
   }, duration);
   feedbackTimers.set(element, timeoutId);
-}
-
-function findCardNode(element) {
-  if (!element || typeof element.closest !== "function") return null;
-  return element.closest(".card");
-}
-
-function summarizeBorrowedChords(progression) {
-  if (!progression?.bars?.length) return "";
-  const reasons = new Set();
-  progression.bars.forEach((bar) => {
-    if (bar && bar.isDiatonic === false) {
-      reasons.add(bar.diatonicReason || "other");
-    }
-  });
-  if (!reasons.size) return "";
-  const summary = Array.from(reasons)
-    .map((code) => getBorrowedReasonLabel(code))
-    .join(", ");
-  return `Borrowed: ${summary}`;
-}
-
-function escapeHtmlAttr(value) {
-  if (!value) return "";
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-function getBorrowedReasonLabel(code) {
-  switch (code) {
-    case "secondary":
-      return "Secondary Movement";
-    case "accidental":
-      return "Chromatic Alterations";
-    case "quality":
-      return "Altered Qualities";
-    case "undefined":
-      return "Outside Mode";
-    default:
-      return "Borrowed Harmony";
-  }
 }

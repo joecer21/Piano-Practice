@@ -9,6 +9,7 @@ import type { SamplerSnapshot } from "./sampler.js";
 /** The slice of the committed assignment the coach renders. */
 export type CoachAssignment = {
   score: Score;
+  scale: { name?: string; notes?: readonly string[] } | null;
   leftHand: { name?: string } | null;
   motif: { description?: string } | null;
 };
@@ -44,8 +45,22 @@ export type CoachBridge = {
   assignmentEditor: AssignmentEditor;
   /** Reactive sound controls, expressed in the units shown to the player. */
   soundSettings: SoundSettings;
+  /** The one audition not represented by Score playback: the scale itself. */
+  scaleAudition: ScaleAudition;
   /** Starred assignments, share links and practice preferences, kept in this browser. */
   library: CoachLibrary;
+};
+
+export type ScaleAuditionSnapshot = {
+  playing: boolean;
+  activeNote: string | null;
+};
+
+export type ScaleAudition = {
+  getSnapshot(): ScaleAuditionSnapshot;
+  subscribe(listener: () => void): () => void;
+  play(loop: boolean): Promise<void>;
+  stop(): void;
 };
 
 export type MixPart = "left" | "lead";

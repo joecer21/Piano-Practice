@@ -966,10 +966,10 @@ body {
   }
 }
 
-/* ---- Sound controls ------------------------------------------------------ */
+/* ---- Reference and sound controls --------------------------------------- */
 
 .coach-settings,
-.legacy-drawer {
+.coach-scale-reference {
   margin-top: var(--space-6);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
@@ -978,7 +978,7 @@ body {
 }
 
 .coach-settings > summary,
-.legacy-drawer > summary,
+.coach-scale-reference > summary,
 .coach-mix-settings > summary {
   min-height: var(--touch-target);
   display: flex;
@@ -986,6 +986,49 @@ body {
   padding: 0 var(--space-4);
   cursor: pointer;
   font-weight: 700;
+}
+
+.coach-scale-reference-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.coach-scale-reference-body h2 {
+  margin: 0 0 var(--space-2);
+  font-size: 1rem;
+}
+
+.coach-scale-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.coach-scale-notes li {
+  min-width: 2.1rem;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  text-align: center;
+  font-weight: 700;
+  transition:
+    color 120ms ease,
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.coach-scale-notes li[aria-current="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--surface);
 }
 
 .coach-settings-body {
@@ -1094,23 +1137,6 @@ body {
   .coach-mix-body {
     grid-template-columns: 1fr;
   }
-}
-
-/* ---- The remaining legacy reference controls --------------------------- */
-
-.legacy-drawer {
-  margin-top: var(--space-3);
-}
-
-.legacy-drawer-body {
-  margin: 0 var(--space-2) var(--space-2);
-  padding: var(--space-4);
-  border-radius: calc(var(--radius-card) - 4px);
-  /* The relocated panels were designed for a light page; keep them there until
-     they are ported onto tokens. */
-  color-scheme: light;
-  background: #f6f1eb;
-  color: #2a1f19;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -11,7 +11,12 @@ import { createMidiInput } from "../input/midi.ts";
 
 function assignmentFor(inputs) {
   const generated = generateAssignment({ ...DEFAULT_ASSIGNMENT_INPUTS, ...inputs });
-  return { score: buildScore(generated), leftHand: generated.leftHand, motif: generated.motif };
+  return {
+    score: buildScore(generated),
+    scale: generated.scale,
+    leftHand: generated.leftHand,
+    motif: generated.motif,
+  };
 }
 
 const READY = {
@@ -146,6 +151,7 @@ function createFakeBridge({
     canRedo: false,
   };
   const successfulEdit = { ok: true, message: "Assignment updated" };
+  const scaleAuditionSnapshot = { playing: false, activeNote: null };
   const bridge = {
     audioEngine: createFakeEngine(),
     getAssignment: () => current,
@@ -161,6 +167,12 @@ function createFakeBridge({
     getTempoBpm: () => 90,
     unlockAudio: vi.fn(async () => unlock),
     stopOtherPlayback: vi.fn(),
+    scaleAudition: {
+      getSnapshot: () => scaleAuditionSnapshot,
+      subscribe: () => () => {},
+      play: vi.fn(async () => {}),
+      stop: vi.fn(),
+    },
     reportError: vi.fn(),
     getKeyboardElement: () => keyboard,
     keyboard,
