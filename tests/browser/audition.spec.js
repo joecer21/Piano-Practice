@@ -1,5 +1,14 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
+
+// The page starts from the committed ledger; approving the first case adds to its count.
+const ledger = JSON.parse(
+  readFileSync(new URL("../../audits/musical/reviews.json", import.meta.url), "utf8"),
+);
+const approvedBefore = ledger.reviews.filter((review) => review.disposition === "approved").length;
+const firstApproved = ledger.reviews[0]?.disposition === "approved";
+const approvedAfter = `${approvedBefore + (firstApproved ? 0 : 1)} approved`;
 
 test("the musical QA page auditions sequentially and records an exportable disposition", async ({ page }) => {
   const errors = [];
@@ -27,7 +36,7 @@ test("the musical QA page auditions sequentially and records an exportable dispo
   await page.getByLabel("Reviewer notes").fill("Harmony, register, repetition and learner fit reviewed.");
   await page.getByRole("button", { name: "Approve" }).click();
   await expect(page.locator(".disposition")).toHaveText("approved");
-  await expect(page.getByLabel("Review progress")).toContainText("1 approved");
+  await expect(page.getByLabel("Review progress")).toContainText(approvedAfter);
 
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export review JSON" }).click();
@@ -36,7 +45,7 @@ test("the musical QA page auditions sequentially and records an exportable dispo
   await page.getByRole("button", { name: "Next →" }).click();
   await expect(page.getByLabel("Review progress")).toContainText("2 / 27");
   await page.reload();
-  await expect(page.getByLabel("Review progress")).toContainText("1 approved");
+  await expect(page.getByLabel("Review progress")).toContainText(approvedAfter);
 
   const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
   expect(accessibility.violations).toEqual([]);

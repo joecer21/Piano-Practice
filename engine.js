@@ -37,34 +37,47 @@ import {
  *   duration: string;    // Tone.js duration ("4n", "8n", etc.)
  *   note?: string;
  *   notes?: string[];
+ *   degree?: string;
+ *   label?: string;
  *   rest?: boolean;
  * };
  */
 
-const MAX_BAR_SHIFT_ATTEMPTS = 4;
-
 const HAND_RANGE_MAP = buildHandRangeMap(HAND_RANGE_SPECS);
-const PATTERN_OCTAVE_REQUIREMENTS = new Set(["root-5th-oct", "pop-8ths", "power-8ths"]);
-const STYLE_LH_ANCHOR_GAPS = {
-  classical: 13,
-  pop: 14,
-  jazz: 12,
-  modal: 13,
-  blues: 13,
-  dramatic: 13,
-  practice: 12,
-  default: 12,
+
+/*
+ * Hand positions. A player picks where each hand lives once for the piece and
+ * follows the chords by changing inversions, not octaves. The left hand gets two
+ * lanes chosen once per assignment: a twelve-key bass lane, where every bass note
+ * has exactly one home, and a chord lane above it that stops short of the tune.
+ */
+
+/** A1: no left-hand note goes below this, whatever the tune asks. */
+export const KEYBOARD_FLOOR = 33;
+/** The tune's lowest note sits at least this many semitones above the left hand's highest. */
+export const HAND_CLEARANCE = 2;
+/** E6: the highest a tune may be lifted to make room for the left hand. */
+const MELODY_LIFT_CEILING = 88;
+/** Semitones the lanes may drop to make room before the tune is lifted instead. */
+const LANE_GIVE = 2;
+
+/**
+ * Lane shapes, in semitones from the bottom of the bass lane (`home`).
+ * `chordFrom` is the lowest key a chord may use; `reach` is the top of the hand.
+ */
+const LANE_SHAPES = {
+  // A low bass with chords, octaves or fifths above: bass E2–D#3, chords D3–D#4.
+  bassAndChord: { home: 40, chordFrom: 10, reach: 23 },
+  // One compact figure from the bass up: bass G2–F#3, chords C3–E4.
+  compact: { home: 43, chordFrom: 5, reach: 21 },
+  // Chords only: C3–E4.
+  chords: { home: 45, chordFrom: 3, reach: 19 },
 };
-const PATTERN_LH_GAP_ADJUST = {
-  stride: 6,
-  walking: 5,
-  pedal: -2,
-  alberti: -1,
-  "root-5th-oct": 2,
-  "pop-8ths": 1,
-  "power-8ths": 1,
-};
-const MIN_LH_RH_INTERVAL = 4;
+
+const laneOf = (patternId) => LEFT_HAND_PATTERN_METADATA[patternId]?.lane || "bassAndChord";
+
+/** Figures played as one hand shape from the bass up, so the chord stays within this of the bass. */
+const COMPACT_FIGURE_SPAN = 14;
 
 export function generateScale({ key, mode = "major" }) {
   const normalizedMode = SCALE_PATTERNS[mode] ? mode : "major";
@@ -147,109 +160,102 @@ export function generateCustomProgression(key, romanSequence, scale, mode, style
   };
 }
 
+/**
+ * Where the tune should sit, before the left hand is placed under it. A preset
+ * may name the tune's register (`anchors.rh`); otherwise the motif's own target
+ * register, aligned to the key and kept within the style's right-hand range.
+ */
 export function createPhrasePlan({
   key = "C",
-  mode = "major",
   styleId = "classical",
   motifPatternId = "pop-hook-1351",
   leftHandPatternId = "block",
   anchors: anchorOverrides = {},
 } = {}) {
   const styleAnchors = getStyleAnchors(styleId) || {};
-  const styleStrategy = getLeftHandStyleStrategy(styleId);
   const motifStyle = MOTIF_STYLES[motifPatternId] || MOTIF_STYLES["pop-hook-1351"];
-  const leftPatternMeta = LEFT_HAND_PATTERN_METADATA[leftHandPatternId] || LEFT_HAND_PATTERN_METADATA.block;
-
-  const computedAnchors = computeDefaultHandAnchors({
-    key,
-    mode,
-    styleId,
-    motifStyle,
-    leftHandPatternId,
-    leftPatternMeta,
-    styleAnchors,
-  });
-
-  const rawLhAnchor = anchorOverrides.lh || computedAnchors.lh;
-  const rawRhAnchor = anchorOverrides.rh || computedAnchors.rh;
-  const hasLhOverride = Boolean(anchorOverrides.lh);
-  const hasRhOverride = Boolean(anchorOverrides.rh);
-  const lhAnchorRange = anchorOverrides.lhRange || styleStrategy.anchorRange || styleAnchors.lh;
-  const rhAnchorRange = styleAnchors.rh;
-  let lhAnchorClamped = hasLhOverride
-    ? ensureNoteWithOctave(rawLhAnchor, rawLhAnchor)
-    : clampAnchorToRangeSpec(ensureNoteWithOctave(rawLhAnchor, rawLhAnchor), lhAnchorRange, "lh");
-  const rhAnchorClamped = hasRhOverride
-    ? ensureNoteWithOctave(rawRhAnchor, rawRhAnchor)
-    : clampAnchorToRangeSpec(ensureNoteWithOctave(rawRhAnchor, rawRhAnchor), rhAnchorRange, "rh");
-
-  const motifRange = estimateMotifRangeForAnchors({
-    motifStyle,
-    key,
-    mode,
-    rhAnchor: rhAnchorClamped,
-  });
-
-  if (!hasLhOverride) {
-    lhAnchorClamped = applyLowKeyGuard({
-      lhAnchor: lhAnchorClamped,
-      motifRange,
-      leftPatternMeta,
-      styleAnchors,
-      key,
-      mode,
-    });
-  }
-
-  let lhAnchorNote = hasLhOverride
-    ? ensureNoteWithOctave(rawLhAnchor, rawLhAnchor)
-    : adjustAnchorForPattern(lhAnchorClamped, leftHandPatternId);
-  let rhAnchorNote = rhAnchorClamped;
-  if (!hasLhOverride && !hasRhOverride) {
-    let lhMidi = noteStringToMidiSafe(lhAnchorNote, lhAnchorNote);
-    let rhMidi = noteStringToMidiSafe(rhAnchorNote, rhAnchorNote);
-    const rhFloor = noteStringToMidiSafe(rhAnchorRange?.low || HAND_RANGE_SPECS.rh.soft.low, "G3");
-    const lhCeiling = noteStringToMidiSafe(lhAnchorRange?.high || HAND_RANGE_SPECS.lh.soft.high, "C5");
-    while (rhMidi - lhMidi > 30) {
-      if (rhMidi - 12 >= rhFloor) {
-        rhMidi -= 12;
-        rhAnchorNote = midiToNote(rhMidi);
-      } else if (lhMidi + 12 <= lhCeiling) {
-        lhMidi += 12;
-        lhAnchorNote = midiToNote(lhMidi);
-      } else {
-        break;
-      }
-    }
-  }
-  const lhAnchorMidi = noteStringToMidiSafe(lhAnchorNote, lhAnchorNote);
-  const rhAnchorMidi = noteStringToMidiSafe(rhAnchorNote, rhAnchorNote);
-  const chordAnchors = anchorOverrides.chords || anchorOverrides.lhChords || null;
+  const rhAnchorNote = anchorOverrides?.rh
+    ? ensureNoteWithOctave(anchorOverrides.rh, anchorOverrides.rh)
+    : clampAnchorToRangeSpec(
+        deriveRhAnchorCandidate({ key, motifStyle, styleAnchors }),
+        styleAnchors.rh,
+        "rh",
+      );
+  const lanes = planHandLanes({ leftHandPatternId, melody: null });
 
   return {
     key,
     styleId,
     motifPatternId,
     leftHandPatternId,
-    lh: {
-      anchorNote: lhAnchorNote,
-      anchorMidi: lhAnchorMidi,
-      contour: "steady",
-      intervalBias: leftPatternMeta.motionBias || "close",
-      peaksPerPhrase: 0,
-      anchorRange: styleAnchors.lh,
-      chordAnchors,
-    },
+    lh: { anchorNote: midiToNote(lanes.home), anchorMidi: lanes.home },
     rh: {
       anchorNote: rhAnchorNote,
-      anchorMidi: rhAnchorMidi,
+      anchorMidi: noteStringToMidiSafe(rhAnchorNote, rhAnchorNote),
       contour: motifStyle.contour || "arch",
-      intervalBias: motifStyle.intervalBias || motifStyle.motionBias || "steps",
-      peaksPerPhrase: motifStyle.peaksPerPhrase || 1,
       targetRegister: motifStyle.targetRegister || rhAnchorNote,
-      anchorRange: styleAnchors.rh,
     },
+    lanes,
   };
+}
+
+/**
+ * Choose the left hand's lanes once for the whole assignment.
+ *
+ * With no tune, the lanes sit at the pattern's home. Under a tune, the hand stops
+ * HAND_CLEARANCE below the tune's lowest note. When that leaves too little room,
+ * one decision is made for the whole piece: drop the lanes a little, else lift the
+ * tune an octave, else drop the lanes further (never below KEYBOARD_FLOOR). Chords
+ * that still do not fit are thinned when they are voiced.
+ *
+ * @param {{ leftHandPatternId?: string, melody?: { min: number, max: number } | null }} options
+ */
+export function planHandLanes({ leftHandPatternId = "block", melody = null } = {}) {
+  const shape = LANE_SHAPES[laneOf(leftHandPatternId)];
+  const needed = shape.chordFrom + 9;
+  let home = shape.home;
+  let melodyShift = 0;
+  let melodyMin = melody?.min ?? null;
+
+  const shortfall = () => (melodyMin == null ? 0 : home + needed - (melodyMin - HAND_CLEARANCE));
+  if (shortfall() > 0) {
+    if (shortfall() <= Math.min(LANE_GIVE, home - KEYBOARD_FLOOR)) {
+      home -= shortfall();
+    } else {
+      if (melody && melody.max + 12 <= MELODY_LIFT_CEILING) {
+        melodyShift = 12;
+        melodyMin += 12;
+      }
+      if (shortfall() > 0) home -= Math.min(shortfall(), home - KEYBOARD_FLOOR);
+    }
+  }
+
+  const ceiling = Math.min(home + shape.reach, melodyMin == null ? Infinity : melodyMin - HAND_CLEARANCE);
+  return {
+    home,
+    bassTop: Math.min(home + 11, ceiling),
+    chordLow: home + shape.chordFrom,
+    ceiling,
+    reach: shape.reach,
+    melodyShift,
+  };
+}
+
+/**
+ * Place both hands for an assignment: settle the tune's register, choose the left
+ * hand's lanes under it, and lift the tune if that is the decision.
+ */
+export function placeHands({ motif, leftHandPatternId }) {
+  const stats = motif ? gatherStepMidiStats(motif.steps) : null;
+  const lanes = planHandLanes({
+    leftHandPatternId,
+    melody: stats ? { min: stats.min, max: stats.max } : null,
+  });
+  const placedMotif =
+    motif && lanes.melodyShift
+      ? { ...motif, steps: motif.steps.map((step) => transposeStep(step, lanes.melodyShift)) }
+      : motif;
+  return { motif: placedMotif, lanes };
 }
 
 export function generateMotif({ motifPatternId, styleId: playbackStyleId, phrasePlan }, scale) {
@@ -304,31 +310,16 @@ export function generateMotif({ motifPatternId, styleId: playbackStyleId, phrase
   });
 
   const motifAnchorMidi = phraseSegment?.anchorMidi ?? targetMotifMidi;
-  const anchorAlignedSteps = alignStepsToAnchor(steps, motifAnchorMidi, "rh");
-  const lockedSteps = lockStepsToRegister(anchorAlignedSteps);
-
-  const motifState = createHandState(
-    "rh",
-    {
-      defaultAnchor: style.targetRegister || "C5",
-      maxSpan: style.maxSpan || 24,
-      motionBias: style.intervalBias || "steps",
-      peaksPerPhrase: style.peaksPerPhrase,
-      contour: style.contour,
-      intervalBias: style.intervalBias,
-    },
-    phraseSegment,
-  );
-  motifState.metadata.totalNotes = lockedSteps.filter((s) => !s?.rest && (s.note || s.notes?.length)).length;
-  const normalizedSteps = enforceHandRange(lockedSteps, motifState, { part: "rh", lockGlobalShift: true });
+  // The tune moves as one piece: its shape is never broken to fit a range.
+  const placedSteps = keepStepsWithinRange(alignStepsToAnchor(steps, motifAnchorMidi, "rh"), "rh");
 
   const totalBeats = cumulative;
-  const noteSteps = normalizedSteps.filter((s) => !s.rest);
+  const noteSteps = placedSteps.filter((s) => !s.rest);
 
   return {
     styleId: patternId,
     description: style.description,
-    steps: normalizedSteps,
+    steps: placedSteps,
     // Pattern tokens as written. What they sound as depends on degreeInterpretation,
     // so display the pitches (Score degrees), not these.
     degrees: noteSteps.map((s) => s.degree),
@@ -339,62 +330,44 @@ export function generateMotif({ motifPatternId, styleId: playbackStyleId, phrase
   };
 }
 
-export function generateLeftHandPattern({ leftHand, difficulty, styleId, phrasePlan }, progression, mode) {
+export function generateLeftHandPattern({ leftHand, difficulty, styleId, lanes }, progression, mode) {
   const difficultyLevel = difficulty || "intermediate";
   const playbackHints = getStylePlaybackHints(styleId, mode);
-  const patternMetadata = LEFT_HAND_PATTERN_METADATA[leftHand] || LEFT_HAND_PATTERN_METADATA.block;
-  const phraseSegment = phrasePlan?.lh || null;
   const styleStrategy = getLeftHandStyleStrategy(styleId);
-  const chordAnchors = phraseSegment?.chordAnchors || null;
-  const handState = createHandState("lh", patternMetadata, phraseSegment);
-  const voicingState = {
-    lastRoot: handState.anchorMidi,
-    lastCenter: handState.anchorMidi,
-    lastMidis: null,
-  };
+  const handLanes = fitBassLaneToProgression(
+    lanes || planHandLanes({ leftHandPatternId: leftHand, melody: null }),
+    progression,
+  );
+  let previousChord = null;
+  // A chord that comes round again is found where the hand first played it.
+  const remembered = new Map();
+
   const bars = progression.bars.map((bar, idx) => {
-    const barAnchorInfo = resolveBarAnchorInfo({
-      bar,
-      chordAnchors,
-      fallbackNote: phraseSegment?.anchorNote,
-      styleStrategy,
+    const bass = placeBass(bar, handLanes);
+    const voicing = chooseLaneVoicing(bar, {
       patternType: leftHand,
-    });
-    const barAnchorMidi = barAnchorInfo.anchorMidi ?? handState.anchorMidi;
-    if (idx === 0 && Number.isFinite(barAnchorMidi)) {
-      handState.anchorMidi = barAnchorMidi;
-      handState.lastMidi = barAnchorMidi;
-      handState.centerMidi = barAnchorMidi;
-    }
-    const voicing = chooseVoicingForBar(
-      bar,
-      leftHand,
-      patternMetadata,
-      voicingState,
-      barAnchorMidi,
-      styleStrategy,
-    );
-    const rawBar = buildPatternBar(
-      bar,
-      idx,
-      leftHand,
-      difficultyLevel,
       styleId,
-      playbackHints,
-      voicing,
-      patternMetadata,
-      handState,
-      barAnchorMidi,
-      barAnchorInfo,
-    );
-    let adjustedSteps = enforceHandRange(rawBar.steps, handState, {
-      part: "lh",
-      barIndex: idx,
+      styleStrategy,
+      lanes: handLanes,
+      previous: previousChord,
+      remembered: remembered.get(bar.symbol) ?? null,
+      bass: laneOf(leftHand) === "compact" ? bass : null,
     });
-    if (leftHand === "pop-8ths") {
-      adjustedSteps = clampStepsToMidiRange(adjustedSteps, "C2", "C4");
-    }
-    return { ...rawBar, steps: adjustedSteps };
+    previousChord = voicing.chord;
+    if (!remembered.has(bar.symbol)) remembered.set(bar.symbol, voicing.chord);
+    const built = buildPatternBar(bar, idx, leftHand, difficultyLevel, playbackHints, {
+      bass,
+      chord: voicing.chord,
+      ceiling: handLanes.ceiling,
+      voicingType: voicing.type,
+    });
+    return {
+      ...built,
+      voicing: {
+        bass: leftHand === "block" ? [] : [midiToNote(bass)],
+        chord: voicing.chord.map((midi) => midiToNote(midi)),
+      },
+    };
   });
   const nameMap = {
     alberti: "Alberti Bass",
@@ -450,483 +423,293 @@ function getChordVoicing(bar, { type = "triad" } = {}) {
   return { notes, label, type };
 }
 
-function buildPatternBar(
-  bar,
-  barIndex,
-  type,
-  difficulty,
-  styleId = "classical",
-  playbackHints = {},
-  voicingOverride = null,
-  patternMetadata = {},
-  handState = null,
-  barAnchorMidi = null,
-  barAnchorInfo = null,
-) {
-  const voicingType = chooseVoicingType(type, styleId, bar);
-  const voicing = voicingOverride || getChordVoicing(bar, { type: voicingType });
+/** How far the bass lane may slide, once per assignment, to suit the progression. */
+const BASS_LANE_SLIDE = { down: 4, up: 2 };
 
-  const root = (voicing.notes && voicing.notes[0]) || (bar.bassNotes && bar.bassNotes[0]) || null;
-  const third = (voicing.notes && voicing.notes[1]) || (bar.bassNotes && bar.bassNotes[1]) || root;
-  const fifth = (voicing.notes && voicing.notes[2]) || (bar.bassNotes && bar.bassNotes[2]) || third;
-  const seventh = (voicing.notes && voicing.notes[3]) || (bar.bassNotes && bar.bassNotes[3]) || null;
+function rootPitchClass(bar) {
+  const source = bar.bassNotes?.[0] || bar.chordNotes?.[0] || `${bar.root || "C"}3`;
+  return ((noteStringToMidiSafe(source, "C3") % 12) + 12) % 12;
+}
 
+/** The bass note: the chord root's one position in the bass lane. */
+function placeBass(bar, lanes) {
+  let midi = lanes.home + ((rootPitchClass(bar) - (lanes.home % 12) + 12) % 12);
+  while (midi > lanes.bassTop && midi - 12 >= KEYBOARD_FLOOR) midi -= 12;
+  return midi;
+}
+
+/**
+ * A twelve-key lane has one edge where a step in the harmony becomes a leap (a lane
+ * from E splits D from E). Slide the lane a few keys, once for the whole piece, so
+ * that edge falls where this progression moves least. Ties keep the lane at home.
+ */
+function fitBassLaneToProgression(lanes, progression) {
+  const bars = progression?.bars || [];
+  if (bars.length < 2) return lanes;
+  let best = null;
+  for (let slide = -BASS_LANE_SLIDE.down; slide <= BASS_LANE_SLIDE.up; slide++) {
+    const home = lanes.home + slide;
+    // The whole hand slides: sliding down lowers its top too, so it never spreads wider.
+    const ceiling = Math.min(lanes.ceiling, home + lanes.reach);
+    const bassTop = Math.min(home + 11, ceiling);
+    if (home < KEYBOARD_FLOOR || bassTop - home < 11) continue;
+    const candidate = { ...lanes, home, bassTop, ceiling, chordLow: lanes.chordLow + slide };
+    const basses = bars.map((bar) => placeBass(bar, candidate));
+    let travel = 0;
+    for (let index = 0; index < basses.length; index++) {
+      const next = basses[(index + 1) % basses.length];
+      travel += Math.abs(next - basses[index]);
+    }
+    const cost = travel + Math.abs(slide) * 0.5;
+    if (!best || cost < best.cost) best = { cost, lanes: candidate };
+  }
+  return best ? best.lanes : lanes;
+}
+
+/**
+ * Voice the bar's chord inside the chord lane. Every allowed shape and inversion is
+ * tried at every octave that fits wholly in the lane; the winner moves the fewest
+ * semitones from the previous chord, returns to where this chord was played before,
+ * stays near the middle of the lane, and follows the style's inversion preference.
+ * A chord that cannot fit is re-inverted, then thinned, rather than leaving the lane.
+ */
+function chooseLaneVoicing(bar, { patternType, styleId, styleStrategy, lanes, previous, remembered, bass }) {
+  const voicingType = chooseVoicingType(patternType, styleId, bar);
+  const baseVoicing = getChordVoicing(bar, { type: voicingType });
+  const rawNotes = baseVoicing.notes?.length ? baseVoicing.notes : bar.chordNotes || [];
+  const baseMidis = rawNotes.map((note) => noteStringToMidiSafe(note, "C3"));
+  const shapes = buildStyleVoicingCandidates({ bar, baseMidis, patternType, styleStrategy });
+  // A compact figure keeps its chord just above its own bass; others use the chord lane.
+  const compactLow = bass == null ? null : bass + 1;
+  const compactHigh = bass == null ? null : Math.min(lanes.ceiling, bass + COMPACT_FIGURE_SPAN);
+  const useCompact = compactLow != null && compactHigh - compactLow >= 7;
+  const low = useCompact ? compactLow : Math.max(KEYBOARD_FLOOR, Math.min(lanes.chordLow, lanes.ceiling - 5));
+  const high = useCompact ? compactHigh : lanes.ceiling;
+  const target = low + (high - low) * 0.45;
+
+  const fitted = (candidates) => {
+    const placed = [];
+    candidates.forEach((candidate, rank) => {
+      for (let shift = -48; shift <= 48; shift += 12) {
+        const midis = candidate.midis.map((midi) => midi + shift);
+        if (midis[0] >= low && midis[midis.length - 1] <= high) placed.push({ ...candidate, midis, rank });
+      }
+    });
+    return placed;
+  };
+
+  // Fallbacks, in order: the style's shapes; any inversion of the chord; the chord
+  // without one note, then two. Over a sounding bass the root goes first, since the
+  // bass already plays it; a chord on its own keeps its root.
+  const inversions = rotations(baseMidis).map((midis) => ({ midis, shape: "inversion", inversion: null }));
+  const dropOrder = bass != null || patternType !== "block" ? [1, 3, 2, 0] : [0, 1, 3, 2];
+  const tiers = [
+    shapes,
+    inversions,
+    [...shapes, ...inversions].map((shape) => thinShape(shape, baseMidis, shape.midis.length - 1, dropOrder)),
+    [...shapes, ...inversions].map((shape) => thinShape(shape, baseMidis, 2, dropOrder)),
+  ];
+  let placed = [];
+  for (let tier = 0; tier < tiers.length && !placed.length; tier++) {
+    placed = fitted(tiers[tier].filter(Boolean)).map((candidate) => ({
+      ...candidate,
+      rank: candidate.rank + tier * 4,
+    }));
+  }
+  if (!placed.length) {
+    let root = baseMidis[0] ?? 48;
+    while (root > high) root -= 12;
+    while (root + 12 <= high && root < low) root += 12;
+    placed = [{ midis: [root], shape: "single", inversion: null, rank: 0 }];
+  }
+
+  let best = null;
+  for (const candidate of placed) {
+    const center = average(candidate.midis);
+    const cost =
+      voiceMovement(previous, candidate.midis) +
+      voiceMovement(remembered, candidate.midis) * 3 +
+      Math.abs(center - target) * 0.35 +
+      candidate.rank * 1.5 +
+      (4 - Math.min(4, candidate.midis.length)) * 2;
+    if (!best || cost < best.cost) best = { cost, candidate };
+  }
+  return { chord: best.candidate.midis, type: voicingType };
+}
+
+/** Total semitones the voices travel between two chords, each voice to its nearest. */
+function voiceMovement(previous, next) {
+  if (!previous?.length) return 0;
+  const nearest = (midi, pool) => Math.min(...pool.map((other) => Math.abs(other - midi)));
+  const forward = next.reduce((sum, midi) => sum + nearest(midi, previous), 0);
+  const backward = previous.reduce((sum, midi) => sum + nearest(midi, next), 0);
+  return (forward + backward) / 2;
+}
+
+/** Every inversion of a chord in close position. */
+function rotations(baseMidis) {
+  const chord = normalizeAscending(baseMidis);
+  return chord.map((_, turn) =>
+    normalizeAscending([...chord.slice(turn), ...chord.slice(0, turn).map((m) => m + 12)]),
+  );
+}
+
+/** A smaller version of a shape: at most `size` notes, kept in `keepOrder` (indexes into the chord). */
+function thinShape(shape, baseMidis, size, keepOrder) {
+  if (size < 1 || shape.midis.length <= size) return null;
+  const pitchClass = (midi) => ((midi % 12) + 12) % 12;
+  const priority = keepOrder.map((index) => baseMidis[index]).filter((midi) => midi != null);
+  const keep = new Set(priority.slice(0, size).map(pitchClass));
+  const midis = shape.midis.filter((midi) => keep.has(pitchClass(midi)));
+  return midis.length ? { ...shape, midis, shape: `${shape.shape}-thin` } : null;
+}
+
+function buildPatternBar(bar, barIndex, type, difficulty, playbackHints, placement) {
+  const { bass, chord, ceiling, voicingType } = placement;
   const pattern = {
     title: `Bar ${barIndex + 1} (${bar.label})`,
     description: "",
   };
   const steps = [];
-
-  const NORMALIZED_TYPE_MAP = {
-    "root-5th-octave": "root-5th-oct",
-    "root-5th-oct": "root-5th-oct",
-    "power-5ths-8ths": "power-8ths",
-    "power-8ths": "power-8ths",
-    "pedal-root-chords": "pedal",
-    pedal: "pedal",
-    "light-stride": "stride",
-    stride: "stride",
-    oompah: "oompah",
-  };
-  const normalizedType = NORMALIZED_TYPE_MAP[type] || type;
-
   const baseBeats = barIndex * 4;
+  const note = (midi) => midiToNote(midi);
+  const name = (midi) => stripOctave(midiToNote(midi));
+  const chordNotes = chord.map(note);
+  const chordLabel = chord.map(name).join("-");
+
   function scheduleBeat(beatOffset, payload) {
-    const totalBeats = baseBeats + beatOffset;
-    const beats = payload.beats ?? toneToBeatsFromDuration(payload.duration || "4n");
-    const duration = payload.duration || beatsToTone(beats);
-    const dynamics = computeDynamics(beatOffset, playbackHints);
-    const swingPosition = computeSwingPosition(beatOffset, playbackHints);
+    const duration = payload.duration || "4n";
     steps.push({
-      time: totalBeats,
-      beats,
+      time: baseBeats + beatOffset,
+      beats: payload.beats ?? toneToBeatsFromDuration(duration),
       duration,
-      swingPosition,
-      dynamics,
-      registerLocked: lockRegisterSteps || payload.registerLocked,
+      swingPosition: computeSwingPosition(beatOffset, playbackHints),
+      dynamics: computeDynamics(beatOffset, playbackHints),
       ...payload,
     });
   }
 
-  function withOctave(noteStr, octave) {
-    if (!noteStr) return `C${octave}`;
-    if (/\d/.test(noteStr)) return noteStr.replace(/\d/, String(octave));
-    return `${noteStr}${octave}`;
-  }
+  // Figures above the bass never pass the lane's ceiling: an octave becomes a fifth, a fifth the bass.
+  const intervals = (bar.bassNotes || []).map((value, index, all) =>
+    index === 0
+      ? 0
+      : (((noteStringToMidiSafe(value, "C3") - noteStringToMidiSafe(all[0], "C3")) % 12) + 12) % 12,
+  );
+  const fifthInterval = intervals[2] ?? 7;
+  const thirdInterval = intervals[1] ?? 4;
+  const seventhInterval = intervals[3] ?? 12;
+  const within = (midi, fallback) => (midi <= ceiling ? midi : fallback);
+  const fifth = within(bass + fifthInterval, bass);
+  const octave = within(bass + 12, fifth);
+  // Chord tones above the bass, without doubling the note the bass already plays.
+  const above = chord.filter((midi) => midi > bass && (midi - bass) % 12 !== 0);
+  const upper = above.length ? above : chord;
+  const chordTop = upper[upper.length - 1];
+  const chordMiddle = upper[upper.length - 2] ?? chordTop;
 
-  function safeRootNote() {
-    if (root) return root;
-    if (bar.bassNotes && bar.bassNotes.length) return bar.bassNotes[0];
-    if (voicing.notes && voicing.notes.length) return voicing.notes[0];
-    if (bar.root) return `${bar.root}3`;
-    return "C3";
-  }
-
-  const rootSafe = safeRootNote();
-  const normalizedMetadata = patternMetadata || {};
-  const lockRegisterSteps = !!normalizedMetadata.lockRegister;
-  const anchorMidi =
-    (Number.isFinite(barAnchorMidi) ? barAnchorMidi : handState?.anchorMidi) ??
-    noteStringToMidiSafe(normalizedMetadata.defaultAnchor || "C3", normalizedMetadata.defaultAnchor || "C3");
-  const anchorStrict = Boolean(barAnchorInfo?.strict);
-  const preferAnchorFlats = barAnchorInfo?.preferredAccidental === "flat";
-  const bassOffset = normalizedMetadata.bassOffset ?? 0;
-  const highOffset = normalizedMetadata.highOffset ?? 12;
-  const chordOffset = normalizedMetadata.chordOffset ?? 12;
-
-  function snapMidiNearTarget(midi, target) {
-    if (!Number.isFinite(midi) || !Number.isFinite(target)) return midi;
-    const candidates = [-24, -12, 0, 12, 24].map((shift) => midi + shift);
-    let best = candidates[0];
-    let bestDiff = Math.abs(best - target);
-    for (const candidate of candidates) {
-      const diff = Math.abs(candidate - target);
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        best = candidate;
-      }
-    }
-    return best;
-  }
-
-  function alignNoteToAnchor(noteStr, offset = 0, options = {}) {
-    const target = anchorMidi + offset;
-    const preferFlats = resolvePreferFlat(options.preferFlats, noteStr, preferAnchorFlats);
-    const fallbackNote = midiToNote(target, preferFlats);
-    const midi = noteStringToMidiSafe(noteStr || fallbackNote, fallbackNote);
-    const snapped = options.forceAnchorName ? target : snapMidiNearTarget(midi, target);
-    return midiToNote(snapped, preferFlats);
-  }
-
-  const rootMidiBase = noteStringToMidiSafe(rootSafe, rootSafe);
-
-  function intervalFromRoot(noteStr) {
-    if (!noteStr) return 0;
-    const midi = noteStringToMidiSafe(noteStr, noteStr);
-    return (((midi - rootMidiBase) % 12) + 12) % 12;
-  }
-
-  function alignChordNotesLocal(notes = []) {
-    if (!notes.length) return [];
-    return notes.map((note, idx) => {
-      const interval = idx === 0 ? 0 : intervalFromRoot(note);
-      const offset = chordOffset + interval;
-      return alignNoteToAnchor(note, offset, {
-        forceAnchorName: anchorStrict && idx === 0,
-        preferFlats: preferAnchorFlats,
-      });
-    });
-  }
-
-  const chordNotesRaw =
-    bar.chordNotes && bar.chordNotes.length
-      ? bar.chordNotes
-      : voicing.notes && voicing.notes.length
-        ? voicing.notes
-        : [rootSafe, third, fifth].filter(Boolean);
-  const chordNotesAnchored = alignChordNotesLocal(chordNotesRaw);
-  const thirdInterval = third ? intervalFromRoot(third) : 4;
-  const fifthInterval = fifth ? intervalFromRoot(fifth) : 7;
-  const seventhInterval = seventh ? intervalFromRoot(seventh) : 10;
-  const chordRootNote = chordNotesAnchored[0] || alignNoteToAnchor(rootSafe, chordOffset);
-  const chordThirdNote =
-    chordNotesAnchored[1] ||
-    alignNoteToAnchor(third || rootSafe, chordOffset + thirdInterval, {
-      preferFlats: preferAnchorFlats,
-    });
-  const chordFifthNote =
-    chordNotesAnchored[2] ||
-    alignNoteToAnchor(fifth || rootSafe, chordOffset + fifthInterval, {
-      preferFlats: preferAnchorFlats,
-    });
-  const chordSeventhNote =
-    chordNotesAnchored[3] ||
-    alignNoteToAnchor(seventh || fifth || rootSafe, chordOffset + seventhInterval, {
-      preferFlats: preferAnchorFlats,
-    });
-  const chordNotesForPlayback = chordNotesAnchored.length
-    ? chordNotesAnchored
-    : [chordRootNote, chordThirdNote, chordFifthNote, chordSeventhNote].filter(Boolean);
-  const chordNotes = chordNotesForPlayback;
-  const anchoredChordDisplay = chordNotes.map(stripOctave).join("-");
-  const anchorOptions = { forceAnchorName: anchorStrict, preferFlats: preferAnchorFlats };
-  const bassRootNote = alignNoteToAnchor(rootSafe, bassOffset, anchorOptions);
-  const bassFifthNote = alignNoteToAnchor(fifth || rootSafe, bassOffset + fifthInterval, {
-    preferFlats: preferAnchorFlats,
-  });
-  const bassOctaveNote = alignNoteToAnchor(rootSafe, bassOffset + 12, anchorOptions);
-  const upperRootNote = alignNoteToAnchor(rootSafe, highOffset, anchorOptions);
-
-  if (normalizedType === "alberti") {
-    const motif = [
-      bassRootNote,
-      chordFifthNote || chordThirdNote || chordRootNote,
-      chordThirdNote || chordRootNote,
-      chordFifthNote || chordThirdNote || chordRootNote,
-    ].filter(Boolean);
-
+  if (type === "alberti") {
+    const figure = [bass, chordTop, chordMiddle, chordTop];
     const subdivision = difficulty === "advanced" ? 0.25 : 0.5;
     const duration = subdivision === 0.25 ? "16n" : "8n";
-    const feel = subdivision === 0.25 ? "sixteenths" : "eighths";
     const totalSteps = Math.round(4 / subdivision);
-
-    let beat = 0;
     for (let i = 0; i < totalSteps; i++) {
-      scheduleBeat(beat, { note: motif[i % motif.length], duration });
-      beat += subdivision;
+      scheduleBeat(i * subdivision, { note: note(figure[i % figure.length]), duration });
     }
-
-    const motifNames = motif.map(stripOctave);
-    pattern.description = `${bar.label}: ${motifNames.join(" - ")} (${voicingType}) in ${feel}`;
-  } else if (normalizedType === "broken") {
-    const baseSeq =
-      voicing.notes && voicing.notes.length ? voicing.notes : [rootSafe, third, fifth].filter(Boolean);
-
-    const topNote =
-      baseSeq.length && baseSeq[0]
-        ? withOctave(baseSeq[0], 4)
-        : withOctave(bar.root || stripOctave(rootSafe || "C"), 4);
-
-    const seqBase = baseSeq.length < 4 ? [...baseSeq, topNote] : baseSeq;
-    const seq = seqBase.map((note, idx) => {
-      if (idx === 0) return bassRootNote;
-      const isTop = idx === seqBase.length - 1 && seqBase.length > baseSeq.length;
-      if (isTop) return upperRootNote;
-      return alignNoteToAnchor(note, chordOffset + intervalFromRoot(note), {
-        forceAnchorName: anchorStrict && stripOctave(note) === stripOctave(rootSafe),
-        preferFlats: preferAnchorFlats,
-      });
-    });
-
+    pattern.description = `${bar.label}: ${figure.map(name).join(" - ")} (${voicingType}) in ${
+      subdivision === 0.25 ? "sixteenths" : "eighths"
+    }`;
+  } else if (type === "broken") {
+    // Bass, the chord tones above it, then the bass note again on top when it fits.
+    let top = bass + 12;
+    while (top <= chordTop) top += 12;
+    const figure = upper.length < 3 ? [bass, ...upper, within(top, chordMiddle)] : [bass, ...upper];
     let beat = 0;
-    const subdivision = 0.5;
-    const duration = "8n";
-
     while (beat < 4 - 1e-6) {
-      for (const note of seq) {
+      for (const midi of figure) {
         if (beat >= 4 - 1e-6) break;
-        scheduleBeat(beat, { note, duration });
-        beat += subdivision;
+        scheduleBeat(beat, { note: note(midi), duration: "8n" });
+        beat += 0.5;
       }
     }
-
-    pattern.description = `${bar.label}: broken ${anchoredChordDisplay} (${voicingType})`;
-  } else if (normalizedType === "block") {
-    const displayLabel = chordNotes.map(stripOctave).join("-");
+    pattern.description = `${bar.label}: broken ${chordLabel} (${voicingType})`;
+  } else if (type === "block") {
     scheduleBeat(0, { notes: chordNotes, duration: "1m" });
-    pattern.description = `${bar.label}: block ${displayLabel} (full chord)`;
-  } else if (normalizedType === "oompah") {
-    const bassNote = bassRootNote;
-
-    scheduleBeat(0, { note: bassNote, duration: "4n" });
-    for (let b = 1; b <= 3; b++) {
-      scheduleBeat(b, { notes: chordNotes, duration: "4n" });
-    }
-
-    pattern.description = `${bar.label}: bass ${stripOctave(bassNote)} + chord ${anchoredChordDisplay} (${voicingType})`;
-  } else if (normalizedType === "root-5th-oct") {
-    const seq = [bassRootNote, bassFifthNote, bassOctaveNote, bassFifthNote];
-
-    seq.forEach((note, i) => {
-      scheduleBeat(i, { note, duration: "4n" });
-    });
-
+    pattern.description = `${bar.label}: block ${chordLabel} (full chord)`;
+  } else if (type === "root-5th-oct") {
+    [bass, fifth, octave, fifth].forEach((midi, i) => scheduleBeat(i, { note: note(midi), duration: "4n" }));
     pattern.description = `${bar.label}: root–5th–octave in quarters`;
-  } else if (normalizedType === "pop-8ths") {
-    const rootLow = bassRootNote;
-    const rootHigh = upperRootNote;
-
-    let beat = 0;
-    while (beat < 4 - 1e-6) {
-      const even = Math.round(beat * 2) % 2 === 0;
-      const note = even ? rootLow : rootHigh;
-      scheduleBeat(beat, { note, duration: "8n" });
-      beat += 0.5;
+  } else if (type === "pop-8ths") {
+    for (let i = 0; i < 8; i++) {
+      scheduleBeat(i * 0.5, { note: note(i % 2 === 0 ? bass : octave), duration: "8n" });
     }
-
-    pattern.description = `${bar.label}: pop 8ths on root/octave (${stripOctave(rootLow)} / ${stripOctave(rootHigh)})`;
-  } else if (normalizedType === "power-8ths") {
-    const rootLow = bassRootNote;
-    const dyad = [rootLow, bassFifthNote];
-
-    let beat = 0;
-    while (beat < 4 - 1e-6) {
-      scheduleBeat(beat, { notes: dyad, duration: "8n" });
-      beat += 0.5;
+    pattern.description = `${bar.label}: pop 8ths on root/octave (${name(bass)} / ${name(octave)})`;
+  } else if (type === "power-8ths") {
+    const dyad = fifth === bass ? [note(bass)] : [note(bass), note(fifth)];
+    for (let i = 0; i < 8; i++) {
+      scheduleBeat(i * 0.5, { notes: dyad, duration: "8n" });
     }
-
-    pattern.description = `${bar.label}: power-fifths 8ths (${stripOctave(dyad[0])}–${stripOctave(dyad[1])})`;
-  } else if (normalizedType === "pedal") {
-    const rootLow = bassRootNote;
-
-    scheduleBeat(0, { note: rootLow, duration: "2n" });
-    scheduleBeat(2, { note: rootLow, duration: "2n" });
+    pattern.description = `${bar.label}: power-fifths 8ths (${dyad.map(stripOctave).join("–")})`;
+  } else if (type === "pedal") {
+    scheduleBeat(0, { note: note(bass), duration: "2n" });
+    scheduleBeat(2, { note: note(bass), duration: "2n" });
     scheduleBeat(1.5, { notes: chordNotes, duration: "8n" });
     scheduleBeat(3.5, { notes: chordNotes, duration: "8n" });
-
-    pattern.description = `${bar.label}: pedal ${stripOctave(rootLow)} with off-beat chords (${anchoredChordDisplay})`;
-  } else if (normalizedType === "stride") {
-    const rootLow = bassRootNote;
-
-    scheduleBeat(0, { note: rootLow, duration: "4n" });
+    pattern.description = `${bar.label}: pedal ${name(bass)} with off-beat chords (${chordLabel})`;
+  } else if (type === "stride") {
+    scheduleBeat(0, { note: note(bass), duration: "4n" });
     scheduleBeat(1.5, { notes: chordNotes, duration: "4n" });
-    scheduleBeat(2, { note: rootLow, duration: "4n" });
+    scheduleBeat(2, { note: note(bass), duration: "4n" });
     scheduleBeat(3.5, { notes: chordNotes, duration: "4n" });
-
-    pattern.description = `${bar.label}: light stride bass ${stripOctave(rootLow)} + chords (${anchoredChordDisplay})`;
-  } else if (normalizedType === "walking") {
-    const seq = [
-      bassRootNote,
-      alignNoteToAnchor(third || rootSafe, bassOffset + thirdInterval, { preferFlats: preferAnchorFlats }),
-      alignNoteToAnchor(fifth || rootSafe, bassOffset + fifthInterval, { preferFlats: preferAnchorFlats }),
-      alignNoteToAnchor(seventh || rootSafe, bassOffset + seventhInterval, {
-        preferFlats: preferAnchorFlats,
-      }),
-    ].filter(Boolean);
-
-    const useSeq = seq.length ? seq : [bassRootNote];
-
-    for (let b = 0; b < 4; b++) {
-      const note = useSeq[b % useSeq.length];
-      scheduleBeat(b, { note, duration: "4n" });
-    }
-
-    pattern.description = `${bar.label}: walking bass through chord tones (${useSeq.map(stripOctave).join("-")})`;
+    pattern.description = `${bar.label}: light stride bass ${name(bass)} + chords (${chordLabel})`;
+  } else if (type === "walking") {
+    const walk = [bass, within(bass + thirdInterval, bass), fifth, within(bass + seventhInterval, fifth)];
+    walk.forEach((midi, b) => scheduleBeat(b, { note: note(midi), duration: "4n" }));
+    pattern.description = `${bar.label}: walking bass through chord tones (${walk.map(name).join("-")})`;
   } else {
-    const bassNote = bassRootNote;
-
-    scheduleBeat(0, { note: bassNote, duration: "4n" });
+    scheduleBeat(0, { note: note(bass), duration: "4n" });
     for (let b = 1; b <= 3; b++) {
       scheduleBeat(b, { notes: chordNotes, duration: "4n" });
     }
-
-    pattern.description = `${bar.label}: bass ${stripOctave(bassNote)} + chord ${anchoredChordDisplay} (${voicingType})`;
+    pattern.description = `${bar.label}: bass ${name(bass)} + chord ${chordLabel} (${voicingType})`;
   }
 
-  const registerSafeSteps = clampStepsToComfortRange(steps, handState?.part || "lh");
-  return { ...pattern, steps: registerSafeSteps };
+  return { ...pattern, steps };
 }
 
-function chooseVoicingForBar(
-  bar,
-  patternType,
-  patternMetadata,
-  voicingState,
-  anchorMidiOverride,
-  styleStrategy,
-) {
-  const voicingType = chooseVoicingType(patternType, bar.styleId || "classical", bar);
-  const baseVoicing = getChordVoicing(bar, { type: voicingType });
-  const rawNotes = baseVoicing.notes && baseVoicing.notes.length ? baseVoicing.notes : bar.chordNotes;
-  if (!rawNotes || !rawNotes.length) {
-    return baseVoicing;
-  }
-
-  const anchorMidi =
-    anchorMidiOverride ??
-    voicingState.lastCenter ??
-    noteStringToMidiSafe(patternMetadata.defaultAnchor, "C3");
-  const candidates = buildStyleVoicingCandidates({
-    bar,
-    rawNotes,
-    patternType,
-    patternMetadata,
-    anchorMidi,
-    styleStrategy,
-  });
-
-  let best = null;
-  for (const candidate of candidates) {
-    const penalty = scoreVoicingCandidate(candidate, {
-      patternMetadata,
-      styleStrategy,
-      anchorMidi,
-      voicingState,
-    });
-    if (!best || penalty < best.penalty) {
-      best = { candidate, penalty };
-    }
-  }
-
-  const chosen = best?.candidate || candidates[0];
-  const chosenMidis = chosen?.midis?.length
-    ? chosen.midis
-    : rawNotes.map((note) => noteStringToMidiSafe(note, patternMetadata.defaultAnchor));
-  const chosenNotes = chosen?.notes?.length ? chosen.notes : chosenMidis.map((midi) => midiToNote(midi));
-  const label = chosenNotes.map(stripOctave).join("-");
-
-  if (chosenMidis.length) {
-    voicingState.lastRoot = chosenMidis[0];
-    voicingState.lastCenter = average(chosenMidis);
-    voicingState.lastMidis = chosenMidis.slice();
-  }
-
-  return {
-    ...baseVoicing,
-    notes: chosenNotes,
-    label,
-  };
-}
-
-function resolveBarAnchorInfo({ bar, chordAnchors, fallbackNote, styleStrategy, patternType }) {
-  const chordAnchorNote = matchChordAnchorFromMap(chordAnchors, bar?.symbol);
-  const baseNote = chordAnchorNote || fallbackNote || "C3";
-  const clamped = clampAnchorToRangeSpec(baseNote, styleStrategy?.anchorRange, "lh");
-  let anchorMidi = noteStringToMidiSafe(clamped, clamped);
-  anchorMidi = adjustAnchorMidiForPattern(anchorMidi, patternType);
-  const preferFlat = prefersFlatNotation(chordAnchorNote || baseNote);
-  const anchorNote = midiToNote(anchorMidi, preferFlat);
-  return {
-    anchorNote,
-    anchorMidi,
-    strict: Boolean(chordAnchorNote),
-    preferredAccidental: preferFlat ? "flat" : "sharp",
-  };
-}
-
-function matchChordAnchorFromMap(chordAnchors, symbol) {
-  if (!chordAnchors || !symbol) return null;
-  const parsed = parseRomanSymbol(symbol);
-  const variants = [];
-  if (parsed) {
-    const accidental = parsed.accStr || "";
-    const numeral = parsed.numeral || symbol;
-    const extension = parsed.extension || "";
-    const base = `${accidental}${numeral}`;
-    variants.push(base, base.toUpperCase(), base.toLowerCase());
-    if (extension) {
-      const extended = `${base}${extension}`;
-      variants.push(extended, extended.toUpperCase(), extended.toLowerCase());
-    }
-    variants.push(numeral, numeral.toUpperCase(), numeral.toLowerCase());
-  }
-  variants.push(symbol, symbol.toUpperCase(), symbol.toLowerCase());
-  for (const key of variants) {
-    if (key && chordAnchors[key] != null) {
-      return chordAnchors[key];
-    }
-  }
-  return null;
-}
-
-function buildStyleVoicingCandidates({
-  bar,
-  rawNotes,
-  patternType,
-  patternMetadata,
-  anchorMidi: _anchorMidi,
-  styleStrategy,
-}) {
-  const fallbackAnchor = patternMetadata.defaultAnchor || "C3";
-  const baseMidis = rawNotes.map((note) => noteStringToMidiSafe(note, fallbackAnchor));
+function buildStyleVoicingCandidates({ bar, baseMidis, patternType, styleStrategy }) {
   const parsedRoman = bar?.symbol ? parseRomanSymbol(bar.symbol) : null;
-  const allowedShapes = patternMetadata.allowedShapes?.length
-    ? patternMetadata.allowedShapes
-    : styleStrategy?.allowedShapes || ["triad"];
-  const allowedInversions = resolveAllowedInversions({
-    patternType,
-    patternMetadata,
-    styleStrategy,
-    parsedRoman,
-  });
+  const allowedShapes = styleStrategy?.allowedShapes?.length ? styleStrategy.allowedShapes : ["triad"];
+  const allowedInversions = resolveAllowedInversions({ patternType, styleStrategy, parsedRoman });
   const candidates = [];
   const seen = new Set();
 
   const pushCandidate = (midis, meta = {}) => {
     if (!midis || !midis.length) return;
-    const normalized = clampCandidateToRegister(midis, styleStrategy);
-    const key = normalized.map((m) => Math.round(m)).join("-");
+    const normalized = normalizeAscending(midis);
+    const key = normalized.map((m) => ((m % 12) + 12) % 12).join("-") + `|${normalized[0] % 12}`;
     if (seen.has(key)) return;
     seen.add(key);
-    candidates.push({
-      midis: normalized,
-      notes: normalized.map((m) => midiToNote(m)),
-      shape: meta.shape || "triad",
-      inversion: meta.inversion || null,
-    });
+    candidates.push({ midis: normalized, shape: meta.shape || "triad", inversion: meta.inversion || null });
   };
 
   if (allowedShapes.includes("triad") && baseMidis.length) {
-    const triadSource = baseMidis.slice(0, 3);
     allowedInversions.forEach((inv) => {
-      const triad = applyTriadInversion(triadSource, inv);
-      pushCandidate(triad, { shape: "triad", inversion: inv });
+      pushCandidate(applyInversion(baseMidis, inv), { shape: "triad", inversion: inv });
     });
   }
 
   if (allowedShapes.includes("open5")) {
-    const open = buildOpenFifthCandidate(baseMidis, styleStrategy?.includeSeventhInOpen);
-    pushCandidate(open, { shape: "open5" });
+    pushCandidate(buildOpenFifthCandidate(baseMidis, styleStrategy?.includeSeventhInOpen), {
+      shape: "open5",
+    });
   }
 
   if (allowedShapes.includes("shell")) {
-    const shell = buildShellCandidate(baseMidis, styleStrategy?.shellOptions || {});
-    pushCandidate(shell, { shape: "shell" });
+    pushCandidate(buildShellCandidate(baseMidis, styleStrategy?.shellOptions || {}), { shape: "shell" });
   }
 
   if (allowedShapes.includes("quartal")) {
-    const quartal = buildQuartalCandidate(baseMidis[0]);
-    pushCandidate(quartal, { shape: "quartal" });
+    pushCandidate(buildQuartalCandidate(baseMidis[0]), { shape: "quartal" });
   }
 
   if (!candidates.length) {
@@ -936,9 +719,8 @@ function buildStyleVoicingCandidates({
   return candidates;
 }
 
-function resolveAllowedInversions({ patternType, patternMetadata, styleStrategy, parsedRoman }) {
-  const patternLock = patternMetadata.allowedInversions?.length ? patternMetadata.allowedInversions : null;
-  let allowed = patternLock || styleStrategy?.allowedInversions || ["root"];
+function resolveAllowedInversions({ patternType, styleStrategy, parsedRoman }) {
+  let allowed = styleStrategy?.allowedInversions || ["root"];
   if (styleStrategy?.lockRootPatterns?.includes(patternType)) {
     allowed = ["root"];
   }
@@ -976,23 +758,15 @@ function determineRomanPreferredInversion(strategy, parsedRoman) {
   return null;
 }
 
-function applyTriadInversion(sourceMidis = [], inversion = "root") {
+/** Close position from the root, then rotate the lowest notes up an octave. */
+function applyInversion(sourceMidis = [], inversion = "root") {
   if (!sourceMidis.length) return null;
-  const triad = sourceMidis.slice();
-  while (triad.length < 3) {
-    triad.push(triad[triad.length - 1] + 12);
-  }
-  for (let i = 1; i < triad.length; i++) {
-    while (triad[i] <= triad[i - 1]) {
-      triad[i] += 12;
-    }
-  }
+  const chord = normalizeAscending(sourceMidis);
   const inversionSteps = inversion === "first" ? 1 : inversion === "second" ? 2 : 0;
-  for (let i = 0; i < inversionSteps; i++) {
-    const note = triad.shift();
-    triad.push(note + 12);
+  for (let i = 0; i < Math.min(inversionSteps, chord.length - 1); i++) {
+    chord.push(chord.shift() + 12);
   }
-  return normalizeAscending(triad);
+  return normalizeAscending(chord);
 }
 
 function buildOpenFifthCandidate(baseMidis = [], includeSeventh = false) {
@@ -1025,54 +799,6 @@ function buildQuartalCandidate(rootMidi) {
   return normalizeAscending([rootMidi, rootMidi + 5, rootMidi + 10]);
 }
 
-function clampCandidateToRegister(midis = [], strategy = {}) {
-  if (!midis.length) return midis;
-  const preferred = strategy.preferredRegister;
-  if (!preferred || !preferred.low || !preferred.high) {
-    return normalizeAscending(midis);
-  }
-  const min = noteStringToMidiSafe(preferred.low, preferred.low);
-  const max = noteStringToMidiSafe(preferred.high, preferred.high);
-  let candidate = midis.slice();
-  let guard = 0;
-  while (guard < 8) {
-    const center = average(candidate);
-    if (center < min) {
-      candidate = candidate.map((m) => m + 12);
-    } else if (center > max) {
-      candidate = candidate.map((m) => m - 12);
-    } else {
-      break;
-    }
-    guard += 1;
-  }
-  return normalizeAscending(candidate);
-}
-
-function scoreVoicingCandidate(candidate, { patternMetadata, styleStrategy, anchorMidi, voicingState }) {
-  const midis = candidate.midis || [];
-  if (!midis.length) return Number.POSITIVE_INFINITY;
-  const span = Math.max(...midis) - Math.min(...midis);
-  const center = average(midis);
-  const root = midis[0];
-  const lastRoot = voicingState.lastRoot ?? anchorMidi;
-  const register = styleStrategy?.preferredRegister;
-  let registerPenalty = 0;
-  if (register && register.low && register.high) {
-    const min = noteStringToMidiSafe(register.low, register.low);
-    const max = noteStringToMidiSafe(register.high, register.high);
-    if (center < min) registerPenalty = (min - center) * 2.5;
-    else if (center > max) registerPenalty = (center - max) * 2.5;
-  }
-  const spanLimit = patternMetadata.maxSpan || 14;
-  const spanPenalty = span > spanLimit ? (span - spanLimit) * 3 : 0;
-  const movementPenalty = Math.abs(root - lastRoot);
-  const anchorPenalty = Math.abs(center - anchorMidi) * 0.25;
-  const inversionPenalty =
-    candidate.inversion === "second" && !(styleStrategy?.allowedInversions || []).includes("second") ? 6 : 0;
-  return registerPenalty + spanPenalty + movementPenalty * 0.9 + anchorPenalty + inversionPenalty;
-}
-
 function normalizeAscending(midis = []) {
   const sorted = midis.slice().sort((a, b) => a - b);
   const result = [];
@@ -1086,325 +812,14 @@ function normalizeAscending(midis = []) {
   return result;
 }
 
-function enforceHandRange(steps = [], state, { part, lockGlobalShift = false } = {}) {
-  if (!Array.isArray(steps) || !state) return steps;
-  const rangeKey = part || state.part || "rh";
-  const ranges = HAND_RANGE_MAP[rangeKey] || HAND_RANGE_MAP.rh;
-  let attempt = 0;
-  const working = steps;
-  while (attempt < MAX_BAR_SHIFT_ATTEMPTS) {
-    const result = adjustStepsWithShift(working, state, ranges, { lockGlobalShift });
-    if (result.needShift && result.shiftDelta) {
-      if (lockGlobalShift) {
-        return working;
-      }
-      state.globalShift += result.shiftDelta;
-      state.anchorMidi = (state.anchorMidi || 0) + result.shiftDelta;
-      state.centerMidi = (state.centerMidi || 0) + result.shiftDelta;
-      attempt += 1;
-      continue;
-    }
-    if (result.steps) {
-      state.lastMidi = result.lastMidi ?? state.lastMidi;
-      state.centerMidi = result.center ?? state.centerMidi;
-      state.noteIndex = (state.noteIndex || 0) + (result.noteCount || 0);
-      state.peaksUsed = (state.peaksUsed || 0) + (result.peaks || 0);
-      return result.steps;
-    }
-    break;
-  }
-  return working;
-}
-
-function adjustStepsWithShift(steps, state, ranges, options = {}) {
-  const metadata = state.metadata || {};
-  const adjusted = [];
-  const barMidis = [];
-  let lastMidi = state.lastMidi ?? state.anchorMidi;
-  const baseNoteIndex = state.noteIndex || 0;
-  let localNoteCount = 0;
-  let peakCount = 0;
-
-  for (const step of steps) {
-    if (!step || step.rest || (!step.note && !step.notes?.length)) {
-      adjusted.push(step);
-      continue;
-    }
-
-    const notesArray = step.notes && step.notes.length ? step.notes : [step.note];
-    const noteOrdinal = baseNoteIndex + localNoteCount;
-    const outcome = adjustNoteCollection(
-      notesArray,
-      lastMidi,
-      state.globalShift,
-      ranges,
-      metadata,
-      state,
-      noteOrdinal,
-      step,
-    );
-    if (!outcome.ok) {
-      return { needShift: true, shiftDelta: outcome.shiftDelta };
-    }
-
-    if (step.notes && step.notes.length) {
-      adjusted.push({ ...step, notes: outcome.notes });
-    } else {
-      adjusted.push({ ...step, note: outcome.notes[0] });
-    }
-
-    if (outcome.midis.length) {
-      lastMidi = outcome.midis[outcome.midis.length - 1];
-      barMidis.push(...outcome.midis);
-      localNoteCount += outcome.noteContribution || 1;
-      if (outcome.peakUsed) {
-        peakCount += 1;
-      }
-    }
-  }
-
-  const center = barMidis.length ? average(barMidis) : (state.centerMidi ?? lastMidi);
-  if (!options.lockGlobalShift && center != null) {
-    if (center < ranges.comfort.min - 0.5) {
-      return { needShift: true, shiftDelta: 12 };
-    }
-    if (center > ranges.comfort.max + 0.5) {
-      return { needShift: true, shiftDelta: -12 };
-    }
-  }
-
-  return { steps: adjusted, lastMidi, center, noteCount: localNoteCount, peaks: peakCount };
-}
-
-function adjustNoteCollection(
-  notes,
-  lastMidi,
-  globalShift,
-  ranges,
-  metadata,
-  state,
-  noteOrdinal = 0,
-  step = null,
-) {
-  const part = state.part || "rh";
-  const fallbackAnchor = metadata.defaultAnchor || (part === "lh" ? "C3" : "C5");
-  const baseMidis = notes.map((note) => noteStringToMidiSafe(note, fallbackAnchor));
-  const shiftedBase = baseMidis.map((midi) => midi + globalShift);
-  if (step?.registerLocked) {
-    const lockedMidis = clampLockedMidisToRange(shiftedBase, ranges);
-    return {
-      ok: true,
-      notes: lockedMidis.map((midi) => midiToNote(midi)),
-      midis: lockedMidis,
-      peakUsed: false,
-      noteContribution: 1,
-    };
-  }
-  const decision = chooseBestShiftForMidis(shiftedBase, lastMidi, ranges, metadata, state, noteOrdinal);
-  if (!decision) {
-    const avg = average(shiftedBase);
-    const shiftDelta = avg > ranges.soft.max ? -12 : 12;
-    return { ok: false, shiftDelta };
-  }
-  return {
-    ok: true,
-    notes: decision.midis.map((midi) => midiToNote(midi)),
-    midis: decision.midis,
-    peakUsed: decision.isPeak || false,
-    noteContribution: 1,
-  };
-}
-
-function clampLockedMidisToRange(midis = [], ranges) {
-  if (!midis.length) return midis;
-  const soft = ranges?.soft;
-  if (!soft) return midis;
-  let result = midis.slice();
-  let guard = 0;
-  const min = soft.min;
-  const max = soft.max;
-  while (guard < 8) {
-    const below = result.some((m) => m < min);
-    const above = result.some((m) => m > max);
-    if (!below && !above) break;
-    if (below) {
-      result = result.map((m) => m + 12);
-    } else if (above) {
-      result = result.map((m) => m - 12);
-    }
-    guard += 1;
-  }
-  return result;
-}
-
-function chooseBestShiftForMidis(midis, lastMidi, ranges, metadata, state, noteOrdinal = 0) {
-  const shiftOptions = [0, -12, 12, -24, 24];
-  const motionWeight = motionBiasWeight(metadata.motionBias || metadata.intervalBias);
-  let best = null;
-
-  for (const shift of shiftOptions) {
-    const candidate = midis.map((m) => m + shift);
-    if (!candidate.every((m) => m >= ranges.soft.min && m <= ranges.soft.max)) continue;
-
-    const span = Math.max(...candidate) - Math.min(...candidate);
-    if (metadata.maxSpan && span > metadata.maxSpan) continue;
-
-    const comfortViolations = candidate.filter(
-      (m) => m < ranges.comfort.min || m > ranges.comfort.max,
-    ).length;
-    const anchor = candidate[0];
-    const movement = lastMidi != null ? anchor - lastMidi : 0;
-    const distance = Math.abs(movement);
-    const contourDir = determineContourDirection(state, noteOrdinal);
-    const contourPenalty = computeContourPenalty(contourDir, movement);
-    const intervalPenalty = computeIntervalPenalty(metadata.intervalBias || metadata.motionBias, distance);
-    const isPeak = candidate.some((m) => m > ranges.comfort.max - 1.5);
-    const peakPenalty = computePeakPenalty(state, isPeak);
-    const penalty =
-      distance * motionWeight +
-      comfortViolations * 200 +
-      Math.abs(shift) * 0.1 +
-      contourPenalty +
-      intervalPenalty +
-      peakPenalty;
-
-    if (!best || penalty < best.penalty) {
-      best = { shift, midis: candidate, penalty, isPeak };
-    }
-  }
-
-  return best;
-}
-
-function motionBiasWeight(bias) {
-  switch (bias) {
-    case "leap-on-barlines":
-      return 0.7;
-    case "static":
-    case "steady":
-      return 1.15;
-    case "arpeggio":
-    case "stepwise":
-    case "steps":
-    default:
-      return 1;
-  }
-}
-
-function determineContourDirection(state, noteOrdinal = 0) {
-  const contour = state?.metadata?.contour;
-  if (!contour) return 0;
-  const total = Math.max(1, state?.metadata?.totalNotes || 1);
-  const denom = Math.max(1, total - 1);
-  const ratio = Math.min(1, noteOrdinal / denom);
-  switch (contour) {
-    case "up":
-      return 1;
-    case "down":
-      return -1;
-    case "arch":
-      return ratio < 0.5 ? 1 : -1;
-    case "static":
-    default:
-      return 0;
-  }
-}
-
-function computeContourPenalty(direction, movement) {
-  if (!direction || !Number.isFinite(movement)) return 0;
-  if (direction > 0 && movement < 0) {
-    return Math.abs(movement) * 2.5;
-  }
-  if (direction < 0 && movement > 0) {
-    return movement * 2.5;
-  }
-  if (Math.abs(movement) < 0.5) {
-    return 0.2;
-  }
-  return 0;
-}
-
-function computeIntervalPenalty(bias, distance) {
-  if (!bias || !Number.isFinite(distance)) return 0;
-  if (bias === "steps" || bias === "stepwise") {
-    return Math.max(0, distance - 3) * 0.9;
-  }
-  if (bias === "thirds") {
-    return Math.max(0, distance - 5) * 0.6;
-  }
-  if (bias === "steady" || bias === "static") {
-    return Math.max(0, distance - 2) * 1.2;
-  }
-  return 0;
-}
-
-function clampStepsToComfortRange(steps = [], part = "lh") {
-  if (!Array.isArray(steps) || !steps.length) return steps;
-  const ranges = HAND_RANGE_MAP[part] || HAND_RANGE_MAP.rh;
-  const comfort = ranges?.comfort;
-  if (!comfort) return steps;
-  const soft = ranges?.soft;
+/** Move a whole part by octaves until it sits within its hand's soft range. */
+function keepStepsWithinRange(steps = [], part = "rh") {
   const stats = gatherStepMidiStats(steps);
-  if (!stats) return steps;
-
-  let min = stats.min;
-  let max = stats.max;
+  const soft = HAND_RANGE_MAP[part]?.soft;
+  if (!stats || !soft) return steps;
   let delta = 0;
-  let guard = 0;
-
-  while (max > comfort.max && guard < 8) {
-    max -= 12;
-    min -= 12;
-    delta -= 12;
-    guard += 1;
-  }
-
-  while (min < comfort.min && guard < 16) {
-    min += 12;
-    max += 12;
-    delta += 12;
-    guard += 1;
-  }
-
-  if (soft) {
-    while (min < soft.min && guard < 24) {
-      min += 12;
-      max += 12;
-      delta += 12;
-      guard += 1;
-    }
-    while (max > soft.max && guard < 32) {
-      max -= 12;
-      min -= 12;
-      delta -= 12;
-      guard += 1;
-    }
-  }
-
-  if (delta === 0) return steps;
-  return steps.map((step) => transposeStep(step, delta));
-}
-
-function clampStepsToMidiRange(steps = [], lowNote, highNote) {
-  const stats = gatherStepMidiStats(steps);
-  if (!stats) return steps;
-  const minAllowed = noteStringToMidiSafe(lowNote, lowNote);
-  const maxAllowed = noteStringToMidiSafe(highNote, highNote);
-  let min = stats.min;
-  let max = stats.max;
-  let delta = 0;
-
-  while (max > maxAllowed) {
-    max -= 12;
-    min -= 12;
-    delta -= 12;
-  }
-  while (min < minAllowed) {
-    min += 12;
-    max += 12;
-    delta += 12;
-  }
-
+  for (let guard = 0; guard < 4 && stats.max + delta > soft.max; guard++) delta -= 12;
+  for (let guard = 0; guard < 4 && stats.min + delta < soft.min; guard++) delta += 12;
   return delta ? steps.map((step) => transposeStep(step, delta)) : steps;
 }
 
@@ -1440,13 +855,6 @@ function alignStepsToAnchor(steps = [], anchorMidi, part = "rh") {
   return steps.map((step) => transposeStep(step, bestShift));
 }
 
-function lockStepsToRegister(steps = []) {
-  return steps.map((step) => {
-    if (!step || step.rest || (!step.note && !step.notes?.length)) return step;
-    return { ...step, registerLocked: true };
-  });
-}
-
 function gatherStepMidiStats(steps = []) {
   const midis = [];
   for (const step of steps) {
@@ -1476,47 +884,6 @@ function transposeStep(step, delta = 0) {
   return step;
 }
 
-function resolvePreferFlat(override, noteStr, fallback = false) {
-  if (typeof override === "boolean") return override;
-  if (noteStr) return prefersFlatNotation(noteStr);
-  return fallback;
-}
-
-function prefersFlatNotation(noteStr) {
-  if (!noteStr) return false;
-  return /[A-G]b/i.test(noteStr);
-}
-
-function computePeakPenalty(state, isPeak) {
-  if (!isPeak) return 0;
-  const limit = state?.metadata?.peaksPerPhrase;
-  if (!limit) return 0;
-  const used = state?.peaksUsed || 0;
-  return used >= limit ? 400 + (used - limit + 1) * 25 : 0;
-}
-
-function createHandState(part, metadata = {}, phraseSegment = null) {
-  const defaultAnchor = phraseSegment?.anchorNote || metadata.defaultAnchor || (part === "lh" ? "C3" : "C5");
-  const anchorMidi = phraseSegment?.anchorMidi ?? noteStringToMidiSafe(defaultAnchor, defaultAnchor);
-  const mergedMetadata = {
-    ...metadata,
-    contour: phraseSegment?.contour ?? metadata.contour,
-    intervalBias: phraseSegment?.intervalBias ?? metadata.intervalBias,
-    peaksPerPhrase: phraseSegment?.peaksPerPhrase ?? metadata.peaksPerPhrase,
-    anchorRange: phraseSegment?.anchorRange ?? metadata.anchorRange,
-  };
-  return {
-    part,
-    metadata: mergedMetadata,
-    anchorMidi,
-    lastMidi: anchorMidi,
-    centerMidi: anchorMidi,
-    globalShift: 0,
-    noteIndex: 0,
-    peaksUsed: 0,
-  };
-}
-
 function average(values = []) {
   if (!values.length) return 0;
   const total = values.reduce((sum, value) => sum + value, 0);
@@ -1537,25 +904,6 @@ function ensureNoteWithOctave(noteStr, fallbackNote = "C3") {
 function extractOctaveNumber(noteStr, defaultOctave = 3) {
   const match = noteStr && noteStr.match(/-?\d+/);
   return match ? Number(match[0]) : defaultOctave;
-}
-
-function computeDefaultHandAnchors({
-  key,
-  mode: _mode,
-  styleId,
-  motifStyle,
-  leftHandPatternId,
-  leftPatternMeta: _leftPatternMeta,
-  styleAnchors,
-}) {
-  const rhCandidate = deriveRhAnchorCandidate({ key, motifStyle, styleAnchors });
-  const rhAnchor = clampAnchorToRangeSpec(rhCandidate, styleAnchors?.rh, "rh");
-  const rhMidi = noteStringToMidiSafe(rhAnchor, rhAnchor);
-  const gap = computeStyleGap(styleId, leftHandPatternId);
-  const lhCandidateMidi = rhMidi - gap;
-  const lhCandidate = midiToNote(lhCandidateMidi, prefersFlatNotation(key));
-  const lhAnchor = clampAnchorToRangeSpec(lhCandidate, styleAnchors?.lh, "lh");
-  return { lh: lhAnchor, rh: rhAnchor };
 }
 
 function deriveRhAnchorCandidate({ key, motifStyle, styleAnchors }) {
@@ -1582,60 +930,6 @@ function alignKeyToRegister(key, targetNote) {
   return `${keyBase}${octave}`;
 }
 
-function computeStyleGap(styleId, leftHandPatternId) {
-  const base = STYLE_LH_ANCHOR_GAPS[styleId] ?? STYLE_LH_ANCHOR_GAPS.default;
-  const adjust = PATTERN_LH_GAP_ADJUST[leftHandPatternId] || 0;
-  return Math.max(8, base + adjust);
-}
-
-function estimateMotifRangeForAnchors({ motifStyle, key, mode, rhAnchor }) {
-  if (!motifStyle || !motifStyle.degreePattern || !motifStyle.degreePattern.length) {
-    return null;
-  }
-  const scale = generateScale({ key, mode });
-  const anchorMidi = noteStringToMidiSafe(rhAnchor, rhAnchor);
-  const baseNoteName = scale?.notes?.[0] || stripOctave(key || "C") || "C";
-  const reference = `${baseNoteName}${extractOctaveNumber(rhAnchor, 5)}`;
-  const referenceMidi = noteStringToMidiSafe(reference, reference);
-  const octaveAdjust = Math.round((anchorMidi - referenceMidi) / 12);
-  const startOctave = extractOctaveNumber(reference, 5) + octaveAdjust;
-  const midis = motifStyle.degreePattern
-    .map((degreeToken) => {
-      const interpretation = motifStyle.degreeInterpretation;
-      const noteName = degreeToNote(degreeToken, mode, scale, interpretation);
-      if (!noteName) return null;
-      const octaveShift = Math.floor(degreeTokenSemitones(degreeToken, mode, interpretation) / 12);
-      const finalNote = `${noteName}${startOctave + octaveShift}`;
-      return noteStringToMidiSafe(finalNote, finalNote);
-    })
-    .filter((midi) => Number.isFinite(midi));
-  if (!midis.length) return null;
-  return {
-    min: Math.min(...midis),
-    max: Math.max(...midis),
-    avg: average(midis),
-  };
-}
-
-function applyLowKeyGuard({ lhAnchor, motifRange, leftPatternMeta, styleAnchors, key }) {
-  if (!motifRange || !lhAnchor) return lhAnchor;
-  const patternHighOffset = leftPatternMeta?.highOffset ?? 12;
-  const styleHigh = styleAnchors?.lh?.high
-    ? noteStringToMidiSafe(styleAnchors.lh.high, styleAnchors.lh.high)
-    : HAND_RANGE_MAP.lh.soft.max;
-  const softHigh = Math.min(styleHigh, HAND_RANGE_MAP.lh.soft.max);
-  let anchorMidi = noteStringToMidiSafe(lhAnchor, lhAnchor);
-  const canRaiseOneOctave = () =>
-    anchorMidi + 12 <= softHigh &&
-    motifRange.min - (anchorMidi + 12 + patternHighOffset) >= MIN_LH_RH_INTERVAL;
-  let iterations = 0;
-  while (canRaiseOneOctave() && iterations < 4) {
-    anchorMidi += 12;
-    iterations += 1;
-  }
-  return midiToNote(anchorMidi, prefersFlatNotation(key));
-}
-
 function clampAnchorToRangeSpec(note, range, part = "lh") {
   if (!note) return note;
   const normalized = ensureNoteWithOctave(note, note);
@@ -1653,30 +947,6 @@ function clampAnchorToRangeSpec(note, range, part = "lh") {
     guard += 1;
   }
   return midiToNote(midi);
-}
-
-function adjustAnchorForPattern(note, patternType) {
-  if (!note) return note;
-  const midi = noteStringToMidiSafe(note, note);
-  const adjusted = adjustAnchorMidiForPattern(midi, patternType);
-  return midiToNote(adjusted);
-}
-
-function adjustAnchorMidiForPattern(anchorMidi, patternType, part = "lh") {
-  if (!Number.isFinite(anchorMidi)) return anchorMidi;
-  const ranges = HAND_RANGE_MAP[part] || HAND_RANGE_MAP.lh;
-  const soft = ranges.soft;
-  let midi = anchorMidi;
-  if (PATTERN_OCTAVE_REQUIREMENTS.has(patternType) && midi + 12 > soft.max) {
-    midi -= 12;
-  }
-  while (midi < soft.min) {
-    midi += 12;
-  }
-  while (midi > soft.max) {
-    midi -= 12;
-  }
-  return midi;
 }
 
 function buildHandRangeMap(specs = {}) {

@@ -36,38 +36,14 @@ function runPresetAssertions(preset) {
     anchors: preset.anchors,
   });
 
-  expect(plan?.lh?.anchorNote, `Preset ${preset.id} missing LH anchor`).toBeTruthy();
+  // A preset may name where its tune sits; the left hand is placed under it (tests/hand-lanes.spec.js).
   expect(plan?.rh?.anchorNote, `Preset ${preset.id} missing RH anchor`).toBeTruthy();
-
-  if (preset.anchors?.lh) {
-    const expectedMidi = noteStringToMidi(preset.anchors.lh);
-    const actualMidi = noteStringToMidi(plan.lh.anchorNote);
-    expect(
-      actualMidi,
-      `Preset ${preset.id} LH anchor drifted (${plan.lh.anchorNote} vs ${preset.anchors.lh})`,
-    ).toBe(expectedMidi);
-  }
-
   if (preset.anchors?.rh) {
-    const expectedMidi = noteStringToMidi(preset.anchors.rh);
-    const actualMidi = noteStringToMidi(plan.rh.anchorNote);
     expect(
-      actualMidi,
+      noteStringToMidi(plan.rh.anchorNote),
       `Preset ${preset.id} RH anchor drifted (${plan.rh.anchorNote} vs ${preset.anchors.rh})`,
-    ).toBe(expectedMidi);
+    ).toBe(noteStringToMidi(preset.anchors.rh));
   }
-
-  if (preset.anchors?.chords) {
-    expect(plan.lh.chordAnchors, `Preset ${preset.id} did not forward chord anchors`).toBe(
-      preset.anchors.chords,
-    );
-  }
-
-  const lhMidi = noteStringToMidi(plan.lh.anchorNote);
-  const rhMidi = noteStringToMidi(plan.rh.anchorNote);
-  const gap = rhMidi - lhMidi;
-  expect(gap, `Preset ${preset.id} LH/RH anchor gap ${gap} outside safe range`).toBeGreaterThanOrEqual(10);
-  expect(gap, `Preset ${preset.id} LH/RH anchor gap ${gap} outside safe range`).toBeLessThanOrEqual(30);
 }
 
 function run() {

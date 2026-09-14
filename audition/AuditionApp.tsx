@@ -262,6 +262,10 @@ export function AuditionApp({
                 Concurrent hand gap {current.metrics.closestConcurrentHandGap ?? "—"} to{" "}
                 {current.metrics.widestConcurrentHandGap ?? "—"} semitones
               </li>
+              <li>
+                Hand zone gap {current.metrics.handZoneGap ?? "—"}; largest bass leap{" "}
+                {current.metrics.maxBassLeap} semitones
+              </li>
               <li>{current.metrics.outsideCollectionNotes.length} right-hand notes outside the collection</li>
               <li>{current.metrics.longNotes.length} notes held for at least three beats</li>
             </ul>

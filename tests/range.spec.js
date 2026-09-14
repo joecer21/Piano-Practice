@@ -31,7 +31,7 @@ function average(values) {
 
 function run() {
   describe("Range-aware phrase planning", () => {
-    it("Pop 4 in A minor keeps LH in C2–C4 and RH near C5", () => {
+    it("Pop 4 in A minor keeps LH in its home lanes and RH near C5", () => {
       const scale = generateScale({ key: "A", mode: "minor" });
       const progression = generateProgression(
         { key: "A", mode: "minor", length: 4, progressionPresetId: "pop-4" },
@@ -57,12 +57,12 @@ function run() {
       const lhMidis = leftHand.bars.flatMap((bar) => collectMidisFromSteps(bar.steps));
       const minLh = Math.min(...lhMidis);
       const maxLh = Math.max(...lhMidis);
-      expect(minLh, `Left hand dropped below comfort zone: ${minLh}`).toBeGreaterThanOrEqual(
+      // With no tune above it, the hand stays in its home lanes (bass from E2, slid at most
+      // four keys to suit the progression) and nothing above D#4.
+      expect(minLh, `Left hand dropped below its bass lane: ${minLh}`).toBeGreaterThanOrEqual(
         noteStringToMidi("C2"),
       );
-      expect(maxLh, `Left hand exceeded upper comfort zone: ${maxLh}`).toBeLessThanOrEqual(
-        noteStringToMidi("C4"),
-      );
+      expect(maxLh, `Left hand exceeded its lanes: ${maxLh}`).toBeLessThanOrEqual(noteStringToMidi("D#4"));
 
       const motif = generateMotif({ motifPatternId: "pop-hook-1351", styleId: "pop", phrasePlan }, scale);
       const motifMidis = collectMidisFromSteps(motif.steps);

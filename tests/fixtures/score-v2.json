@@ -22,8 +22,8 @@
       "chordPitchClasses": [0, 4, 7],
       "rootPitchClass": 0,
       "voicingMidis": {
-        "chord": [60, 64, 67],
-        "bass": [48, 52, 55]
+        "chord": [48, 52, 55],
+        "bass": []
       },
       "provenance": { "kind": "diatonic" }
     }

@@ -147,7 +147,8 @@ export type ScoreAssignment = {
   inputs: { key: string; mode: string };
   scale: { root?: string; key?: string; mode?: string; intervals: number[] };
   progression: { bars: LegacyBar[]; roman: string[]; length: number };
-  leftHand: { bars: Array<{ steps: LegacyStep[] }> };
+  /** `voicing` is the hand position the left hand actually plays; older assignments lack it. */
+  leftHand: { bars: Array<{ steps: LegacyStep[]; voicing?: { bass: string[]; chord: string[] } }> };
   motif: { steps: LegacyStep[]; totalBeats: number; degreeInterpretation?: DegreeInterpretation } | null;
 };
 
@@ -160,7 +161,7 @@ export type ScoreValidationResult = { valid: boolean; errors: string[] };
  */
 export function buildScore(assignment: ScoreAssignment): Score {
   const bars = assignment.progression.bars.map((bar, barIndex) =>
-    buildScoreBar(bar, barIndex, assignment.inputs.mode),
+    buildScoreBar(bar, barIndex, assignment.inputs.mode, assignment.leftHand.bars[barIndex]?.voicing),
   );
   const totalBeats = bars.length * SCORE_BEATS_PER_BAR;
   const scaleContext = buildScaleContext(assignment);
@@ -265,9 +266,18 @@ export function assertValidScore(value: unknown): asserts value is Score {
   if (!result.valid) throw new TypeError(`Invalid score: ${result.errors.join("; ")}`);
 }
 
-function buildScoreBar(bar: LegacyBar, barIndex: number, mode: string): ScoreBar {
+function buildScoreBar(
+  bar: LegacyBar,
+  barIndex: number,
+  mode: string,
+  played?: { bass: string[]; chord: string[] },
+): ScoreBar {
   const chordMidis = (bar.chordNotes ?? []).map(assertMidi);
   const bassMidis = (bar.bassNotes ?? []).map(assertMidi);
+  // The shape drawn for chord by chord is where the left hand really plays it, when known.
+  const voicingMidis = played?.chord.length
+    ? { chord: played.chord.map(assertMidi), bass: played.bass.map(assertMidi) }
+    : { chord: chordMidis, bass: bassMidis };
   const rootPitchClass =
     pitchClassForName(bar.root) ??
     (chordMidis[0] == null && bassMidis[0] == null ? null : pitchClass(chordMidis[0] ?? bassMidis[0]));
@@ -285,7 +295,7 @@ function buildScoreBar(bar: LegacyBar, barIndex: number, mode: string): ScoreBar
     chordSymbol: bar.label ?? bar.symbol,
     chordPitchClasses: uniqueSorted(chordMidis.map(pitchClass)),
     rootPitchClass,
-    voicingMidis: { chord: chordMidis, bass: bassMidis },
+    voicingMidis,
     provenance: buildProvenance(bar.symbol, bar.isDiatonic ?? analysis.isDiatonic, reason),
   };
 }

@@ -13,7 +13,6 @@ import {
   getStyleProfile,
   isMotifOfferedInMode,
   motifFitForMode,
-  noteStringToMidi,
 } from "../theory.js";
 import {
   createPhrasePlan,
@@ -22,6 +21,7 @@ import {
   generateMotif,
   generateProgression,
   generateScale,
+  placeHands,
 } from "../engine.js";
 import { DEFAULT_PRESET_ID, getPresetConfig } from "../presets.js";
 import { createSeededRandom, deriveSeed, hashString, normalizeSeed, pickSeeded } from "./random.js";
@@ -216,26 +216,31 @@ export function generateAssignment(rawInputs) {
   const preset = getPresetConfig(inputs.presetId);
   const phrasePlan = createPhrasePlan({
     key: inputs.key,
-    mode: inputs.mode,
     styleId: inputs.styleId,
     motifPatternId: inputs.motifId,
     leftHandPatternId: inputs.lhId,
     anchors: preset?.anchors,
   });
+  // The tune is placed first; the left hand's lanes are then chosen once, under it.
+  const placed = placeHands({
+    motif:
+      inputs.motifId === "none"
+        ? null
+        : generateMotif({ motifPatternId: inputs.motifId, styleId: inputs.styleId, phrasePlan }, scale),
+    leftHandPatternId: inputs.lhId,
+  });
+  phrasePlan.lanes = placed.lanes;
+  const motif = placed.motif;
   const leftHand = generateLeftHandPattern(
     {
       leftHand: inputs.lhId,
       difficulty: "intermediate",
       styleId: inputs.styleId,
-      phrasePlan,
+      lanes: placed.lanes,
     },
     progression,
     inputs.mode,
   );
-  const motif =
-    inputs.motifId === "none"
-      ? null
-      : generateMotif({ motifPatternId: inputs.motifId, styleId: inputs.styleId, phrasePlan }, scale);
   const idPayload = stableStringify(inputs);
   const assignment = {
     schemaVersion: /** @type {1} */ (ASSIGNMENT_SCHEMA_VERSION),
@@ -352,12 +357,6 @@ export function validateAssignment(value) {
   }
   if (assignment.motif && (!Array.isArray(assignment.motif.steps) || assignment.motif.totalBeats <= 0)) {
     errors.push("motif steps and duration must be valid");
-  }
-  if (assignment.phrasePlan?.lh?.anchorNote && assignment.phrasePlan?.rh?.anchorNote) {
-    const gap =
-      noteStringToMidi(assignment.phrasePlan.rh.anchorNote) -
-      noteStringToMidi(assignment.phrasePlan.lh.anchorNote);
-    if (gap < 4 || gap > 30) errors.push(`hand anchor gap ${gap} is outside 4–30 semitones`);
   }
   return { valid: errors.length === 0, errors };
 }

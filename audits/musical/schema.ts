@@ -9,6 +9,10 @@ export type AuditionMetrics = {
   rightHandRange: readonly [number, number] | null;
   closestConcurrentHandGap: number | null;
   widestConcurrentHandGap: number | null;
+  /** Lowest right-hand note minus highest left-hand note: each hand's own zone. */
+  handZoneGap: number | null;
+  /** Largest jump of the bass between neighbouring bars, in semitones. */
+  maxBassLeap: number;
   outsideCollectionNotes: readonly {
     eventId: string;
     beat: number;

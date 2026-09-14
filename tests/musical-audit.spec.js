@@ -83,14 +83,21 @@ describe("musical audition corpus", () => {
     expect(changedIssues).toContain(
       `${changed.cases[0].id}: content changed after its listening disposition`,
     );
-    expect(changedIssues).toContain(
-      `${changed.cases[0].id}: new or changed content requires explicit listening approval`,
+
+    // Pending content never merges, whatever the ledger currently holds.
+    const unreviewed = structuredClone(ledger);
+    unreviewed.reviews[0].disposition = "pending";
+    unreviewed.reviews[0].grandfathered = false;
+    const unreviewedIssues = musicalReviewGateIssues(corpus, unreviewed);
+    expect(unreviewedIssues).toContain(`${corpus.cases[0].id}: pending content is not mergeable`);
+    expect(unreviewedIssues).toContain(
+      `${corpus.cases[0].id}: new or changed content requires explicit listening approval`,
     );
 
-    const unreviewed = structuredClone(ledger);
-    unreviewed.reviews[0].grandfathered = false;
-    expect(musicalReviewGateIssues(corpus, unreviewed)).toContain(
-      `${corpus.cases[0].id}: pending content is not mergeable`,
+    const crossed = structuredClone(corpus);
+    crossed.cases[0].metrics.handZoneGap = 0;
+    expect(musicalReviewGateIssues(crossed, ledger)).toContain(
+      `${crossed.cases[0].id}: the hands leave their own zones (gap 0)`,
     );
 
     const rejected = structuredClone(ledger);

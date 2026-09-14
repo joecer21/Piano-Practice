@@ -39,14 +39,12 @@
       "rootPitchClass": 0,
       "voicingMidis": {
         "chord": [
-          60,
-          64,
-          67
+          52,
+          55,
+          60
         ],
         "bass": [
-          48,
-          52,
-          55
+          48
         ]
       },
       "provenance": {
@@ -70,9 +68,7 @@
           62
         ],
         "bass": [
-          43,
-          47,
-          50
+          43
         ]
       },
       "provenance": {
@@ -91,14 +87,12 @@
       "rootPitchClass": 9,
       "voicingMidis": {
         "chord": [
+          52,
           57,
-          60,
-          64
+          60
         ],
         "bass": [
-          45,
-          48,
-          52
+          45
         ]
       },
       "provenance": {
@@ -117,14 +111,12 @@
       "rootPitchClass": 5,
       "voicingMidis": {
         "chord": [
-          65,
-          69,
-          72
-        ],
-        "bass": [
           53,
           57,
           60
+        ],
+        "bass": [
+          41
         ]
       },
       "provenance": {
@@ -143,14 +135,12 @@
       "rootPitchClass": 0,
       "voicingMidis": {
         "chord": [
-          60,
-          64,
-          67
+          52,
+          55,
+          60
         ],
         "bass": [
-          48,
-          52,
-          55
+          48
         ]
       },
       "provenance": {
@@ -174,9 +164,7 @@
           62
         ],
         "bass": [
-          43,
-          47,
-          50
+          43
         ]
       },
       "provenance": {
@@ -195,14 +183,12 @@
       "rootPitchClass": 9,
       "voicingMidis": {
         "chord": [
+          52,
           57,
-          60,
-          64
+          60
         ],
         "bass": [
-          45,
-          48,
-          52
+          45
         ]
       },
       "provenance": {
@@ -221,14 +207,12 @@
       "rootPitchClass": 5,
       "voicingMidis": {
         "chord": [
-          65,
-          69,
-          72
-        ],
-        "bass": [
           53,
           57,
           60
+        ],
+        "bass": [
+          41
         ]
       },
       "provenance": {

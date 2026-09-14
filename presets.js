@@ -9,20 +9,7 @@ export const PRESET_CONFIGS = [
     motifId: "pop-hook-1351",
     length: 8,
     styleId: "pop",
-    anchors: {
-      lh: "C3",
-      rh: "C5",
-      chords: {
-        I: "C3",
-        i: "C3",
-        V: "G3",
-        v: "G3",
-        IV: "F3",
-        iv: "F3",
-        vi: "A2",
-        VI: "A2",
-      },
-    },
+    anchors: { rh: "C5" },
   },
   {
     id: "blues-a",
@@ -34,22 +21,7 @@ export const PRESET_CONFIGS = [
     motifId: "blues-riff-minor",
     length: 12,
     styleId: "jazz",
-    anchors: {
-      lh: "A2",
-      rh: "E4",
-      chords: {
-        i: "A2",
-        i7: "A2",
-        I: "A2",
-        I7: "A2",
-        iv: "D3",
-        iv7: "D3",
-        IV: "D3",
-        IV7: "D3",
-        V: "E3",
-        V7: "E3",
-      },
-    },
+    anchors: { rh: "E4" },
   },
   {
     id: "classical-f",
@@ -61,7 +33,7 @@ export const PRESET_CONFIGS = [
     motifId: "step-arch",
     length: 8,
     styleId: "classical",
-    anchors: { lh: "F3", rh: "C5" },
+    anchors: { rh: "C5" },
   },
   {
     id: "lofi-d",
@@ -73,20 +45,7 @@ export const PRESET_CONFIGS = [
     motifId: "lofi-sway",
     length: 8,
     styleId: "modal",
-    anchors: {
-      lh: "D2",
-      rh: "E4",
-      chords: {
-        i: "D3",
-        I: "D3",
-        VI: "Bb2",
-        vi: "Bb2",
-        III: "F2",
-        iii: "F2",
-        VII: "C3",
-        vii: "C3",
-      },
-    },
+    anchors: { rh: "E4" },
   },
   {
     id: "jazz-bb",
@@ -98,7 +57,7 @@ export const PRESET_CONFIGS = [
     motifId: "swing-lick-3579",
     length: 4,
     styleId: "jazz",
-    anchors: { lh: "A#2", rh: "D5" },
+    anchors: { rh: "D5" },
   },
   {
     id: "harmonic-e",
@@ -110,7 +69,7 @@ export const PRESET_CONFIGS = [
     motifId: "harmonic-rise",
     length: 8,
     styleId: "classical",
-    anchors: { lh: "G3", rh: "A4" },
+    anchors: { rh: "A4" },
   },
   {
     id: "modal-g",
@@ -122,7 +81,7 @@ export const PRESET_CONFIGS = [
     motifId: "modal-pedal",
     length: 8,
     styleId: "modal",
-    anchors: { lh: "G3", rh: "A4" },
+    anchors: { rh: "A4" },
   },
   {
     id: "pent-c",
@@ -134,7 +93,7 @@ export const PRESET_CONFIGS = [
     motifId: "pent-grid",
     length: 4,
     styleId: "pop",
-    anchors: { lh: "C3", rh: "E4" },
+    anchors: { rh: "E4" },
   },
   {
     id: "ned-shearon",
@@ -146,16 +105,7 @@ export const PRESET_CONFIGS = [
     motifId: "ballad-long",
     length: 8,
     styleId: "pop",
-    anchors: {
-      lh: "D3",
-      rh: "A4",
-      chords: {
-        I: "D2",
-        V: "A2",
-        vi: "B2",
-        IV: "G2",
-      },
-    },
+    anchors: { rh: "A4" },
   },
   {
     id: "verde-dia",
@@ -167,7 +117,7 @@ export const PRESET_CONFIGS = [
     motifId: "pop-offbeat-echo",
     length: 8,
     styleId: "pop",
-    anchors: { lh: "G2", rh: "D4" },
+    anchors: { rh: "D4" },
   },
   {
     id: "coldplayer",
@@ -179,7 +129,7 @@ export const PRESET_CONFIGS = [
     motifId: "arpeggio-climb",
     length: 12,
     styleId: "modal",
-    anchors: { lh: "D#3", rh: "A#4" },
+    anchors: { rh: "A#4" },
   },
   {
     id: "tayla-swift",
@@ -191,7 +141,7 @@ export const PRESET_CONFIGS = [
     motifId: "step-arch",
     length: 8,
     styleId: "pop",
-    anchors: { lh: "C3", rh: "E4" },
+    anchors: { rh: "E4" },
   },
   {
     id: "billie-eyelash",
@@ -203,7 +153,7 @@ export const PRESET_CONFIGS = [
     motifId: "modal-pedal",
     length: 8,
     styleId: "modal",
-    anchors: { lh: "A2", rh: "C4" },
+    anchors: { rh: "C4" },
   },
   {
     id: "brunho-bars",
@@ -215,7 +165,7 @@ export const PRESET_CONFIGS = [
     motifId: "pent-grid",
     length: 8,
     styleId: "pop",
-    anchors: { lh: "C3", rh: "E4" },
+    anchors: { rh: "E4" },
   },
   {
     id: "daft-ponk",
@@ -227,7 +177,7 @@ export const PRESET_CONFIGS = [
     motifId: "funk-sync",
     length: 8,
     styleId: "pop",
-    anchors: { lh: "B2", rh: "D4" },
+    anchors: { rh: "D4" },
   },
   {
     id: "john-legendairy",
@@ -239,7 +189,7 @@ export const PRESET_CONFIGS = [
     motifId: "ballad-call-response",
     length: 8,
     styleId: "classical",
-    anchors: { lh: "F3", rh: "C5" },
+    anchors: { rh: "C5" },
   },
 ];
 

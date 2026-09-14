@@ -1050,25 +1050,21 @@ export const HAND_RANGE_SPECS = {
   },
 };
 
+/** Where each style's tune sits by default. The left hand is placed under the tune. */
 export const STYLE_HAND_ANCHORS = {
   classical: {
-    lh: { low: "C2", high: "C4" },
     rh: { low: "C4", high: "E5" },
   },
   pop: {
-    lh: { low: "C2", high: "G3" },
     rh: { low: "C4", high: "C5" },
   },
   jazz: {
-    lh: { low: "A2", high: "G4" },
     rh: { low: "C4", high: "G5" },
   },
   modal: {
-    lh: { low: "B1", high: "G3" },
     rh: { low: "B3", high: "F5" },
   },
   blues: {
-    lh: { low: "A1", high: "G3" },
     rh: { low: "E4", high: "A5" },
   },
 };
@@ -1077,169 +1073,42 @@ export function getStyleAnchors(styleId) {
   return STYLE_HAND_ANCHORS[styleId] || STYLE_HAND_ANCHORS.classical;
 }
 
-const RAW_LEFT_HAND_PATTERN_METADATA = {
-  block: {
-    defaultAnchor: "C3",
-    maxSpan: 12,
-    motionBias: "close",
-    shape: "close",
-    maxJump: 7,
-    chordOffset: 0,
-    allowedInversions: ["root"],
-    allowedShapes: ["triad"],
-    lockRegister: true,
-  },
-  alberti: {
-    defaultAnchor: "C3",
-    maxSpan: 12,
-    motionBias: "stepwise",
-    shape: "broken",
-    maxJump: 5,
-    chordOffset: 10,
-    highOffset: 7,
-    allowedInversions: ["root"],
-    allowedShapes: ["triad"],
-    lockRegister: true,
-  },
-  broken: {
-    defaultAnchor: "C3",
-    maxSpan: 14,
-    motionBias: "arpeggio",
-    shape: "arpeggio",
-    maxJump: 9,
-    chordOffset: 0,
-    allowedShapes: ["triad"],
-    lockRegister: true,
-  },
-  oompah: {
-    defaultAnchor: "C2",
-    maxSpan: 12,
-    motionBias: "leap-on-barlines",
-    shape: "bass-chord",
-    maxJump: 12,
-    chordOffset: 0,
-    allowedInversions: ["root"],
-    allowedShapes: ["triad"],
-    lockRegister: true,
-  },
-  "root-5th-oct": {
-    defaultAnchor: "C2",
-    maxSpan: 14,
-    motionBias: "leap-on-barlines",
-    shape: "fixed",
-    maxJump: 14,
-    highOffset: 12,
-    allowedShapes: ["open5"],
-    lockRegister: true,
-  },
-  "pop-8ths": {
-    defaultAnchor: "C2",
-    maxSpan: 12,
-    motionBias: "steady",
-    shape: "fixed",
-    maxJump: 6,
-    highOffset: 12,
-    chordOffset: 0,
-    allowedShapes: ["triad", "open5"],
-    allowedInversions: ["root", "first"],
-    lockRegister: true,
-  },
-  "power-8ths": {
-    defaultAnchor: "C2",
-    maxSpan: 14,
-    motionBias: "steady",
-    shape: "dyad",
-    maxJump: 8,
-    highOffset: 7,
-    allowedShapes: ["open5"],
-    lockRegister: true,
-  },
-  pedal: {
-    defaultAnchor: "C2",
-    maxSpan: 12,
-    motionBias: "static",
-    shape: "pedal",
-    maxJump: 4,
-    chordOffset: 0,
-    allowedInversions: ["root"],
-    allowedShapes: ["triad", "open5"],
-    lockRegister: true,
-  },
-  stride: {
-    defaultAnchor: "C2",
-    maxSpan: 16,
-    motionBias: "leap-on-barlines",
-    shape: "stride",
-    maxJump: 16,
-    chordOffset: 0,
-    allowedShapes: ["triad"],
-    lockRegister: true,
-  },
-  walking: {
-    defaultAnchor: "C2",
-    maxSpan: 24,
-    motionBias: "stepwise",
-    shape: "scalar",
-    maxJump: 6,
-    highOffset: 5,
-    allowedShapes: ["triad", "shell"],
-  },
-};
-
-const LEFT_HAND_DEFAULT_METADATA = {
-  defaultAnchor: "C3",
-  maxSpan: 12,
-  motionBias: "close",
-  shape: "close",
-  maxJump: 7,
-  bassOffset: 0,
-  highOffset: 12,
-  chordOffset: 12,
-  allowedInversions: null,
-  allowedShapes: null,
-  preferredRegister: null,
-  anchorRange: null,
-  lockRegister: false,
-};
-
-function withLeftHandDefaults(base) {
-  return Object.fromEntries(
-    Object.entries(base).map(([id, meta]) => [
-      id,
-      {
-        ...LEFT_HAND_DEFAULT_METADATA,
-        ...meta,
-      },
-    ]),
-  );
-}
-
-export const LEFT_HAND_PATTERN_METADATA = withLeftHandDefaults(RAW_LEFT_HAND_PATTERN_METADATA);
+/**
+ * Left-hand patterns, in catalog order. `lane` says how the hand sits on the
+ * keyboard (see planHandLanes in engine.js): a low bass with chords or octaves above
+ * it, one compact figure from the bass up, or chords alone.
+ */
+export const LEFT_HAND_PATTERN_METADATA = Object.freeze({
+  block: Object.freeze({ lane: "chords" }),
+  alberti: Object.freeze({ lane: "compact" }),
+  broken: Object.freeze({ lane: "compact" }),
+  oompah: Object.freeze({ lane: "bassAndChord" }),
+  "root-5th-oct": Object.freeze({ lane: "bassAndChord" }),
+  "pop-8ths": Object.freeze({ lane: "bassAndChord" }),
+  "power-8ths": Object.freeze({ lane: "bassAndChord" }),
+  pedal: Object.freeze({ lane: "bassAndChord" }),
+  stride: Object.freeze({ lane: "bassAndChord" }),
+  walking: Object.freeze({ lane: "bassAndChord" }),
+});
 
 const STYLE_STRATEGY_DEFAULTS = {
-  preferredRegister: { low: "B2", high: "E4" },
   allowedInversions: ["root"],
   allowedShapes: ["triad"],
-  anchorRange: { low: "C2", high: "C4" },
 };
 
 export const LEFT_HAND_STYLE_STRATEGIES = {
   classical: {
     id: "classical",
-    preferredRegister: { low: "B2", high: "F4" },
     allowedInversions: ["root", "first"],
     allowedShapes: ["triad"],
-    anchorRange: { low: "C2", high: "C4" },
     lockRootPatterns: ["block", "pedal", "oompah", "alberti"],
     defaultInversionByRoman: { VII: "first", vii: "first" },
     forceFirstInversionOnDiminished: true,
   },
   pop: {
     id: "pop",
-    preferredRegister: { low: "E2", high: "C4" },
     allowedInversions: ["root", "first", "second"],
     allowedShapes: ["triad"],
-    anchorRange: { low: "C2", high: "G3" },
     lockRootPatterns: ["block", "pedal", "pop-8ths", "power-8ths", "root-5th-oct"],
     defaultInversionByRoman: {
       I: "root",
@@ -1251,27 +1120,21 @@ export const LEFT_HAND_STYLE_STRATEGIES = {
   },
   jazz: {
     id: "jazz",
-    preferredRegister: { low: "A2", high: "F3" },
     allowedInversions: ["root", "first"],
     allowedShapes: ["shell", "triad"],
-    anchorRange: { low: "A2", high: "G4" },
     lockRootPatterns: ["block"],
     shellOptions: { addThirteen: true },
   },
   blues: {
     id: "blues",
-    preferredRegister: { low: "A1", high: "E3" },
     allowedInversions: ["root", "first"],
     allowedShapes: ["open5", "triad"],
-    anchorRange: { low: "A1", high: "G3" },
     lockRootPatterns: ["root-5th-oct", "pop-8ths", "power-8ths", "block"],
   },
   modal: {
     id: "modal",
-    preferredRegister: { low: "B2", high: "D4" },
     allowedInversions: ["root", "first"],
     allowedShapes: ["triad", "open5", "quartal"],
-    anchorRange: { low: "B1", high: "G3" },
     lockRootPatterns: ["block", "pedal", "pop-8ths", "root-5th-oct"],
   },
 };
@@ -1282,10 +1145,8 @@ export function getLeftHandStyleStrategy(styleId = "classical") {
   return {
     ...STYLE_STRATEGY_DEFAULTS,
     ...strategy,
-    preferredRegister: strategy.preferredRegister || STYLE_STRATEGY_DEFAULTS.preferredRegister,
     allowedInversions: strategy.allowedInversions || STYLE_STRATEGY_DEFAULTS.allowedInversions,
     allowedShapes: strategy.allowedShapes || STYLE_STRATEGY_DEFAULTS.allowedShapes,
-    anchorRange: strategy.anchorRange || STYLE_STRATEGY_DEFAULTS.anchorRange,
   };
 }
 

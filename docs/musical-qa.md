@@ -4,7 +4,7 @@ Automated tests can prove that an assignment is structurally valid and unchanged
 
 ## Audition corpus
 
-`audits/musical/cases.js` defines the stable cases. The generated `corpus.json` retains the complete JSON-safe Score for each one, along with its input, seed, musical fingerprint, Score fingerprint, rationale, listening prompts, pitch ranges, concurrent hand gaps, outside-collection notes and long notes.
+`audits/musical/cases.js` defines the stable cases. The generated `corpus.json` retains the complete JSON-safe Score for each one, along with its input, seed, musical fingerprint, Score fingerprint, rationale, listening prompts, pitch ranges, concurrent hand gaps, the gap between the hands' zones, the largest bass leap, outside-collection notes and long notes. The gate also refuses any case whose hands leave their own zones.
 
 The corpus includes:
 

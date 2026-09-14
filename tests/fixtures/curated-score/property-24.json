@@ -40,16 +40,12 @@
       "rootPitchClass": 7,
       "voicingMidis": {
         "chord": [
+          54,
           55,
-          59,
-          62,
-          66
+          59
         ],
         "bass": [
-          43,
-          47,
-          50,
-          54
+          43
         ]
       },
       "provenance": {
@@ -69,16 +65,12 @@
       "rootPitchClass": 9,
       "voicingMidis": {
         "chord": [
+          55,
           57,
-          60,
-          64,
-          67
+          60
         ],
         "bass": [
-          45,
-          48,
-          52,
-          55
+          45
         ]
       },
       "provenance": {
@@ -98,16 +90,12 @@
       "rootPitchClass": 7,
       "voicingMidis": {
         "chord": [
+          54,
           55,
-          59,
-          62,
-          66
+          59
         ],
         "bass": [
-          43,
-          47,
-          50,
-          54
+          43
         ]
       },
       "provenance": {
@@ -127,16 +115,12 @@
       "rootPitchClass": 9,
       "voicingMidis": {
         "chord": [
+          55,
           57,
-          60,
-          64,
-          67
+          60
         ],
         "bass": [
-          45,
-          48,
-          52,
-          55
+          45
         ]
       },
       "provenance": {
@@ -156,16 +140,12 @@
       "rootPitchClass": 7,
       "voicingMidis": {
         "chord": [
+          54,
           55,
-          59,
-          62,
-          66
+          59
         ],
         "bass": [
-          43,
-          47,
-          50,
-          54
+          43
         ]
       },
       "provenance": {
@@ -185,16 +165,12 @@
       "rootPitchClass": 9,
       "voicingMidis": {
         "chord": [
+          55,
           57,
-          60,
-          64,
-          67
+          60
         ],
         "bass": [
-          45,
-          48,
-          52,
-          55
+          45
         ]
       },
       "provenance": {
@@ -214,16 +190,12 @@
       "rootPitchClass": 7,
       "voicingMidis": {
         "chord": [
+          54,
           55,
-          59,
-          62,
-          66
+          59
         ],
         "bass": [
-          43,
-          47,
-          50,
-          54
+          43
         ]
       },
       "provenance": {
@@ -243,16 +215,12 @@
       "rootPitchClass": 9,
       "voicingMidis": {
         "chord": [
+          55,
           57,
-          60,
-          64,
-          67
+          60
         ],
         "bass": [
-          45,
-          48,
-          52,
-          55
+          45
         ]
       },
       "provenance": {
@@ -268,7 +236,7 @@
         "barIndex": 0,
         "startBeat": 0,
         "durationBeats": 1,
-        "midi": 55,
+        "midi": 43,
         "role": "root",
         "scaleMembership": "collection",
         "degree": {
@@ -290,11 +258,11 @@
         "barIndex": 0,
         "startBeat": 1,
         "durationBeats": 1,
-        "midi": 55,
-        "role": "root",
+        "midi": 54,
+        "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 1,
+          "number": 7,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -312,11 +280,11 @@
         "barIndex": 0,
         "startBeat": 1,
         "durationBeats": 1,
-        "midi": 59,
-        "role": "chordTone",
-        "scaleMembership": "chromatic",
+        "midi": 55,
+        "role": "root",
+        "scaleMembership": "collection",
         "degree": {
-          "number": 3,
+          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -334,33 +302,11 @@
         "barIndex": 0,
         "startBeat": 1,
         "durationBeats": 1,
-        "midi": 62,
+        "midi": 59,
         "role": "chordTone",
-        "scaleMembership": "collection",
+        "scaleMembership": "chromatic",
         "degree": {
-          "number": 5,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:0:1:3",
-        "kind": "note",
-        "barIndex": 0,
-        "startBeat": 1,
-        "durationBeats": 1,
-        "midi": 66,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 7,
+          "number": 3,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -378,11 +324,11 @@
         "barIndex": 0,
         "startBeat": 2,
         "durationBeats": 1,
-        "midi": 55,
-        "role": "root",
+        "midi": 54,
+        "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 1,
+          "number": 7,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -400,11 +346,11 @@
         "barIndex": 0,
         "startBeat": 2,
         "durationBeats": 1,
-        "midi": 59,
-        "role": "chordTone",
-        "scaleMembership": "chromatic",
+        "midi": 55,
+        "role": "root",
+        "scaleMembership": "collection",
         "degree": {
-          "number": 3,
+          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -422,33 +368,11 @@
         "barIndex": 0,
         "startBeat": 2,
         "durationBeats": 1,
-        "midi": 62,
+        "midi": 59,
         "role": "chordTone",
-        "scaleMembership": "collection",
+        "scaleMembership": "chromatic",
         "degree": {
-          "number": 5,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "accent",
-        "expression": {
-          "accent": 0.16,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:0:2:3",
-        "kind": "note",
-        "barIndex": 0,
-        "startBeat": 2,
-        "durationBeats": 1,
-        "midi": 66,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 7,
+          "number": 3,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -462,6 +386,28 @@
       },
       {
         "id": "lh:0:3:0",
+        "kind": "note",
+        "barIndex": 0,
+        "startBeat": 3,
+        "durationBeats": 1,
+        "midi": 54,
+        "role": "chordTone",
+        "scaleMembership": "collection",
+        "degree": {
+          "number": 7,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.08,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:0:3:1",
         "kind": "note",
         "barIndex": 0,
         "startBeat": 3,
@@ -483,7 +429,7 @@
         }
       },
       {
-        "id": "lh:0:3:1",
+        "id": "lh:0:3:2",
         "kind": "note",
         "barIndex": 0,
         "startBeat": 3,
@@ -505,56 +451,12 @@
         }
       },
       {
-        "id": "lh:0:3:2",
-        "kind": "note",
-        "barIndex": 0,
-        "startBeat": 3,
-        "durationBeats": 1,
-        "midi": 62,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 5,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:0:3:3",
-        "kind": "note",
-        "barIndex": 0,
-        "startBeat": 3,
-        "durationBeats": 1,
-        "midi": 66,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 7,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
         "id": "lh:1:0:0",
         "kind": "note",
         "barIndex": 1,
         "startBeat": 4,
         "durationBeats": 1,
-        "midi": 57,
+        "midi": 45,
         "role": "root",
         "scaleMembership": "collection",
         "degree": {
@@ -576,11 +478,11 @@
         "barIndex": 1,
         "startBeat": 5,
         "durationBeats": 1,
-        "midi": 57,
-        "role": "root",
+        "midi": 55,
+        "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 2,
+          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -598,11 +500,11 @@
         "barIndex": 1,
         "startBeat": 5,
         "durationBeats": 1,
-        "midi": 60,
-        "role": "chordTone",
+        "midi": 57,
+        "role": "root",
         "scaleMembership": "collection",
         "degree": {
-          "number": 4,
+          "number": 2,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -620,33 +522,11 @@
         "barIndex": 1,
         "startBeat": 5,
         "durationBeats": 1,
-        "midi": 64,
+        "midi": 60,
         "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 6,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:1:1:3",
-        "kind": "note",
-        "barIndex": 1,
-        "startBeat": 5,
-        "durationBeats": 1,
-        "midi": 67,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 1,
+          "number": 4,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -664,11 +544,11 @@
         "barIndex": 1,
         "startBeat": 6,
         "durationBeats": 1,
-        "midi": 57,
-        "role": "root",
+        "midi": 55,
+        "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 2,
+          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -686,11 +566,11 @@
         "barIndex": 1,
         "startBeat": 6,
         "durationBeats": 1,
-        "midi": 60,
-        "role": "chordTone",
+        "midi": 57,
+        "role": "root",
         "scaleMembership": "collection",
         "degree": {
-          "number": 4,
+          "number": 2,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -708,33 +588,11 @@
         "barIndex": 1,
         "startBeat": 6,
         "durationBeats": 1,
-        "midi": 64,
+        "midi": 60,
         "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 6,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "accent",
-        "expression": {
-          "accent": 0.16,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:1:2:3",
-        "kind": "note",
-        "barIndex": 1,
-        "startBeat": 6,
-        "durationBeats": 1,
-        "midi": 67,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 1,
+          "number": 4,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -748,6 +606,28 @@
       },
       {
         "id": "lh:1:3:0",
+        "kind": "note",
+        "barIndex": 1,
+        "startBeat": 7,
+        "durationBeats": 1,
+        "midi": 55,
+        "role": "chordTone",
+        "scaleMembership": "collection",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.08,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:1:3:1",
         "kind": "note",
         "barIndex": 1,
         "startBeat": 7,
@@ -769,7 +649,7 @@
         }
       },
       {
-        "id": "lh:1:3:1",
+        "id": "lh:1:3:2",
         "kind": "note",
         "barIndex": 1,
         "startBeat": 7,
@@ -791,56 +671,12 @@
         }
       },
       {
-        "id": "lh:1:3:2",
-        "kind": "note",
-        "barIndex": 1,
-        "startBeat": 7,
-        "durationBeats": 1,
-        "midi": 64,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 6,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:1:3:3",
-        "kind": "note",
-        "barIndex": 1,
-        "startBeat": 7,
-        "durationBeats": 1,
-        "midi": 67,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 1,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
         "id": "lh:2:0:0",
         "kind": "note",
         "barIndex": 2,
         "startBeat": 8,
         "durationBeats": 1,
-        "midi": 55,
+        "midi": 43,
         "role": "root",
         "scaleMembership": "collection",
         "degree": {
@@ -862,11 +698,11 @@
         "barIndex": 2,
         "startBeat": 9,
         "durationBeats": 1,
-        "midi": 55,
-        "role": "root",
+        "midi": 54,
+        "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 1,
+          "number": 7,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -884,11 +720,11 @@
         "barIndex": 2,
         "startBeat": 9,
         "durationBeats": 1,
-        "midi": 59,
-        "role": "chordTone",
-        "scaleMembership": "chromatic",
+        "midi": 55,
+        "role": "root",
+        "scaleMembership": "collection",
         "degree": {
-          "number": 3,
+          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -906,33 +742,11 @@
         "barIndex": 2,
         "startBeat": 9,
         "durationBeats": 1,
-        "midi": 62,
+        "midi": 59,
         "role": "chordTone",
-        "scaleMembership": "collection",
+        "scaleMembership": "chromatic",
         "degree": {
-          "number": 5,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:2:1:3",
-        "kind": "note",
-        "barIndex": 2,
-        "startBeat": 9,
-        "durationBeats": 1,
-        "midi": 66,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 7,
+          "number": 3,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -950,11 +764,11 @@
         "barIndex": 2,
         "startBeat": 10,
         "durationBeats": 1,
-        "midi": 55,
-        "role": "root",
+        "midi": 54,
+        "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 1,
+          "number": 7,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -972,11 +786,11 @@
         "barIndex": 2,
         "startBeat": 10,
         "durationBeats": 1,
-        "midi": 59,
-        "role": "chordTone",
-        "scaleMembership": "chromatic",
+        "midi": 55,
+        "role": "root",
+        "scaleMembership": "collection",
         "degree": {
-          "number": 3,
+          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -994,33 +808,11 @@
         "barIndex": 2,
         "startBeat": 10,
         "durationBeats": 1,
-        "midi": 62,
+        "midi": 59,
         "role": "chordTone",
-        "scaleMembership": "collection",
+        "scaleMembership": "chromatic",
         "degree": {
-          "number": 5,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "accent",
-        "expression": {
-          "accent": 0.16,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:2:2:3",
-        "kind": "note",
-        "barIndex": 2,
-        "startBeat": 10,
-        "durationBeats": 1,
-        "midi": 66,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 7,
+          "number": 3,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1034,6 +826,28 @@
       },
       {
         "id": "lh:2:3:0",
+        "kind": "note",
+        "barIndex": 2,
+        "startBeat": 11,
+        "durationBeats": 1,
+        "midi": 54,
+        "role": "chordTone",
+        "scaleMembership": "collection",
+        "degree": {
+          "number": 7,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.08,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:2:3:1",
         "kind": "note",
         "barIndex": 2,
         "startBeat": 11,
@@ -1055,7 +869,7 @@
         }
       },
       {
-        "id": "lh:2:3:1",
+        "id": "lh:2:3:2",
         "kind": "note",
         "barIndex": 2,
         "startBeat": 11,
@@ -1077,56 +891,12 @@
         }
       },
       {
-        "id": "lh:2:3:2",
-        "kind": "note",
-        "barIndex": 2,
-        "startBeat": 11,
-        "durationBeats": 1,
-        "midi": 62,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 5,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:2:3:3",
-        "kind": "note",
-        "barIndex": 2,
-        "startBeat": 11,
-        "durationBeats": 1,
-        "midi": 66,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 7,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
         "id": "lh:3:0:0",
         "kind": "note",
         "barIndex": 3,
         "startBeat": 12,
         "durationBeats": 1,
-        "midi": 57,
+        "midi": 45,
         "role": "root",
         "scaleMembership": "collection",
         "degree": {
@@ -1148,11 +918,11 @@
         "barIndex": 3,
         "startBeat": 13,
         "durationBeats": 1,
-        "midi": 57,
-        "role": "root",
+        "midi": 55,
+        "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 2,
+          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1170,11 +940,11 @@
         "barIndex": 3,
         "startBeat": 13,
         "durationBeats": 1,
-        "midi": 60,
-        "role": "chordTone",
+        "midi": 57,
+        "role": "root",
         "scaleMembership": "collection",
         "degree": {
-          "number": 4,
+          "number": 2,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1192,33 +962,11 @@
         "barIndex": 3,
         "startBeat": 13,
         "durationBeats": 1,
-        "midi": 64,
+        "midi": 60,
         "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 6,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:3:1:3",
-        "kind": "note",
-        "barIndex": 3,
-        "startBeat": 13,
-        "durationBeats": 1,
-        "midi": 67,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 1,
+          "number": 4,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1236,11 +984,11 @@
         "barIndex": 3,
         "startBeat": 14,
         "durationBeats": 1,
-        "midi": 57,
-        "role": "root",
+        "midi": 55,
+        "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 2,
+          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1258,11 +1006,11 @@
         "barIndex": 3,
         "startBeat": 14,
         "durationBeats": 1,
-        "midi": 60,
-        "role": "chordTone",
+        "midi": 57,
+        "role": "root",
         "scaleMembership": "collection",
         "degree": {
-          "number": 4,
+          "number": 2,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1280,33 +1028,11 @@
         "barIndex": 3,
         "startBeat": 14,
         "durationBeats": 1,
-        "midi": 64,
+        "midi": 60,
         "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 6,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "accent",
-        "expression": {
-          "accent": 0.16,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:3:2:3",
-        "kind": "note",
-        "barIndex": 3,
-        "startBeat": 14,
-        "durationBeats": 1,
-        "midi": 67,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 1,
+          "number": 4,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1320,6 +1046,28 @@
       },
       {
         "id": "lh:3:3:0",
+        "kind": "note",
+        "barIndex": 3,
+        "startBeat": 15,
+        "durationBeats": 1,
+        "midi": 55,
+        "role": "chordTone",
+        "scaleMembership": "collection",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.08,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:3:3:1",
         "kind": "note",
         "barIndex": 3,
         "startBeat": 15,
@@ -1341,7 +1089,7 @@
         }
       },
       {
-        "id": "lh:3:3:1",
+        "id": "lh:3:3:2",
         "kind": "note",
         "barIndex": 3,
         "startBeat": 15,
@@ -1363,56 +1111,12 @@
         }
       },
       {
-        "id": "lh:3:3:2",
-        "kind": "note",
-        "barIndex": 3,
-        "startBeat": 15,
-        "durationBeats": 1,
-        "midi": 64,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 6,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:3:3:3",
-        "kind": "note",
-        "barIndex": 3,
-        "startBeat": 15,
-        "durationBeats": 1,
-        "midi": 67,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 1,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
         "id": "lh:4:0:0",
         "kind": "note",
         "barIndex": 4,
         "startBeat": 16,
         "durationBeats": 1,
-        "midi": 55,
+        "midi": 43,
         "role": "root",
         "scaleMembership": "collection",
         "degree": {
@@ -1434,11 +1138,11 @@
         "barIndex": 4,
         "startBeat": 17,
         "durationBeats": 1,
-        "midi": 55,
-        "role": "root",
+        "midi": 54,
+        "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 1,
+          "number": 7,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1456,11 +1160,11 @@
         "barIndex": 4,
         "startBeat": 17,
         "durationBeats": 1,
-        "midi": 59,
-        "role": "chordTone",
-        "scaleMembership": "chromatic",
+        "midi": 55,
+        "role": "root",
+        "scaleMembership": "collection",
         "degree": {
-          "number": 3,
+          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1478,33 +1182,11 @@
         "barIndex": 4,
         "startBeat": 17,
         "durationBeats": 1,
-        "midi": 62,
+        "midi": 59,
         "role": "chordTone",
-        "scaleMembership": "collection",
+        "scaleMembership": "chromatic",
         "degree": {
-          "number": 5,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:4:1:3",
-        "kind": "note",
-        "barIndex": 4,
-        "startBeat": 17,
-        "durationBeats": 1,
-        "midi": 66,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 7,
+          "number": 3,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1522,11 +1204,11 @@
         "barIndex": 4,
         "startBeat": 18,
         "durationBeats": 1,
-        "midi": 55,
-        "role": "root",
+        "midi": 54,
+        "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 1,
+          "number": 7,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1544,11 +1226,11 @@
         "barIndex": 4,
         "startBeat": 18,
         "durationBeats": 1,
-        "midi": 59,
-        "role": "chordTone",
-        "scaleMembership": "chromatic",
+        "midi": 55,
+        "role": "root",
+        "scaleMembership": "collection",
         "degree": {
-          "number": 3,
+          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1566,33 +1248,11 @@
         "barIndex": 4,
         "startBeat": 18,
         "durationBeats": 1,
-        "midi": 62,
+        "midi": 59,
         "role": "chordTone",
-        "scaleMembership": "collection",
+        "scaleMembership": "chromatic",
         "degree": {
-          "number": 5,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "accent",
-        "expression": {
-          "accent": 0.16,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:4:2:3",
-        "kind": "note",
-        "barIndex": 4,
-        "startBeat": 18,
-        "durationBeats": 1,
-        "midi": 66,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 7,
+          "number": 3,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1606,6 +1266,28 @@
       },
       {
         "id": "lh:4:3:0",
+        "kind": "note",
+        "barIndex": 4,
+        "startBeat": 19,
+        "durationBeats": 1,
+        "midi": 54,
+        "role": "chordTone",
+        "scaleMembership": "collection",
+        "degree": {
+          "number": 7,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.08,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:4:3:1",
         "kind": "note",
         "barIndex": 4,
         "startBeat": 19,
@@ -1627,7 +1309,7 @@
         }
       },
       {
-        "id": "lh:4:3:1",
+        "id": "lh:4:3:2",
         "kind": "note",
         "barIndex": 4,
         "startBeat": 19,
@@ -1649,56 +1331,12 @@
         }
       },
       {
-        "id": "lh:4:3:2",
-        "kind": "note",
-        "barIndex": 4,
-        "startBeat": 19,
-        "durationBeats": 1,
-        "midi": 62,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 5,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:4:3:3",
-        "kind": "note",
-        "barIndex": 4,
-        "startBeat": 19,
-        "durationBeats": 1,
-        "midi": 66,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 7,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
         "id": "lh:5:0:0",
         "kind": "note",
         "barIndex": 5,
         "startBeat": 20,
         "durationBeats": 1,
-        "midi": 57,
+        "midi": 45,
         "role": "root",
         "scaleMembership": "collection",
         "degree": {
@@ -1720,11 +1358,11 @@
         "barIndex": 5,
         "startBeat": 21,
         "durationBeats": 1,
-        "midi": 57,
-        "role": "root",
+        "midi": 55,
+        "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 2,
+          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1742,11 +1380,11 @@
         "barIndex": 5,
         "startBeat": 21,
         "durationBeats": 1,
-        "midi": 60,
-        "role": "chordTone",
+        "midi": 57,
+        "role": "root",
         "scaleMembership": "collection",
         "degree": {
-          "number": 4,
+          "number": 2,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1764,33 +1402,11 @@
         "barIndex": 5,
         "startBeat": 21,
         "durationBeats": 1,
-        "midi": 64,
+        "midi": 60,
         "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 6,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:5:1:3",
-        "kind": "note",
-        "barIndex": 5,
-        "startBeat": 21,
-        "durationBeats": 1,
-        "midi": 67,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 1,
+          "number": 4,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1808,11 +1424,11 @@
         "barIndex": 5,
         "startBeat": 22,
         "durationBeats": 1,
-        "midi": 57,
-        "role": "root",
+        "midi": 55,
+        "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 2,
+          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1830,11 +1446,11 @@
         "barIndex": 5,
         "startBeat": 22,
         "durationBeats": 1,
-        "midi": 60,
-        "role": "chordTone",
+        "midi": 57,
+        "role": "root",
         "scaleMembership": "collection",
         "degree": {
-          "number": 4,
+          "number": 2,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1852,33 +1468,11 @@
         "barIndex": 5,
         "startBeat": 22,
         "durationBeats": 1,
-        "midi": 64,
+        "midi": 60,
         "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 6,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "accent",
-        "expression": {
-          "accent": 0.16,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:5:2:3",
-        "kind": "note",
-        "barIndex": 5,
-        "startBeat": 22,
-        "durationBeats": 1,
-        "midi": 67,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 1,
+          "number": 4,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -1892,6 +1486,28 @@
       },
       {
         "id": "lh:5:3:0",
+        "kind": "note",
+        "barIndex": 5,
+        "startBeat": 23,
+        "durationBeats": 1,
+        "midi": 55,
+        "role": "chordTone",
+        "scaleMembership": "collection",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.08,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:5:3:1",
         "kind": "note",
         "barIndex": 5,
         "startBeat": 23,
@@ -1913,7 +1529,7 @@
         }
       },
       {
-        "id": "lh:5:3:1",
+        "id": "lh:5:3:2",
         "kind": "note",
         "barIndex": 5,
         "startBeat": 23,
@@ -1935,56 +1551,12 @@
         }
       },
       {
-        "id": "lh:5:3:2",
-        "kind": "note",
-        "barIndex": 5,
-        "startBeat": 23,
-        "durationBeats": 1,
-        "midi": 64,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 6,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:5:3:3",
-        "kind": "note",
-        "barIndex": 5,
-        "startBeat": 23,
-        "durationBeats": 1,
-        "midi": 67,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 1,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
         "id": "lh:6:0:0",
         "kind": "note",
         "barIndex": 6,
         "startBeat": 24,
         "durationBeats": 1,
-        "midi": 55,
+        "midi": 43,
         "role": "root",
         "scaleMembership": "collection",
         "degree": {
@@ -2006,11 +1578,11 @@
         "barIndex": 6,
         "startBeat": 25,
         "durationBeats": 1,
-        "midi": 55,
-        "role": "root",
+        "midi": 54,
+        "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 1,
+          "number": 7,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -2028,11 +1600,11 @@
         "barIndex": 6,
         "startBeat": 25,
         "durationBeats": 1,
-        "midi": 59,
-        "role": "chordTone",
-        "scaleMembership": "chromatic",
+        "midi": 55,
+        "role": "root",
+        "scaleMembership": "collection",
         "degree": {
-          "number": 3,
+          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -2050,33 +1622,11 @@
         "barIndex": 6,
         "startBeat": 25,
         "durationBeats": 1,
-        "midi": 62,
+        "midi": 59,
         "role": "chordTone",
-        "scaleMembership": "collection",
+        "scaleMembership": "chromatic",
         "degree": {
-          "number": 5,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:6:1:3",
-        "kind": "note",
-        "barIndex": 6,
-        "startBeat": 25,
-        "durationBeats": 1,
-        "midi": 66,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 7,
+          "number": 3,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -2094,11 +1644,11 @@
         "barIndex": 6,
         "startBeat": 26,
         "durationBeats": 1,
-        "midi": 55,
-        "role": "root",
+        "midi": 54,
+        "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 1,
+          "number": 7,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -2116,11 +1666,11 @@
         "barIndex": 6,
         "startBeat": 26,
         "durationBeats": 1,
-        "midi": 59,
-        "role": "chordTone",
-        "scaleMembership": "chromatic",
+        "midi": 55,
+        "role": "root",
+        "scaleMembership": "collection",
         "degree": {
-          "number": 3,
+          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -2138,33 +1688,11 @@
         "barIndex": 6,
         "startBeat": 26,
         "durationBeats": 1,
-        "midi": 62,
+        "midi": 59,
         "role": "chordTone",
-        "scaleMembership": "collection",
+        "scaleMembership": "chromatic",
         "degree": {
-          "number": 5,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "accent",
-        "expression": {
-          "accent": 0.16,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:6:2:3",
-        "kind": "note",
-        "barIndex": 6,
-        "startBeat": 26,
-        "durationBeats": 1,
-        "midi": 66,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 7,
+          "number": 3,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -2178,6 +1706,28 @@
       },
       {
         "id": "lh:6:3:0",
+        "kind": "note",
+        "barIndex": 6,
+        "startBeat": 27,
+        "durationBeats": 1,
+        "midi": 54,
+        "role": "chordTone",
+        "scaleMembership": "collection",
+        "degree": {
+          "number": 7,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.08,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:6:3:1",
         "kind": "note",
         "barIndex": 6,
         "startBeat": 27,
@@ -2199,7 +1749,7 @@
         }
       },
       {
-        "id": "lh:6:3:1",
+        "id": "lh:6:3:2",
         "kind": "note",
         "barIndex": 6,
         "startBeat": 27,
@@ -2221,56 +1771,12 @@
         }
       },
       {
-        "id": "lh:6:3:2",
-        "kind": "note",
-        "barIndex": 6,
-        "startBeat": 27,
-        "durationBeats": 1,
-        "midi": 62,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 5,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:6:3:3",
-        "kind": "note",
-        "barIndex": 6,
-        "startBeat": 27,
-        "durationBeats": 1,
-        "midi": 66,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 7,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
         "id": "lh:7:0:0",
         "kind": "note",
         "barIndex": 7,
         "startBeat": 28,
         "durationBeats": 1,
-        "midi": 57,
+        "midi": 45,
         "role": "root",
         "scaleMembership": "collection",
         "degree": {
@@ -2292,11 +1798,11 @@
         "barIndex": 7,
         "startBeat": 29,
         "durationBeats": 1,
-        "midi": 57,
-        "role": "root",
+        "midi": 55,
+        "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 2,
+          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -2314,11 +1820,11 @@
         "barIndex": 7,
         "startBeat": 29,
         "durationBeats": 1,
-        "midi": 60,
-        "role": "chordTone",
+        "midi": 57,
+        "role": "root",
         "scaleMembership": "collection",
         "degree": {
-          "number": 4,
+          "number": 2,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -2336,33 +1842,11 @@
         "barIndex": 7,
         "startBeat": 29,
         "durationBeats": 1,
-        "midi": 64,
+        "midi": 60,
         "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 6,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:7:1:3",
-        "kind": "note",
-        "barIndex": 7,
-        "startBeat": 29,
-        "durationBeats": 1,
-        "midi": 67,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 1,
+          "number": 4,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -2380,11 +1864,11 @@
         "barIndex": 7,
         "startBeat": 30,
         "durationBeats": 1,
-        "midi": 57,
-        "role": "root",
+        "midi": 55,
+        "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 2,
+          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -2402,11 +1886,11 @@
         "barIndex": 7,
         "startBeat": 30,
         "durationBeats": 1,
-        "midi": 60,
-        "role": "chordTone",
+        "midi": 57,
+        "role": "root",
         "scaleMembership": "collection",
         "degree": {
-          "number": 4,
+          "number": 2,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -2424,33 +1908,11 @@
         "barIndex": 7,
         "startBeat": 30,
         "durationBeats": 1,
-        "midi": 64,
+        "midi": 60,
         "role": "chordTone",
         "scaleMembership": "collection",
         "degree": {
-          "number": 6,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "accent",
-        "expression": {
-          "accent": 0.16,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:7:2:3",
-        "kind": "note",
-        "barIndex": 7,
-        "startBeat": 30,
-        "durationBeats": 1,
-        "midi": 67,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 1,
+          "number": 4,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7
@@ -2464,6 +1926,28 @@
       },
       {
         "id": "lh:7:3:0",
+        "kind": "note",
+        "barIndex": 7,
+        "startBeat": 31,
+        "durationBeats": 1,
+        "midi": 55,
+        "role": "chordTone",
+        "scaleMembership": "collection",
+        "degree": {
+          "number": 1,
+          "alteration": 0,
+          "octaveOffset": 0,
+          "scaleSize": 7
+        },
+        "dynamic": "normal",
+        "expression": {
+          "accent": 0.08,
+          "ghost": 0,
+          "swingWeight": 0
+        }
+      },
+      {
+        "id": "lh:7:3:1",
         "kind": "note",
         "barIndex": 7,
         "startBeat": 31,
@@ -2485,7 +1969,7 @@
         }
       },
       {
-        "id": "lh:7:3:1",
+        "id": "lh:7:3:2",
         "kind": "note",
         "barIndex": 7,
         "startBeat": 31,
@@ -2495,50 +1979,6 @@
         "scaleMembership": "collection",
         "degree": {
           "number": 4,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:7:3:2",
-        "kind": "note",
-        "barIndex": 7,
-        "startBeat": 31,
-        "durationBeats": 1,
-        "midi": 64,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 6,
-          "alteration": 0,
-          "octaveOffset": 0,
-          "scaleSize": 7
-        },
-        "dynamic": "normal",
-        "expression": {
-          "accent": 0.08,
-          "ghost": 0,
-          "swingWeight": 0
-        }
-      },
-      {
-        "id": "lh:7:3:3",
-        "kind": "note",
-        "barIndex": 7,
-        "startBeat": 31,
-        "durationBeats": 1,
-        "midi": 67,
-        "role": "chordTone",
-        "scaleMembership": "collection",
-        "degree": {
-          "number": 1,
           "alteration": 0,
           "octaveOffset": 0,
           "scaleSize": 7

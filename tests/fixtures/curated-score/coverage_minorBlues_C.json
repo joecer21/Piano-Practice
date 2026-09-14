@@ -38,14 +38,12 @@
       "rootPitchClass": 0,
       "voicingMidis": {
         "chord": [
-          60,
-          63,
-          67
+          51,
+          55,
+          60
         ],
         "bass": [
-          48,
-          51,
-          55
+          48
         ]
       },
       "provenance": {
@@ -69,9 +67,7 @@
           62
         ],
         "bass": [
-          43,
-          46,
-          50
+          43
         ]
       },
       "provenance": {
@@ -95,9 +91,7 @@
           63
         ],
         "bass": [
-          44,
-          48,
-          51
+          44
         ]
       },
       "provenance": {
@@ -116,14 +110,12 @@
       "rootPitchClass": 5,
       "voicingMidis": {
         "chord": [
-          65,
-          68,
-          72
-        ],
-        "bass": [
           53,
           56,
           60
+        ],
+        "bass": [
+          41
         ]
       },
       "provenance": {
@@ -142,14 +134,12 @@
       "rootPitchClass": 0,
       "voicingMidis": {
         "chord": [
-          60,
-          63,
-          67
+          51,
+          55,
+          60
         ],
         "bass": [
-          48,
-          51,
-          55
+          48
         ]
       },
       "provenance": {
@@ -173,9 +163,7 @@
           62
         ],
         "bass": [
-          43,
-          46,
-          50
+          43
         ]
       },
       "provenance": {
@@ -199,9 +187,7 @@
           63
         ],
         "bass": [
-          44,
-          48,
-          51
+          44
         ]
       },
       "provenance": {
@@ -220,14 +206,12 @@
       "rootPitchClass": 5,
       "voicingMidis": {
         "chord": [
-          65,
-          68,
-          72
-        ],
-        "bass": [
           53,
           56,
           60
+        ],
+        "bass": [
+          41
         ]
       },
       "provenance": {
@@ -595,12 +579,12 @@
         "barIndex": 2,
         "startBeat": 8,
         "durationBeats": 0.5,
-        "midi": 45,
-        "role": "chromatic",
-        "scaleMembership": "chromatic",
+        "midi": 44,
+        "role": "root",
+        "scaleMembership": "parentScale",
         "degree": {
           "number": 6,
-          "alteration": 0,
+          "alteration": -1,
           "octaveOffset": 0,
           "scaleSize": 7
         },
@@ -617,12 +601,12 @@
         "barIndex": 2,
         "startBeat": 8.5,
         "durationBeats": 0.5,
-        "midi": 57,
-        "role": "chromatic",
-        "scaleMembership": "chromatic",
+        "midi": 56,
+        "role": "root",
+        "scaleMembership": "parentScale",
         "degree": {
           "number": 6,
-          "alteration": 0,
+          "alteration": -1,
           "octaveOffset": 0,
           "scaleSize": 7
         },
@@ -639,12 +623,12 @@
         "barIndex": 2,
         "startBeat": 9,
         "durationBeats": 0.5,
-        "midi": 45,
-        "role": "chromatic",
-        "scaleMembership": "chromatic",
+        "midi": 44,
+        "role": "root",
+        "scaleMembership": "parentScale",
         "degree": {
           "number": 6,
-          "alteration": 0,
+          "alteration": -1,
           "octaveOffset": 0,
           "scaleSize": 7
         },
@@ -661,12 +645,12 @@
         "barIndex": 2,
         "startBeat": 9.5,
         "durationBeats": 0.5,
-        "midi": 57,
-        "role": "chromatic",
-        "scaleMembership": "chromatic",
+        "midi": 56,
+        "role": "root",
+        "scaleMembership": "parentScale",
         "degree": {
           "number": 6,
-          "alteration": 0,
+          "alteration": -1,
           "octaveOffset": 0,
           "scaleSize": 7
         },
@@ -683,12 +667,12 @@
         "barIndex": 2,
         "startBeat": 10,
         "durationBeats": 0.5,
-        "midi": 45,
-        "role": "chromatic",
-        "scaleMembership": "chromatic",
+        "midi": 44,
+        "role": "root",
+        "scaleMembership": "parentScale",
         "degree": {
           "number": 6,
-          "alteration": 0,
+          "alteration": -1,
           "octaveOffset": 0,
           "scaleSize": 7
         },
@@ -705,12 +689,12 @@
         "barIndex": 2,
         "startBeat": 10.5,
         "durationBeats": 0.5,
-        "midi": 57,
-        "role": "chromatic",
-        "scaleMembership": "chromatic",
+        "midi": 56,
+        "role": "root",
+        "scaleMembership": "parentScale",
         "degree": {
           "number": 6,
-          "alteration": 0,
+          "alteration": -1,
           "octaveOffset": 0,
           "scaleSize": 7
         },
@@ -727,12 +711,12 @@
         "barIndex": 2,
         "startBeat": 11,
         "durationBeats": 0.5,
-        "midi": 45,
-        "role": "chromatic",
-        "scaleMembership": "chromatic",
+        "midi": 44,
+        "role": "root",
+        "scaleMembership": "parentScale",
         "degree": {
           "number": 6,
-          "alteration": 0,
+          "alteration": -1,
           "octaveOffset": 0,
           "scaleSize": 7
         },
@@ -749,12 +733,12 @@
         "barIndex": 2,
         "startBeat": 11.5,
         "durationBeats": 0.5,
-        "midi": 57,
-        "role": "chromatic",
-        "scaleMembership": "chromatic",
+        "midi": 56,
+        "role": "root",
+        "scaleMembership": "parentScale",
         "degree": {
           "number": 6,
-          "alteration": 0,
+          "alteration": -1,
           "octaveOffset": 0,
           "scaleSize": 7
         },
@@ -1299,12 +1283,12 @@
         "barIndex": 6,
         "startBeat": 24,
         "durationBeats": 0.5,
-        "midi": 45,
-        "role": "chromatic",
-        "scaleMembership": "chromatic",
+        "midi": 44,
+        "role": "root",
+        "scaleMembership": "parentScale",
         "degree": {
           "number": 6,
-          "alteration": 0,
+          "alteration": -1,
           "octaveOffset": 0,
           "scaleSize": 7
         },
@@ -1321,12 +1305,12 @@
         "barIndex": 6,
         "startBeat": 24.5,
         "durationBeats": 0.5,
-        "midi": 57,
-        "role": "chromatic",
-        "scaleMembership": "chromatic",
+        "midi": 56,
+        "role": "root",
+        "scaleMembership": "parentScale",
         "degree": {
           "number": 6,
-          "alteration": 0,
+          "alteration": -1,
           "octaveOffset": 0,
           "scaleSize": 7
         },
@@ -1343,12 +1327,12 @@
         "barIndex": 6,
         "startBeat": 25,
         "durationBeats": 0.5,
-        "midi": 45,
-        "role": "chromatic",
-        "scaleMembership": "chromatic",
+        "midi": 44,
+        "role": "root",
+        "scaleMembership": "parentScale",
         "degree": {
           "number": 6,
-          "alteration": 0,
+          "alteration": -1,
           "octaveOffset": 0,
           "scaleSize": 7
         },
@@ -1365,12 +1349,12 @@
         "barIndex": 6,
         "startBeat": 25.5,
         "durationBeats": 0.5,
-        "midi": 57,
-        "role": "chromatic",
-        "scaleMembership": "chromatic",
+        "midi": 56,
+        "role": "root",
+        "scaleMembership": "parentScale",
         "degree": {
           "number": 6,
-          "alteration": 0,
+          "alteration": -1,
           "octaveOffset": 0,
           "scaleSize": 7
         },
@@ -1387,12 +1371,12 @@
         "barIndex": 6,
         "startBeat": 26,
         "durationBeats": 0.5,
-        "midi": 45,
-        "role": "chromatic",
-        "scaleMembership": "chromatic",
+        "midi": 44,
+        "role": "root",
+        "scaleMembership": "parentScale",
         "degree": {
           "number": 6,
-          "alteration": 0,
+          "alteration": -1,
           "octaveOffset": 0,
           "scaleSize": 7
         },
@@ -1409,12 +1393,12 @@
         "barIndex": 6,
         "startBeat": 26.5,
         "durationBeats": 0.5,
-        "midi": 57,
-        "role": "chromatic",
-        "scaleMembership": "chromatic",
+        "midi": 56,
+        "role": "root",
+        "scaleMembership": "parentScale",
         "degree": {
           "number": 6,
-          "alteration": 0,
+          "alteration": -1,
           "octaveOffset": 0,
           "scaleSize": 7
         },
@@ -1431,12 +1415,12 @@
         "barIndex": 6,
         "startBeat": 27,
         "durationBeats": 0.5,
-        "midi": 45,
-        "role": "chromatic",
-        "scaleMembership": "chromatic",
+        "midi": 44,
+        "role": "root",
+        "scaleMembership": "parentScale",
         "degree": {
           "number": 6,
-          "alteration": 0,
+          "alteration": -1,
           "octaveOffset": 0,
           "scaleSize": 7
         },
@@ -1453,12 +1437,12 @@
         "barIndex": 6,
         "startBeat": 27.5,
         "durationBeats": 0.5,
-        "midi": 57,
-        "role": "chromatic",
-        "scaleMembership": "chromatic",
+        "midi": 56,
+        "role": "root",
+        "scaleMembership": "parentScale",
         "degree": {
           "number": 6,
-          "alteration": 0,
+          "alteration": -1,
           "octaveOffset": 0,
           "scaleSize": 7
         },

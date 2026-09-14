@@ -6,6 +6,8 @@ import { MUSICAL_AUDIT_SCHEMA_VERSION, MUSICAL_REVIEW_SCHEMA_VERSION } from "../
 import { musicalAuditCaseDefinitions, musicalAuditInputSummary } from "../../audits/musical/cases.js";
 import { fingerprint, stableStringify } from "./fingerprint.js";
 import { scoreFacts, scoreFingerprint } from "./score-fingerprint.js";
+import { handGeometry } from "./hand-geometry.js";
+import { HAND_CLEARANCE } from "../../engine.js";
 
 const digest = (value) => createHash("sha256").update(stableStringify(value)).digest("hex").slice(0, 16);
 
@@ -66,6 +68,7 @@ export function auditionMetrics(score) {
   const left = noteEvents(score, "lh");
   const right = noteEvents(score, "rh");
   const gaps = concurrentHandGaps(score);
+  const geometry = handGeometry(score);
   const all = [
     ...left.map((event) => ({ ...event, part: "lh" })),
     ...right.map((event) => ({ ...event, part: "rh" })),
@@ -75,6 +78,8 @@ export function auditionMetrics(score) {
     rightHandRange: range(right),
     closestConcurrentHandGap: gaps.length ? Math.min(...gaps) : null,
     widestConcurrentHandGap: gaps.length ? Math.max(...gaps) : null,
+    handZoneGap: geometry.lhRange && geometry.rhRange ? geometry.rhRange[0] - geometry.lhRange[1] : null,
+    maxBassLeap: geometry.maxBassLeap,
     outsideCollectionNotes: right
       .filter((event) => event.scaleMembership !== "collection")
       .map((event) => ({
@@ -144,6 +149,9 @@ export function musicalReviewGateIssues(corpus, ledger) {
   const reviews = new Map((ledger?.reviews || []).map((review) => [review.caseId, review]));
   const cases = new Map(corpus.cases.map((entry) => [entry.id, entry]));
   for (const entry of corpus.cases) {
+    if (entry.metrics.handZoneGap != null && entry.metrics.handZoneGap < HAND_CLEARANCE) {
+      issues.push(`${entry.id}: the hands leave their own zones (gap ${entry.metrics.handZoneGap})`);
+    }
     const review = reviews.get(entry.id);
     if (!review) {
       issues.push(`${entry.id}: missing listening disposition`);

@@ -43,10 +43,21 @@ Plan for both in the same pull request.
 
 ## Adding a preset
 
-1. Add it to `PRESET_CONFIGS` in `presets.js`: a stable, never-reused `id`, `name`, the assignment fields, and `anchors` for the left hand, the right hand and every chord numeral the progression uses.
+1. Add it to `PRESET_CONFIGS` in `presets.js`: a stable, never-reused `id`, `name`, the assignment fields, and optionally `anchors.rh`, the note the tune should sit around. Do not place the left hand: the engine gives it its own lanes under the tune (see _Where the hands sit_ below).
 2. Choose only a motif the mode offers. Learner generation refuses anything else, so the preset would fail to open; check it in the running app.
-3. `npm test`. `tests/presets.spec.js` checks the bar count, bar labels, that both hands' anchors are honoured and chord anchors forwarded, and that the hands sit 10–30 semitones apart.
+3. `npm test`. `tests/presets.spec.js` checks the bar count, bar labels and that the tune's anchor is honoured; `tests/hand-lanes.spec.js` checks that the hands keep their own zones.
 4. Continue with _Freezing the change_ below.
+
+## Where the hands sit
+
+Like a player, the engine chooses hand positions once for the piece and follows the chords by changing inversions, never octaves (`planHandLanes` and `generateLeftHandPattern` in `engine.js`):
+
+- The tune is placed first, as one piece.
+- The left hand gets a twelve-key **bass lane**, where each bass note has exactly one home, slid a few keys once per assignment so its edge falls where the progression moves least. Above it is a **chord lane** that stops two semitones below the tune's lowest note. Each pattern's `lane` in `LEFT_HAND_PATTERN_METADATA` says which shape the hand takes.
+- Each chord is the inversion that fits the lane and moves least from the previous chord; a chord that comes round again is played where it was the first time. A chord that cannot fit is re-inverted, then thinned (over a sounding bass, the root goes first).
+- When a low tune leaves no room, one decision is made for the whole piece: drop the lanes slightly, else lift the tune an octave, else drop the lanes further, never below A1.
+
+`tests/hand-lanes.spec.js` holds this for every preset, hundreds of rerolls and every pattern under every tune: no shared or crossed keys, the drawn chord shape clear of the tune, no repeated chord moving, bass leaps within an octave (a fifth for presets), and nothing below A1. The musical audit gates on the same zone gap.
 
 ## Freezing the change
 
